@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FableProvider, useFable } from '@/lib/fable-context'
-import { fetchRecipeSuggestions } from '@/lib/api'
 import { type Recipe } from '@/lib/types'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen } from '@/components/ingredients-screen'
@@ -33,13 +32,39 @@ function FableAppContent() {
   const handleFindRecipes = useCallback(async () => {
     setIsLoadingRecipes(true)
     setCurrentScreen('results')
-    
+
     try {
-      const results = await fetchRecipeSuggestions(
-        preferences.allergens,
-        preferences.ingredients
+      const res = await fetch('/api/recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: preferences.ingredients,
+          allergens: preferences.allergens,
+          mode: 'avoid',
+        }),
+      })
+
+      if (!res.ok) throw new Error(`API error: ${res.status}`)
+
+      const data: { suggestions: { ingredient: string; score: number; allergens: string[] }[] } =
+        await res.json()
+
+      setRecipes(
+        data.suggestions.map((s) => ({
+          id: s.ingredient,
+          title: s.ingredient.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+          description:
+            s.allergens.length > 0
+              ? `Contains: ${s.allergens.map((a) => a.replace(/_/g, ' ')).join(', ')}`
+              : 'No major allergens',
+          image: '',
+          cookTime: 'Ingredient suggestion',
+          servings: 1,
+          matchScore: Math.round(s.score * 100),
+          allergens: s.allergens,
+          ingredients: [s.ingredient],
+        }))
       )
-      setRecipes(results)
     } catch (error) {
       console.error('Error fetching recipes:', error)
       setRecipes([])

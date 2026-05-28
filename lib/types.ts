@@ -33,11 +33,11 @@ export interface UserPreferences {
 // List of all allergens
 export const ALLERGENS: Allergen[] = [
   { id: 'gluten', name: 'Gluten', icon: '🌾' },
-  { id: 'dairy', name: 'Dairy', icon: '🥛' },
+  { id: 'milk', name: 'Dairy', icon: '🥛' },
   { id: 'eggs', name: 'Eggs', icon: '🥚' },
   { id: 'peanuts', name: 'Peanuts', icon: '🥜' },
-  { id: 'tree-nuts', name: 'Tree Nuts', icon: '🌰' },
-  { id: 'shellfish', name: 'Shellfish', icon: '🦐' },
+  { id: 'tree_nuts', name: 'Tree Nuts', icon: '🌰' },
+  { id: 'crustaceans', name: 'Shellfish', icon: '🦐' },
   { id: 'fish', name: 'Fish', icon: '🐟' },
   { id: 'soy', name: 'Soy', icon: '🫘' },
   { id: 'sesame', name: 'Sesame', icon: '🌱' },
