@@ -2,55 +2,68 @@
 
 import { cn } from '@/lib/utils'
 
-// Five distinct food-themed gradient presets.
-// All class names are static strings so Tailwind includes them at build time.
-const GRADIENTS = [
-  // 0 — Amber harvest: warm oranges and rose
+// All colours are inline styles so Tailwind scanning can't drop them.
+// Only structural utilities (position, size, blur, border-radius) use Tailwind.
+
+type Blob = {
+  color: string   // rgba string
+  blur: string    // px value for filter: blur()
+  top?: string; right?: string; bottom?: string; left?: string
+  width: string; height: string
+}
+
+type Preset = {
+  background: string   // full CSS gradient string
+  blobs: Blob[]
+}
+
+const GRADIENTS: Preset[] = [
+  // 0 — Amber harvest: warm amber → burnt orange → deep rose
   {
-    gradient: 'bg-gradient-to-br from-amber-900 via-orange-600 to-rose-800',
+    background: 'linear-gradient(135deg, #78350f 0%, #c2410c 45%, #9f1239 100%)',
     blobs: [
-      'absolute -top-6 -right-6 w-36 h-36 rounded-full bg-amber-400/30 blur-2xl',
-      'absolute top-6 left-4 w-20 h-20 rounded-full bg-orange-300/25 blur-xl',
-      'absolute -bottom-4 right-8 w-28 h-28 rounded-full bg-rose-400/20 blur-xl',
+      { color: 'rgba(251,191,36,0.32)',  blur: '40px', top: '-24px', right: '-24px', width: '144px', height: '144px' },
+      { color: 'rgba(253,186,116,0.25)', blur: '28px', top: '20px',  left: '14px',   width: '80px',  height: '80px'  },
+      { color: 'rgba(251,113,133,0.22)', blur: '32px', bottom: '-14px', right: '28px', width: '112px', height: '112px' },
     ],
   },
-  // 1 — Herb garden: deep emerald and teal
+  // 1 — Herb garden: deep emerald → teal → midnight cyan
   {
-    gradient: 'bg-gradient-to-br from-emerald-900 via-teal-600 to-cyan-800',
+    background: 'linear-gradient(135deg, #064e3b 0%, #0d9488 50%, #155e75 100%)',
     blobs: [
-      'absolute -top-8 -left-6 w-40 h-40 rounded-full bg-emerald-400/25 blur-2xl',
-      'absolute top-4 right-6 w-24 h-24 rounded-full bg-teal-300/20 blur-xl',
-      'absolute -bottom-6 right-2 w-32 h-32 rounded-full bg-cyan-400/20 blur-2xl',
+      { color: 'rgba(52,211,153,0.28)',  blur: '44px', top: '-28px', left: '-20px',  width: '160px', height: '160px' },
+      { color: 'rgba(94,234,212,0.22)', blur: '28px', top: '14px',  right: '20px',  width: '96px',  height: '96px'  },
+      { color: 'rgba(34,211,238,0.20)', blur: '40px', bottom: '-20px', right: '6px', width: '128px', height: '128px' },
     ],
   },
-  // 2 — Spiced red: deep reds and amber
+  // 2 — Spiced red: crimson → burnt orange → amber
   {
-    gradient: 'bg-gradient-to-br from-red-900 via-orange-700 to-amber-700',
+    background: 'linear-gradient(135deg, #7f1d1d 0%, #c2410c 50%, #b45309 100%)',
     blobs: [
-      'absolute -top-4 right-6 w-32 h-32 rounded-full bg-red-400/30 blur-2xl',
-      'absolute bottom-2 left-2 w-24 h-24 rounded-full bg-orange-300/25 blur-xl',
-      'absolute top-2 left-10 w-16 h-16 rounded-full bg-amber-400/20 blur-lg',
+      { color: 'rgba(248,113,113,0.32)', blur: '40px', top: '-14px', right: '20px',  width: '128px', height: '128px' },
+      { color: 'rgba(253,186,116,0.26)', blur: '28px', bottom: '6px', left: '6px',   width: '96px',  height: '96px'  },
+      { color: 'rgba(251,191,36,0.20)',  blur: '20px', top: '6px',  left: '36px',    width: '64px',  height: '64px'  },
     ],
   },
-  // 3 — Plum & fig: purple and rose
+  // 3 — Plum & fig: midnight purple → violet → deep rose
   {
-    gradient: 'bg-gradient-to-br from-purple-900 via-violet-700 to-rose-900',
+    background: 'linear-gradient(135deg, #3b0764 0%, #6d28d9 50%, #881337 100%)',
     blobs: [
-      'absolute -top-6 -right-4 w-40 h-40 rounded-full bg-purple-400/25 blur-2xl',
-      'absolute bottom-0 -left-4 w-28 h-28 rounded-full bg-violet-300/20 blur-xl',
-      'absolute top-8 left-8 w-16 h-16 rounded-full bg-rose-400/20 blur-xl',
+      { color: 'rgba(192,132,252,0.28)', blur: '44px', top: '-24px', right: '-14px', width: '160px', height: '160px' },
+      { color: 'rgba(196,181,253,0.22)', blur: '32px', bottom: '-4px', left: '-14px', width: '112px', height: '112px' },
+      { color: 'rgba(251,113,133,0.20)', blur: '28px', top: '28px', left: '28px',    width: '64px',  height: '64px'  },
     ],
   },
-  // 4 — Forest: deep green and teal
+  // 4 — Forest: deep green → emerald → dark teal
   {
-    gradient: 'bg-gradient-to-br from-green-900 via-emerald-700 to-teal-800',
+    background: 'linear-gradient(135deg, #14532d 0%, #047857 50%, #134e4a 100%)',
     blobs: [
-      'absolute -top-4 -left-4 w-32 h-32 rounded-full bg-green-400/25 blur-2xl',
-      'absolute -bottom-6 right-4 w-36 h-36 rounded-full bg-emerald-300/20 blur-2xl',
-      'absolute top-6 right-6 w-20 h-20 rounded-full bg-teal-400/20 blur-xl',
+      { color: 'rgba(74,222,128,0.26)',  blur: '40px', top: '-14px', left: '-14px',  width: '128px', height: '128px' },
+      { color: 'rgba(110,231,183,0.22)', blur: '44px', bottom: '-20px', right: '14px', width: '144px', height: '144px' },
+      { color: 'rgba(45,212,191,0.22)',  blur: '28px', top: '20px', right: '20px',   width: '80px',  height: '80px'  },
     ],
   },
-] as const
+]
 
 export function gradientIndex(title: string): number {
   const hash = title.split('').reduce(
@@ -66,18 +79,38 @@ interface RecipeGradientProps {
   children?: React.ReactNode
 }
 
-// Renders the colourful base gradient + decorative blobs + a bottom-to-transparent
-// dark veil for text legibility. Overlay your own content as children.
 export function RecipeGradient({ title, className, children }: RecipeGradientProps) {
   const g = GRADIENTS[gradientIndex(title)]
+
   return (
     <div className={cn('relative overflow-hidden', className)}>
-      {/* base gradient */}
-      <div className={cn('absolute inset-0', g.gradient)} />
+      {/* base gradient — inline style so it's never dropped by Tailwind scanning */}
+      <div className="absolute inset-0" style={{ background: g.background }} />
+
       {/* decorative blobs */}
-      {g.blobs.map((b, i) => <div key={i} className={b} />)}
-      {/* legibility veil */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+      {g.blobs.map((blob, i) => (
+        <div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            backgroundColor: blob.color,
+            filter: `blur(${blob.blur})`,
+            top: blob.top,
+            right: blob.right,
+            bottom: blob.bottom,
+            left: blob.left,
+            width: blob.width,
+            height: blob.height,
+          }}
+        />
+      ))}
+
+      {/* legibility veil — bottom-heavy dark gradient for text overlay */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.08) 55%, transparent 100%)' }}
+      />
+
       {children}
     </div>
   )
