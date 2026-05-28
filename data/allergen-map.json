@@ -1,0 +1,3164 @@
+{
+  "abalone": [
+    "molluscs"
+  ],
+  "abalone_mushroom": [
+    "molluscs"
+  ],
+  "absinthe": [],
+  "acacia": [],
+  "acai": [],
+  "acerola": [],
+  "achiote_paste": [],
+  "acorn": [],
+  "acorn_squash": [],
+  "activated_charcoal_powder": [],
+  "adjika": [],
+  "adobo_sauce": [],
+  "adobo_seasoning": [],
+  "advocaat": [
+    "eggs",
+    "milk"
+  ],
+  "agar": [],
+  "agati_flower": [],
+  "agave_syrup": [],
+  "aguardiente": [],
+  "aji_amarillo": [],
+  "aji_panca": [],
+  "ajvar": [],
+  "ajwain": [],
+  "alcaparrado": [],
+  "aleppo_pepper": [],
+  "alfalfa_sprout": [],
+  "alfredo_sauce": [
+    "milk"
+  ],
+  "alligator": [],
+  "allspice": [],
+  "allulose": [],
+  "almond": [
+    "tree_nuts"
+  ],
+  "almond_butter": [
+    "tree_nuts"
+  ],
+  "almond_milk": [
+    "tree_nuts"
+  ],
+  "almond_paste": [
+    "tree_nuts"
+  ],
+  "almond_tofu": [
+    "tree_nuts"
+  ],
+  "aloe_vera": [],
+  "alum": [],
+  "amaranth": [],
+  "amaretti_cookie": [
+    "eggs",
+    "tree_nuts"
+  ],
+  "amaretto": [
+    "tree_nuts"
+  ],
+  "amaro": [],
+  "amazake": [],
+  "amberjack": [
+    "fish"
+  ],
+  "amchur": [],
+  "american_cheese": [
+    "milk"
+  ],
+  "anaheim_chile": [],
+  "anardana_powder": [],
+  "ancho_chile": [],
+  "anchovy": [
+    "fish"
+  ],
+  "andouille_sausage": [],
+  "angelica_root": [],
+  "anise": [],
+  "anisette": [],
+  "annatto_seed": [],
+  "aonori": [],
+  "apple": [],
+  "apple_brandy": [],
+  "apple_cider": [],
+  "apple_cider_vinegar": [],
+  "apple_pie_spice": [],
+  "applewood_chip": [],
+  "apricot": [],
+  "apricot_brandy": [],
+  "aquafaba": [],
+  "aquavit": [],
+  "arame": [],
+  "arctic_char": [
+    "fish"
+  ],
+  "arepa": [],
+  "argan_oil": [],
+  "armagnac": [],
+  "aronia_berry": [],
+  "arrowhead": [],
+  "arrowroot": [],
+  "artichoke": [],
+  "arugula": [],
+  "asafoetida": [],
+  "asam_gelugur": [],
+  "ascorbic_acid": [],
+  "asiago_cheese": [
+    "milk"
+  ],
+  "asian_pear": [],
+  "asparagus": [],
+  "astragalus_root": [],
+  "avocado": [],
+  "avocado_oil": [],
+  "ayran": [
+    "milk"
+  ],
+  "bacon": [],
+  "bagel": [
+    "eggs",
+    "gluten"
+  ],
+  "baharat": [],
+  "bai_ji_mo": [
+    "gluten"
+  ],
+  "baijiu": [],
+  "bak_kut_teh_spice": [],
+  "baked_beans": [],
+  "bakers_ammonia": [],
+  "baking_powder": [],
+  "baking_soda": [],
+  "balado_seasoning": [],
+  "balsamic_vinegar": [
+    "sulphites"
+  ],
+  "balut": [
+    "eggs"
+  ],
+  "balyk": [
+    "fish"
+  ],
+  "bamboo_leaf": [],
+  "bamboo_pith_mushroom": [],
+  "bamboo_salt": [],
+  "bamboo_shoot": [],
+  "banana": [],
+  "banana_blossom": [],
+  "banana_leaf": [],
+  "banana_pepper": [],
+  "barbecue_sauce": [
+    "gluten"
+  ],
+  "barbecue_seasoning": [],
+  "barberry": [],
+  "barley": [
+    "gluten"
+  ],
+  "barley_grass": [
+    "gluten"
+  ],
+  "barramundi": [
+    "fish"
+  ],
+  "basa": [
+    "fish"
+  ],
+  "basil": [],
+  "basil_seed": [],
+  "basmati_rice": [],
+  "batang_fish": [
+    "fish"
+  ],
+  "bay_leaf": [],
+  "bean": [],
+  "bean_sprout": [],
+  "bear_meat": [],
+  "bearnaise_sauce": [
+    "eggs",
+    "milk"
+  ],
+  "bechamel": [
+    "gluten",
+    "milk"
+  ],
+  "bee_pollen": [],
+  "beef": [],
+  "beer": [
+    "gluten",
+    "sulphites"
+  ],
+  "beet": [],
+  "bel_paese_cheese": [
+    "milk"
+  ],
+  "bell_pepper": [],
+  "bellflower_root": [],
+  "benedictine": [],
+  "berbere": [],
+  "bergamot": [],
+  "berry": [],
+  "bilimbi": [],
+  "birds_eye_chili": [],
+  "birds_nest": [],
+  "biryani_masala": [],
+  "biscotti": [
+    "eggs",
+    "gluten",
+    "tree_nuts"
+  ],
+  "biscuit": [
+    "gluten",
+    "milk"
+  ],
+  "bison": [],
+  "bitter_almond": [
+    "tree_nuts"
+  ],
+  "bitter_green": [],
+  "bitter_melon": [],
+  "bitter_orange": [],
+  "bittern": [],
+  "bitters": [],
+  "black_bean": [],
+  "black_bean_paste": [
+    "gluten",
+    "soy"
+  ],
+  "black_currant": [],
+  "black_eyed_pea": [],
+  "black_garlic": [],
+  "black_olive": [],
+  "black_pepper": [],
+  "black_rice": [],
+  "black_salt": [],
+  "black_sesame_seed": [
+    "sesame"
+  ],
+  "black_tea": [],
+  "black_treacle": [],
+  "black_truffle": [],
+  "black_vinegar": [],
+  "blackberry": [],
+  "blackening_seasoning": [],
+  "blood_orange": [],
+  "blood_sausage": [],
+  "blood_tofu": [],
+  "bloody_mary_mix": [],
+  "blue_cheese": [
+    "milk"
+  ],
+  "blue_curacao": [],
+  "blueberry": [],
+  "bluefish": [
+    "fish"
+  ],
+  "bok_choy": [],
+  "bolillo": [
+    "gluten"
+  ],
+  "bolognese_sauce": [],
+  "bombay_duck_fish": [
+    "fish"
+  ],
+  "bone": [],
+  "bone_marrow": [],
+  "bonito": [
+    "fish"
+  ],
+  "bonito_flakes": [
+    "fish"
+  ],
+  "borage": [],
+  "borlotti_bean": [],
+  "bottarga": [
+    "fish"
+  ],
+  "bottle_gourd": [],
+  "bouquet_garni": [
+    "celery"
+  ],
+  "bourbon": [],
+  "boursin_cheese": [
+    "milk"
+  ],
+  "boysenberry": [],
+  "braising_liquid": [],
+  "bran": [],
+  "brandy": [],
+  "branzino": [
+    "fish"
+  ],
+  "bratwurst": [],
+  "braunschweiger": [],
+  "brazil_nut": [
+    "tree_nuts"
+  ],
+  "bread": [
+    "gluten"
+  ],
+  "bread_crumbs": [
+    "gluten"
+  ],
+  "breadfruit": [],
+  "bream": [
+    "fish"
+  ],
+  "bresaola": [],
+  "brewers_yeast": [
+    "gluten"
+  ],
+  "brick_cheese": [
+    "milk"
+  ],
+  "brick_tea": [],
+  "brie_cheese": [
+    "milk"
+  ],
+  "brine": [],
+  "brioche": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "broccoli": [],
+  "broccoli_rabe": [],
+  "broccolini": [],
+  "broth": [],
+  "brown_rice": [],
+  "brown_sauce": [
+    "gluten"
+  ],
+  "brown_sugar": [],
+  "browning_sauce": [
+    "gluten"
+  ],
+  "brussels_sprout": [],
+  "bryndza": [
+    "milk"
+  ],
+  "buckwheat": [],
+  "budae_jjigae_base": [],
+  "buffalo_meat": [],
+  "buffalo_milk": [
+    "milk"
+  ],
+  "buffalo_wing_sauce": [
+    "milk"
+  ],
+  "buldak_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "bulgogi": [
+    "gluten",
+    "soy"
+  ],
+  "bulgur": [
+    "gluten"
+  ],
+  "burdock_root": [],
+  "burrata": [
+    "milk"
+  ],
+  "butifarra": [],
+  "butter": [
+    "milk"
+  ],
+  "buttercream": [
+    "milk"
+  ],
+  "butterfish": [
+    "fish"
+  ],
+  "butterfly_pea_flower": [],
+  "buttermilk": [
+    "milk"
+  ],
+  "butternut_squash": [],
+  "butterscotch": [
+    "milk"
+  ],
+  "cabbage": [],
+  "cacao": [],
+  "cachaca": [],
+  "caciocavallo": [
+    "milk"
+  ],
+  "caesar_dressing": [
+    "eggs",
+    "fish",
+    "milk"
+  ],
+  "cajeta": [
+    "milk"
+  ],
+  "cajun_seasoning": [],
+  "calabrian_chili": [],
+  "calamansi": [],
+  "calcium_chloride": [],
+  "calendula": [],
+  "calpis": [
+    "milk"
+  ],
+  "calvados": [],
+  "camellia_oil": [],
+  "camembert_cheese": [
+    "milk"
+  ],
+  "campari": [],
+  "canadian_bacon": [],
+  "candied_fruit": [],
+  "candlenut": [
+    "tree_nuts"
+  ],
+  "candy": [],
+  "candy_coating": [],
+  "cane_syrup": [],
+  "cane_vinegar": [],
+  "cannellini_bean": [],
+  "cannoli_shell": [
+    "gluten"
+  ],
+  "canola_oil": [],
+  "cantal_cheese": [
+    "milk"
+  ],
+  "cantaloupe": [],
+  "cape_gooseberry": [],
+  "capelin": [
+    "fish"
+  ],
+  "caper": [],
+  "caperberry": [],
+  "capicola": [],
+  "capon": [],
+  "caramel": [
+    "milk"
+  ],
+  "caraway_seed": [],
+  "cardamom": [],
+  "cardoon": [],
+  "carob": [],
+  "carob_molasses": [],
+  "carp": [
+    "fish"
+  ],
+  "carrageenan": [],
+  "carrot": [],
+  "carrot_top": [],
+  "cartilage": [],
+  "cascabel_chile": [],
+  "cashew": [
+    "tree_nuts"
+  ],
+  "cassava": [],
+  "catfish": [
+    "fish"
+  ],
+  "catnip": [],
+  "cattail": [],
+  "caul_fat": [],
+  "cauliflower": [],
+  "cava": [
+    "sulphites"
+  ],
+  "caviar": [
+    "fish"
+  ],
+  "cayenne_pepper": [],
+  "celeriac": [
+    "celery"
+  ],
+  "celery": [
+    "celery"
+  ],
+  "celery_seed": [
+    "celery"
+  ],
+  "celtuce": [],
+  "century_egg": [
+    "eggs"
+  ],
+  "cereal": [
+    "gluten"
+  ],
+  "chaat_masala": [],
+  "chai_spice": [],
+  "chamomile": [],
+  "champagne": [
+    "sulphites"
+  ],
+  "champagne_vinegar": [
+    "sulphites"
+  ],
+  "chana_dal": [],
+  "chanterelle_mushroom": [],
+  "chaozhou_salted_vegetable": [],
+  "char_siu_pork": [],
+  "char_siu_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "chartreuse": [],
+  "chayote": [],
+  "cheddar_cheese": [
+    "milk"
+  ],
+  "cheese": [
+    "milk"
+  ],
+  "cheongyang_chili": [],
+  "cherry": [],
+  "cherry_blossom": [],
+  "cherry_leaf": [],
+  "cherry_liqueur": [],
+  "cherry_pepper": [],
+  "cherry_plum": [],
+  "chervil": [],
+  "cheshire_cheese": [
+    "milk"
+  ],
+  "chestnut": [
+    "tree_nuts"
+  ],
+  "chia_seed": [],
+  "chicha": [],
+  "chicken": [],
+  "chicken_broth": [],
+  "chicken_fat": [],
+  "chickpea": [],
+  "chicory": [],
+  "chihuahua_cheese": [
+    "milk"
+  ],
+  "chikuwa": [],
+  "chile_de_arbol": [],
+  "chili_garlic_sauce": [],
+  "chili_oil": [],
+  "chili_paste": [],
+  "chili_pepper": [],
+  "chili_powder": [],
+  "chili_sauce": [],
+  "chiltepin": [],
+  "chinese_bayberry": [],
+  "chinese_broccoli": [],
+  "chinese_celery": [
+    "celery"
+  ],
+  "chinese_cured_pork": [],
+  "chinese_preserved_olive": [],
+  "chinese_sausage": [],
+  "chinese_toon": [],
+  "chinese_yam": [],
+  "chipotle_pepper": [],
+  "chirimen_jako": [
+    "fish"
+  ],
+  "chive": [],
+  "chive_flower": [],
+  "chocolate": [],
+  "chocolate_hazelnut_spread": [
+    "milk",
+    "tree_nuts"
+  ],
+  "chocolate_liqueur": [],
+  "chokecherry": [],
+  "choricero_pepper": [],
+  "chorizo": [],
+  "choux_pastry": [],
+  "choy_sum": [],
+  "chrysanthemum": [],
+  "chu_hou_paste": [
+    "gluten",
+    "soy"
+  ],
+  "chunjang": [
+    "gluten",
+    "soy"
+  ],
+  "chuno": [],
+  "chutney": [],
+  "ciabatta": [
+    "gluten"
+  ],
+  "cicada": [],
+  "cinnamon": [],
+  "cipollini_onion": [],
+  "citric_acid": [],
+  "citron": [],
+  "citrus": [],
+  "clam": [
+    "molluscs"
+  ],
+  "clamato_juice": [
+    "molluscs"
+  ],
+  "clay_pot_rice_sauce": [],
+  "clear_gel": [],
+  "clementine": [],
+  "clotted_cream": [
+    "milk"
+  ],
+  "clove": [],
+  "clover": [],
+  "club_soda": [],
+  "cobia": [
+    "fish"
+  ],
+  "cockle": [
+    "molluscs"
+  ],
+  "cocktail_sauce": [],
+  "cocoa_butter": [],
+  "cocoa_mass": [],
+  "cocoa_powder": [],
+  "coconut": [],
+  "coconut_aminos": [],
+  "coconut_cream": [],
+  "coconut_liqueur": [],
+  "coconut_milk": [],
+  "coconut_oil": [],
+  "coconut_sugar": [],
+  "coconut_vinegar": [],
+  "coconut_water": [],
+  "cod": [
+    "fish"
+  ],
+  "cod_liver": [
+    "fish"
+  ],
+  "coffee": [],
+  "coffee_creamer": [],
+  "coffee_liqueur": [],
+  "cognac": [],
+  "coix_seed": [],
+  "cola": [],
+  "colby_cheese": [
+    "milk"
+  ],
+  "cold_jelly_noodle": [],
+  "collard_green": [],
+  "comte_cheese": [
+    "milk"
+  ],
+  "conch": [
+    "molluscs"
+  ],
+  "condensed_milk": [
+    "milk"
+  ],
+  "consomme": [],
+  "cookie": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "cookie_butter": [
+    "gluten"
+  ],
+  "cooking_spray": [],
+  "copha": [],
+  "cordyceps_flower": [],
+  "coriander": [],
+  "coriander_root": [],
+  "corn": [],
+  "corn_flakes": [
+    "gluten"
+  ],
+  "corn_husk": [],
+  "corn_oil": [],
+  "corn_relish": [],
+  "corn_silk": [],
+  "corn_syrup": [],
+  "corn_tortilla": [],
+  "cornbread": [],
+  "corned_beef": [],
+  "cornelian_cherry": [],
+  "cornmeal": [],
+  "cornstarch": [],
+  "corvina": [
+    "fish"
+  ],
+  "cotija_cheese": [
+    "milk"
+  ],
+  "cottage_cheese": [
+    "milk"
+  ],
+  "cotton_candy": [],
+  "couscous": [
+    "gluten"
+  ],
+  "crab": [
+    "crustaceans"
+  ],
+  "crab_apple": [],
+  "crab_boil_seasoning": [],
+  "crab_claw_fish": [
+    "crustaceans",
+    "fish"
+  ],
+  "crab_mushroom": [],
+  "crab_roe": [
+    "crustaceans"
+  ],
+  "crab_stick": [
+    "crustaceans",
+    "fish"
+  ],
+  "cracker": [
+    "gluten"
+  ],
+  "cranberry": [],
+  "cranberry_liqueur": [],
+  "cranberry_sauce": [],
+  "crappie": [
+    "fish"
+  ],
+  "crayfish": [
+    "crustaceans"
+  ],
+  "cream": [
+    "milk"
+  ],
+  "cream_cheese": [
+    "milk"
+  ],
+  "cream_liqueur": [
+    "milk"
+  ],
+  "cream_of_celery_soup": [
+    "celery",
+    "gluten",
+    "milk"
+  ],
+  "cream_of_chicken_soup": [
+    "gluten",
+    "milk"
+  ],
+  "cream_of_mushroom_soup": [
+    "gluten",
+    "milk"
+  ],
+  "cream_of_rice": [
+    "milk"
+  ],
+  "cream_of_tartar": [],
+  "cream_of_wheat": [
+    "gluten"
+  ],
+  "cream_soda": [],
+  "creme_anglaise": [
+    "eggs",
+    "milk"
+  ],
+  "creme_de_cacao": [],
+  "creme_de_cassis": [],
+  "creme_de_menthe": [],
+  "creme_de_violette": [],
+  "creme_fraiche": [
+    "milk"
+  ],
+  "creole_sauce": [],
+  "creole_seasoning": [
+    "gluten"
+  ],
+  "crepe": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "crescent_roll": [
+    "gluten",
+    "milk"
+  ],
+  "crispbread": [
+    "gluten"
+  ],
+  "croissant": [
+    "gluten",
+    "milk"
+  ],
+  "crosnes": [],
+  "crouton": [
+    "gluten"
+  ],
+  "crumb_crust": [
+    "gluten"
+  ],
+  "crumpet": [
+    "gluten",
+    "milk"
+  ],
+  "cubanelle_pepper": [],
+  "cucumber": [],
+  "cudweed": [],
+  "culantro": [],
+  "cumin": [],
+  "curd": [],
+  "cured_chicken": [],
+  "cured_duck": [],
+  "cured_fish": [
+    "fish"
+  ],
+  "curing_salt": [],
+  "curry": [],
+  "curry_leaf": [],
+  "curry_paste": [
+    "celery"
+  ],
+  "curry_powder": [
+    "celery"
+  ],
+  "custard": [
+    "eggs",
+    "milk"
+  ],
+  "custard_powder": [
+    "eggs",
+    "milk"
+  ],
+  "cynar": [],
+  "dace": [
+    "fish"
+  ],
+  "daikon": [],
+  "damson": [],
+  "dandelion": [],
+  "dango": [],
+  "dark_soy_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "dashi": [
+    "fish"
+  ],
+  "date": [],
+  "daylily_flower": [],
+  "deer_mushroom": [],
+  "demi_glace": [
+    "gluten"
+  ],
+  "denbu": [
+    "fish"
+  ],
+  "dextrose": [],
+  "digestive_biscuit": [
+    "gluten",
+    "milk"
+  ],
+  "dijonnaise": [
+    "eggs",
+    "mustard"
+  ],
+  "dill": [],
+  "doenjang": [
+    "soy"
+  ],
+  "donburi_sauce": [
+    "fish",
+    "gluten",
+    "soy"
+  ],
+  "dong_leaf": [],
+  "donkey_meat": [],
+  "dory": [
+    "fish"
+  ],
+  "doubanjiang": [
+    "gluten",
+    "soy"
+  ],
+  "dough": [
+    "gluten"
+  ],
+  "dough_improver": [],
+  "doughnut": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "dragon_fruit": [],
+  "dragon_whisker_vegetable": [],
+  "drambuie": [],
+  "dried_ganba_mushroom": [],
+  "dried_lily_bud": [],
+  "dried_orchid_flower": [],
+  "dried_oyster": [
+    "molluscs"
+  ],
+  "dried_scallop": [
+    "molluscs"
+  ],
+  "dried_shrimp": [
+    "crustaceans"
+  ],
+  "dried_tangerine_peel": [],
+  "dried_tofu": [
+    "soy"
+  ],
+  "dried_vegetable": [],
+  "dry_pot_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "dubonnet": [],
+  "duck": [],
+  "duck_egg": [
+    "eggs"
+  ],
+  "duck_fat": [],
+  "duck_sauce": [],
+  "duck_stock": [],
+  "dukkah": [
+    "sesame",
+    "tree_nuts"
+  ],
+  "dulce_de_leche": [
+    "milk"
+  ],
+  "dumpling": [
+    "gluten"
+  ],
+  "dumpling_wrapper": [
+    "gluten"
+  ],
+  "durian": [],
+  "earl_grey_tea": [],
+  "edam_cheese": [
+    "milk"
+  ],
+  "edamame": [
+    "soy"
+  ],
+  "edible_flower": [],
+  "edible_gold_leaf": [],
+  "eel": [
+    "fish"
+  ],
+  "egg": [
+    "eggs"
+  ],
+  "egg_noodle": [
+    "eggs",
+    "gluten"
+  ],
+  "egg_roll": [
+    "eggs",
+    "gluten"
+  ],
+  "egg_roll_wrapper": [
+    "eggs",
+    "gluten"
+  ],
+  "egg_substitute": [],
+  "egg_tofu": [
+    "eggs"
+  ],
+  "egg_white": [
+    "eggs"
+  ],
+  "egg_yolk": [
+    "eggs"
+  ],
+  "eggnog": [
+    "eggs",
+    "milk"
+  ],
+  "eggplant": [],
+  "einkorn": [
+    "gluten"
+  ],
+  "elderberry": [],
+  "elderflower": [],
+  "elderflower_liqueur": [],
+  "emmental_cheese": [
+    "milk"
+  ],
+  "empanada_shell": [
+    "gluten"
+  ],
+  "enchilada_sauce": [],
+  "endive": [],
+  "english_muffin": [
+    "gluten",
+    "milk"
+  ],
+  "enoki_mushroom": [],
+  "epazote": [],
+  "epiphyllum_flower": [],
+  "er_cai": [],
+  "erythritol": [],
+  "escarole": [],
+  "espelette_pepper": [],
+  "evaporated_milk": [
+    "milk"
+  ],
+  "ezine_cheese": [
+    "milk"
+  ],
+  "fajita_seasoning": [],
+  "falafel": [],
+  "falernum": [],
+  "farina": [
+    "gluten"
+  ],
+  "farmer_cheese": [
+    "milk"
+  ],
+  "farro": [
+    "gluten"
+  ],
+  "fava_bean": [],
+  "feijoa": [],
+  "fennel": [],
+  "fennel_pollen": [],
+  "fennel_seed": [],
+  "fenugreek_leaf": [],
+  "fenugreek_seed": [],
+  "fermentation_starter_cake": [
+    "gluten"
+  ],
+  "fermented_black_bean": [
+    "soy"
+  ],
+  "fermented_chive_flower_paste": [],
+  "fermented_fish": [
+    "fish"
+  ],
+  "fermented_glutinous_rice": [],
+  "fermented_tofu": [
+    "soy"
+  ],
+  "fermented_vegetable_brine": [],
+  "fern": [],
+  "feta_cheese": [
+    "milk"
+  ],
+  "fiddlehead_fern": [],
+  "fideo": [
+    "gluten"
+  ],
+  "fig": [],
+  "file_powder": [],
+  "filefish": [
+    "fish"
+  ],
+  "fines_herbes": [],
+  "fish": [
+    "fish"
+  ],
+  "fish_ball": [
+    "fish"
+  ],
+  "fish_cake": [
+    "fish"
+  ],
+  "fish_floss": [
+    "fish"
+  ],
+  "fish_maw": [
+    "fish"
+  ],
+  "fish_mint": [],
+  "fish_noodle": [
+    "fish"
+  ],
+  "fish_oil": [
+    "fish"
+  ],
+  "fish_paste": [
+    "fish"
+  ],
+  "fish_roe": [
+    "fish"
+  ],
+  "fish_sauce": [
+    "fish"
+  ],
+  "fish_sausage": [
+    "fish"
+  ],
+  "fish_skin": [
+    "fish"
+  ],
+  "fish_stock": [
+    "fish"
+  ],
+  "fish_tofu": [
+    "fish"
+  ],
+  "five_grain_powder": [
+    "gluten"
+  ],
+  "five_spice_powder": [],
+  "five_willow_vegetable": [],
+  "flageolet_bean": [],
+  "flatbread": [
+    "gluten"
+  ],
+  "flattened_young_rice": [],
+  "flaxseed": [],
+  "flaxseed_oil": [],
+  "flounder": [
+    "fish"
+  ],
+  "flour": [
+    "gluten"
+  ],
+  "flour_tortilla": [
+    "gluten"
+  ],
+  "foie_gras": [],
+  "fondant": [
+    "milk"
+  ],
+  "fontina_cheese": [
+    "milk"
+  ],
+  "food_coloring": [],
+  "fox_nut": [],
+  "frangipane": [
+    "eggs",
+    "gluten",
+    "milk",
+    "tree_nuts"
+  ],
+  "freekeh": [
+    "gluten"
+  ],
+  "french_dressing": [],
+  "fresno_pepper": [],
+  "fried_bread": [
+    "gluten"
+  ],
+  "fried_dough_twist": [
+    "gluten"
+  ],
+  "fried_gluten_ball": [
+    "gluten"
+  ],
+  "fried_puffed_cracker": [],
+  "fried_tofu_puff": [
+    "soy"
+  ],
+  "frisee": [],
+  "frog_leg": [],
+  "fromage_blanc": [
+    "milk"
+  ],
+  "frosting": [
+    "milk"
+  ],
+  "frozen_yogurt": [
+    "milk"
+  ],
+  "fructose": [],
+  "fruit": [],
+  "fruit_cocktail": [],
+  "fruit_juice": [],
+  "fruit_preserves": [],
+  "fruit_puree": [],
+  "fruit_tea": [],
+  "fruit_vinegar": [],
+  "fruitcake": [],
+  "fry_sauce": [
+    "eggs"
+  ],
+  "fudge": [
+    "milk"
+  ],
+  "furikake": [
+    "fish",
+    "sesame"
+  ],
+  "fuzzy_melon": [],
+  "gac_fruit": [],
+  "galangal": [],
+  "galette": [],
+  "galliano": [],
+  "game_meat": [],
+  "game_stock": [],
+  "gammon": [],
+  "ganache": [
+    "milk"
+  ],
+  "garam_masala": [],
+  "gardenia_flower": [],
+  "gardenia_fruit": [],
+  "garland_chrysanthemum": [],
+  "garlic": [],
+  "garlic_chive": [],
+  "garlic_scape": [],
+  "gelatin": [],
+  "geoduck": [
+    "molluscs"
+  ],
+  "geranium": [],
+  "ghee": [
+    "milk"
+  ],
+  "ghost_pepper": [],
+  "giardiniera": [],
+  "gin": [],
+  "ginger": [],
+  "ginger_ale": [],
+  "ginger_beer": [],
+  "ginger_liqueur": [],
+  "ginger_wine": [
+    "sulphites"
+  ],
+  "gingerbread": [
+    "gluten"
+  ],
+  "gingerbread_spice": [],
+  "gingersnap": [
+    "gluten"
+  ],
+  "ginkgo_nut": [],
+  "glass_noodle": [],
+  "gloucester_cheese": [
+    "milk"
+  ],
+  "glucose_syrup": [],
+  "gluten_free_flour": [],
+  "glutinous_rice": [],
+  "glutinous_rice_flour": [],
+  "glycerin": [],
+  "gnocchi": [
+    "gluten"
+  ],
+  "goat": [],
+  "goat_cheese": [
+    "milk"
+  ],
+  "goat_milk": [
+    "milk"
+  ],
+  "gochugaru": [],
+  "gochujang": [
+    "gluten",
+    "soy"
+  ],
+  "goda_masala": [],
+  "goji_berry": [],
+  "golden_ear_mushroom": [],
+  "golden_syrup": [],
+  "goldschlager": [],
+  "goose": [],
+  "goose_egg": [
+    "eggs"
+  ],
+  "goose_fat": [],
+  "gooseberry": [],
+  "gorgonzola_cheese": [
+    "milk"
+  ],
+  "gouda_cheese": [
+    "milk"
+  ],
+  "gourami": [
+    "fish"
+  ],
+  "graham_cracker": [
+    "gluten",
+    "milk"
+  ],
+  "graham_flour": [
+    "gluten"
+  ],
+  "grains_of_paradise": [],
+  "grana_padano": [
+    "milk"
+  ],
+  "grand_marnier": [],
+  "grape": [],
+  "grape_leaf": [],
+  "grape_must": [],
+  "grapefruit": [],
+  "grapeseed_oil": [],
+  "grappa": [],
+  "grass_jelly": [],
+  "grasshopper": [],
+  "gravy": [
+    "gluten"
+  ],
+  "greek_seasoning": [],
+  "green_bean": [],
+  "green_chili": [],
+  "green_curry_paste": [
+    "crustaceans"
+  ],
+  "green_fish": [
+    "fish"
+  ],
+  "green_olive": [],
+  "green_peppercorn": [],
+  "green_sichuan_peppercorn": [],
+  "green_tea": [],
+  "green_tomato": [],
+  "gremolata": [],
+  "grenadine": [],
+  "grissini": [
+    "gluten"
+  ],
+  "grits": [],
+  "ground_ivy": [],
+  "grouper": [
+    "fish"
+  ],
+  "grouse": [],
+  "gruyere_cheese": [
+    "milk"
+  ],
+  "guacamole": [],
+  "guajillo_chile": [],
+  "guar_gum": [],
+  "guascas": [],
+  "guava": [],
+  "guava_paste": [],
+  "guinea_hen": [],
+  "guizhou_sour_soup": [
+    "gluten"
+  ],
+  "gulai_seasoning": [],
+  "gulas": [],
+  "gullac": [],
+  "gum_paste": [],
+  "gypsum": [],
+  "habanero_pepper": [],
+  "haddock": [
+    "fish"
+  ],
+  "hair_vegetable": [],
+  "hairtail": [
+    "fish"
+  ],
+  "hake": [
+    "fish"
+  ],
+  "halibut": [
+    "fish"
+  ],
+  "halloumi": [
+    "milk"
+  ],
+  "halva": [
+    "sesame"
+  ],
+  "ham": [],
+  "hanpen": [
+    "fish"
+  ],
+  "hard_cider": [
+    "sulphites"
+  ],
+  "harissa": [],
+  "hatch_chile": [],
+  "havarti_cheese": [
+    "milk"
+  ],
+  "hawthorn": [],
+  "hazelnut": [
+    "tree_nuts"
+  ],
+  "hazelnut_liqueur": [
+    "tree_nuts"
+  ],
+  "hazelnut_oil": [
+    "tree_nuts"
+  ],
+  "hearts_of_palm": [],
+  "hemp_oil": [],
+  "hemp_seed": [],
+  "herb": [],
+  "herbal_tea": [],
+  "herbes_de_provence": [],
+  "herbsaint": [],
+  "herring": [
+    "fish"
+  ],
+  "hibiscus": [],
+  "hickory_nut": [
+    "tree_nuts"
+  ],
+  "hijiki": [],
+  "hog_plum": [],
+  "hogao": [],
+  "hoisin_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "hokkien_noodle": [
+    "gluten"
+  ],
+  "hollandaise_sauce": [
+    "eggs",
+    "milk"
+  ],
+  "hominy": [],
+  "honey": [],
+  "honey_citron_tea": [],
+  "honey_mushroom": [],
+  "honey_mustard": [
+    "mustard"
+  ],
+  "honeycomb": [],
+  "honeydew_melon": [],
+  "honeysuckle_flower": [],
+  "hop": [],
+  "horse_gram": [],
+  "horse_head_fish": [
+    "fish"
+  ],
+  "horse_mackerel": [
+    "fish"
+  ],
+  "horse_meat": [],
+  "horseradish": [],
+  "hot_and_sour_sauce": [
+    "gluten"
+  ],
+  "hot_dog": [],
+  "hot_pot_base": [
+    "gluten",
+    "soy"
+  ],
+  "hot_sauce": [],
+  "hpnotiq": [],
+  "huacatay": [],
+  "huckleberry": [],
+  "huitlacoche": [],
+  "hummus": [],
+  "hunan_chopped_chili": [],
+  "hyacinth_bean": [],
+  "iberico_ham": [],
+  "ice": [],
+  "ice_cream": [
+    "eggs",
+    "milk"
+  ],
+  "ice_cream_cone": [
+    "gluten"
+  ],
+  "ice_jelly": [],
+  "ice_plant": [],
+  "idli": [],
+  "indian_gooseberry": [],
+  "inulin": [],
+  "irish_cream": [
+    "milk"
+  ],
+  "isomalt": [],
+  "isot_pepper": [],
+  "italian_dressing": [],
+  "italian_sausage": [],
+  "italian_seasoning": [],
+  "jackfruit": [],
+  "jackfruit_seed": [],
+  "jagermeister": [],
+  "jaggery": [],
+  "jalapeno": [],
+  "jam": [],
+  "jarlsberg_cheese": [
+    "milk"
+  ],
+  "jasmine_flower": [],
+  "jasmine_tea": [],
+  "jellyfish": [],
+  "jerk_seasoning": [],
+  "jerusalem_artichoke": [],
+  "jicama": [],
+  "jinhua_ham": [],
+  "jobs_tears": [],
+  "juniper_berry": [],
+  "junket": [
+    "milk"
+  ],
+  "kabanos": [],
+  "kadaifi": [
+    "gluten"
+  ],
+  "kaffir_lime": [],
+  "kaffir_lime_leaf": [],
+  "kale": [],
+  "kangaroo": [],
+  "kapok_flower": [],
+  "kashkaval_cheese": [
+    "milk"
+  ],
+  "kashmiri_chili": [],
+  "kasseri_cheese": [
+    "milk"
+  ],
+  "kaya": [],
+  "kaymak": [
+    "milk"
+  ],
+  "kefalotyri": [],
+  "kefir": [
+    "milk"
+  ],
+  "kelp": [],
+  "kencur": [],
+  "ketchup": [],
+  "khmeli_suneli": [],
+  "khoya": [
+    "milk"
+  ],
+  "kidney": [],
+  "kidney_bean": [],
+  "kielbasa": [],
+  "kimchi": [],
+  "kinako": [
+    "soy"
+  ],
+  "king_oyster_mushroom": [],
+  "kirschwasser": [],
+  "kissel": [],
+  "kiwi": [],
+  "kluwek": [],
+  "kohlrabi": [],
+  "koji": [],
+  "kokum": [],
+  "komatsuna": [],
+  "kombu": [],
+  "kombucha": [],
+  "konjac": [],
+  "korean_bbq_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "korean_rice_wine": [
+    "sulphites"
+  ],
+  "krill": [
+    "crustaceans"
+  ],
+  "kudzu_root": [],
+  "kumquat": [],
+  "kvass": [],
+  "la_cam_leaf": [],
+  "la_giang_leaf": [],
+  "labneh": [
+    "milk"
+  ],
+  "lacon": [],
+  "ladyfinger": [
+    "eggs",
+    "gluten"
+  ],
+  "laksa_paste": [
+    "crustaceans",
+    "fish"
+  ],
+  "lamb": [],
+  "lambs_quarters": [],
+  "langoustine": [
+    "crustaceans"
+  ],
+  "lard": [],
+  "lavender": [],
+  "lecithin": [],
+  "leek": [],
+  "lemon": [],
+  "lemon_balm": [],
+  "lemon_leaf": [],
+  "lemon_pepper": [],
+  "lemon_verbena": [],
+  "lemongrass": [],
+  "lentil": [],
+  "lettuce": [],
+  "liangpi": [],
+  "licorice_root": [],
+  "light_soy_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "lillet": [
+    "sulphites"
+  ],
+  "lily_bulb": [],
+  "lima_bean": [],
+  "lime": [],
+  "limewater": [],
+  "limoncello": [],
+  "lingonberry": [],
+  "linguica": [],
+  "lions_mane_mushroom": [],
+  "liqueur": [],
+  "liquid_smoke": [],
+  "liquor": [],
+  "litsea_cubeba": [],
+  "liver": [],
+  "loach": [
+    "fish"
+  ],
+  "lobster": [
+    "crustaceans"
+  ],
+  "loganberry": [],
+  "long_pepper": [],
+  "longan": [],
+  "longaniza": [],
+  "loquat": [],
+  "loquat_leaf": [],
+  "lotus_flower": [],
+  "lotus_leaf": [],
+  "lotus_root": [],
+  "lotus_seed": [],
+  "lovage": [],
+  "lucuma": [],
+  "luffa": [],
+  "luncheon_meat": [],
+  "lychee": [],
+  "lye_water": [],
+  "mac_khen": [],
+  "mac_mat_fruit": [],
+  "maca": [],
+  "macadamia_nut": [
+    "tree_nuts"
+  ],
+  "mace": [],
+  "mache": [],
+  "mackerel": [
+    "fish"
+  ],
+  "madeira_wine": [
+    "sulphites"
+  ],
+  "maggi_seasoning": [
+    "gluten"
+  ],
+  "mahi_mahi": [
+    "fish"
+  ],
+  "mahleb": [],
+  "maitake_mushroom": [],
+  "mala_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "malabar_spinach": [],
+  "malanga": [],
+  "mallow": [],
+  "malt": [
+    "gluten"
+  ],
+  "malt_vinegar": [
+    "gluten",
+    "sulphites"
+  ],
+  "maltose": [],
+  "manchego_cheese": [
+    "milk"
+  ],
+  "mandarin_fish": [
+    "fish"
+  ],
+  "mango": [],
+  "mangosteen": [],
+  "mantis_shrimp": [
+    "crustaceans"
+  ],
+  "maple_syrup": [],
+  "mapo_tofu_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "maraschino_cherry": [],
+  "maraschino_liqueur": [],
+  "margarine": [],
+  "marinara_sauce": [],
+  "marjoram": [],
+  "marlin": [
+    "fish"
+  ],
+  "marmite": [
+    "gluten"
+  ],
+  "marsala_wine": [
+    "sulphites"
+  ],
+  "marshmallow": [],
+  "marzipan": [
+    "tree_nuts"
+  ],
+  "masa_harina": [],
+  "mascarpone_cheese": [
+    "milk"
+  ],
+  "masoor_dal": [],
+  "mastic": [],
+  "matambre": [],
+  "matcha_powder": [],
+  "matsoni": [
+    "milk"
+  ],
+  "matsutake_mushroom": [],
+  "matzo": [
+    "gluten"
+  ],
+  "mayonnaise": [
+    "eggs"
+  ],
+  "mead": [
+    "sulphites"
+  ],
+  "meat": [],
+  "meat_extract": [],
+  "meat_floss": [],
+  "meat_stock": [],
+  "meat_tenderizer": [],
+  "mei_kuei_lu_wine": [
+    "sulphites"
+  ],
+  "melinjo": [],
+  "melon": [],
+  "melon_liqueur": [],
+  "melon_seed": [],
+  "mentaiko": [
+    "fish"
+  ],
+  "mentsuyu": [],
+  "merguez": [],
+  "meringue": [
+    "eggs"
+  ],
+  "mesquite": [],
+  "metaxa": [],
+  "mettwurst": [],
+  "mezcal": [],
+  "microgreen": [],
+  "miiuy_croaker": [],
+  "milk": [
+    "milk"
+  ],
+  "milk_bread": [
+    "gluten",
+    "milk"
+  ],
+  "milk_chocolate": [
+    "milk"
+  ],
+  "milk_tea": [
+    "milk"
+  ],
+  "milk_tofu": [
+    "milk"
+  ],
+  "milkfish": [
+    "fish"
+  ],
+  "millet": [],
+  "milo": [],
+  "milt": [],
+  "mincemeat": [],
+  "mint": [],
+  "mirasol_chile": [],
+  "mirepoix": [
+    "celery"
+  ],
+  "mirin": [],
+  "miso": [
+    "gluten",
+    "soy"
+  ],
+  "mitsuba": [],
+  "mixed_grains": [],
+  "mixed_herbs": [],
+  "mixed_seeds": [],
+  "mixed_sprouts": [],
+  "mixed_vegetable": [],
+  "mizuame": [],
+  "mizuna": [],
+  "mocha": [],
+  "mochi": [],
+  "mojo": [],
+  "molasses": [],
+  "mole": [],
+  "monk_fruit": [],
+  "monkfish": [
+    "fish"
+  ],
+  "montasio_cheese": [
+    "milk"
+  ],
+  "monterey_jack_cheese": [
+    "milk"
+  ],
+  "montreal_steak_seasoning": [],
+  "mopping_sauce": [],
+  "morel_mushroom": [],
+  "moringa": [],
+  "mortadella": [],
+  "moscatel_wine": [
+    "sulphites"
+  ],
+  "mountain_pepper": [],
+  "mozzarella_cheese": [
+    "milk"
+  ],
+  "msg": [],
+  "mudfish": [
+    "fish"
+  ],
+  "mudskipper": [
+    "fish"
+  ],
+  "muenster_cheese": [
+    "milk"
+  ],
+  "muffin": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "mugwort": [],
+  "mulato_chile": [],
+  "mulberry": [],
+  "mulberry_leaf": [],
+  "mullet": [
+    "fish"
+  ],
+  "mulling_spice": [],
+  "mung_bean": [],
+  "mung_bean_jelly": [],
+  "mung_bean_paste": [],
+  "mung_bean_starch": [],
+  "muscovado_sugar": [],
+  "mushroom": [],
+  "mushroom_soy_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "mushroom_stock": [],
+  "mussel": [
+    "molluscs"
+  ],
+  "mustard": [
+    "mustard"
+  ],
+  "mustard_green": [
+    "mustard"
+  ],
+  "mustard_oil": [
+    "mustard"
+  ],
+  "mustard_root": [
+    "mustard"
+  ],
+  "mustard_seed": [
+    "mustard"
+  ],
+  "mutton": [],
+  "myoga": [],
+  "myzithra_cheese": [
+    "milk"
+  ],
+  "naan": [
+    "gluten",
+    "milk"
+  ],
+  "nameko_mushroom": [],
+  "nanohana": [],
+  "napa_cabbage": [],
+  "narsharab": [],
+  "nasturtium": [],
+  "natto": [
+    "soy"
+  ],
+  "navy_bean": [],
+  "nduja": [],
+  "nectar": [],
+  "nectarine": [],
+  "needlefish": [
+    "fish"
+  ],
+  "nerikiri": [],
+  "nettle": [],
+  "neufchatel_cheese": [
+    "milk"
+  ],
+  "new_mexico_chile": [],
+  "nigari": [],
+  "nigella_seed": [],
+  "noodle": [
+    "gluten"
+  ],
+  "nopal": [],
+  "nora_chile": [],
+  "nori": [],
+  "nougat": [
+    "eggs",
+    "tree_nuts"
+  ],
+  "nut": [],
+  "nut_butter": [
+    "tree_nuts"
+  ],
+  "nut_oil": [
+    "tree_nuts"
+  ],
+  "nutmeg": [],
+  "nutritional_yeast": [],
+  "oat": [
+    "gluten"
+  ],
+  "oat_milk": [
+    "gluten"
+  ],
+  "oaxaca_cheese": [
+    "milk"
+  ],
+  "octopus": [
+    "molluscs"
+  ],
+  "offal": [],
+  "oil": [],
+  "okara_powder": [
+    "soy"
+  ],
+  "okonomiyaki_sauce": [
+    "fish",
+    "gluten",
+    "soy"
+  ],
+  "okra": [],
+  "olive": [],
+  "olive_oil": [],
+  "olluco": [],
+  "onion": [],
+  "oolong_tea": [],
+  "orange": [],
+  "orange_blossom_water": [],
+  "orange_liqueur": [],
+  "orange_roughy": [
+    "fish"
+  ],
+  "oregano": [],
+  "orgeat": [
+    "tree_nuts"
+  ],
+  "orris_root": [],
+  "osmanthus_flower": [],
+  "osmanthus_wine": [
+    "sulphites"
+  ],
+  "ouzo": [],
+  "oyster": [
+    "molluscs"
+  ],
+  "oyster_mushroom": [],
+  "oyster_sauce": [
+    "molluscs"
+  ],
+  "pacific_saury": [
+    "fish"
+  ],
+  "padron_pepper": [],
+  "paederia_foetida": [],
+  "pagoda_tree_flower": [],
+  "palm_oil": [],
+  "palm_seed": [],
+  "palm_sugar": [],
+  "pan_drippings": [],
+  "panang_curry_paste": [
+    "crustaceans",
+    "tree_nuts"
+  ],
+  "pancake": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "pancetta": [],
+  "panch_phoran": [],
+  "pandan_leaf": [],
+  "paneer": [
+    "milk"
+  ],
+  "panela_cheese": [
+    "milk"
+  ],
+  "panettone": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "pangasius": [
+    "fish"
+  ],
+  "papad": [],
+  "papaya": [],
+  "papaya_leaf": [],
+  "paprika": [],
+  "paratha": [
+    "gluten",
+    "milk"
+  ],
+  "parmesan_cheese": [
+    "milk"
+  ],
+  "parsley": [],
+  "parsley_root": [],
+  "parsnip": [],
+  "partridge": [],
+  "pasilla_chile": [],
+  "passion_fruit": [],
+  "pasta": [
+    "gluten"
+  ],
+  "pasta_sauce": [],
+  "pastila": [],
+  "pastis": [],
+  "pastrami": [],
+  "pastry": [],
+  "pate": [],
+  "pea": [],
+  "pea_shoot": [],
+  "peach": [],
+  "peach_gum": [],
+  "peanut": [
+    "peanuts"
+  ],
+  "peanut_butter": [
+    "peanuts"
+  ],
+  "peanut_oil": [
+    "peanuts"
+  ],
+  "peanut_sauce": [
+    "peanuts"
+  ],
+  "pear": [],
+  "pearl_mushroom": [],
+  "pecan": [
+    "tree_nuts"
+  ],
+  "pecorino_cheese": [
+    "milk"
+  ],
+  "pectin": [],
+  "pennywort": [],
+  "peperomia_pellucida": [],
+  "pepino_melon": [],
+  "peppadew_pepper": [],
+  "pepper_jelly": [],
+  "peppercorn_sauce": [],
+  "peppermint": [],
+  "pepperoncini": [],
+  "pepperoni": [],
+  "perch": [
+    "fish"
+  ],
+  "perilla": [],
+  "perilla_oil": [],
+  "periwinkle": [
+    "molluscs"
+  ],
+  "persimmon": [],
+  "pesto": [
+    "milk",
+    "tree_nuts"
+  ],
+  "petai_bean": [],
+  "petis": [
+    "crustaceans"
+  ],
+  "pheasant": [],
+  "phyllo_dough": [
+    "gluten"
+  ],
+  "picada": [
+    "tree_nuts"
+  ],
+  "pickapeppa_sauce": [],
+  "pickle_juice": [],
+  "pickle_relish": [],
+  "pickled_cucumber": [],
+  "pickled_ginger": [],
+  "pickled_mustard_green": [
+    "mustard"
+  ],
+  "pickled_onion": [],
+  "pickled_radish": [],
+  "pickled_sakura_blossom": [],
+  "pickled_vegetable": [],
+  "pickling_spice": [],
+  "pie_crust": [
+    "gluten",
+    "milk"
+  ],
+  "pie_filling": [],
+  "pigeon": [],
+  "pigeon_egg": [
+    "eggs"
+  ],
+  "pigeon_pea": [],
+  "pike": [
+    "fish"
+  ],
+  "piloncillo": [],
+  "pimento": [],
+  "pina_colada_mix": [],
+  "pine_nut": [
+    "tree_nuts"
+  ],
+  "pine_pollen": [],
+  "pineapple": [],
+  "pink_pepper": [],
+  "pink_sauce": [
+    "milk"
+  ],
+  "pinto_bean": [],
+  "pionono": [],
+  "piquante_sauce": [],
+  "piquillo_pepper": [],
+  "piri_piri": [],
+  "pisco": [],
+  "pistachio": [
+    "tree_nuts"
+  ],
+  "pistachio_oil": [
+    "tree_nuts"
+  ],
+  "pita_bread": [
+    "gluten"
+  ],
+  "pizza_crust": [
+    "gluten"
+  ],
+  "pizza_sauce": [],
+  "plant_based_cheese": [],
+  "plant_based_cream": [],
+  "plant_based_ham": [],
+  "plant_based_milk": [],
+  "plantain": [],
+  "plum": [],
+  "plum_sauce": [],
+  "plum_wine": [
+    "sulphites"
+  ],
+  "pluot": [],
+  "poblano_pepper": [],
+  "pokeweed": [],
+  "polenta": [],
+  "pollock": [
+    "fish"
+  ],
+  "pomegranate": [],
+  "pomegranate_molasses": [],
+  "pomelo": [],
+  "pomfret": [
+    "fish"
+  ],
+  "pompano": [
+    "fish"
+  ],
+  "ponzu": [
+    "fish",
+    "gluten",
+    "soy"
+  ],
+  "poolish": [
+    "gluten"
+  ],
+  "poppy_seed": [],
+  "porcini_mushroom": [],
+  "pork": [],
+  "pork_stock": [],
+  "port_wine": [
+    "sulphites"
+  ],
+  "portobello_mushroom": [],
+  "potato": [],
+  "poultry_seasoning": [],
+  "praline": [
+    "milk",
+    "tree_nuts"
+  ],
+  "preserved_cabbage": [],
+  "preserved_lemon": [],
+  "preserved_plum": [],
+  "pretzel": [
+    "gluten"
+  ],
+  "prickly_pear": [],
+  "prosciutto": [],
+  "prosecco": [
+    "sulphites"
+  ],
+  "provolone_cheese": [
+    "milk"
+  ],
+  "prune": [
+    "sulphites"
+  ],
+  "psyllium_husk": [],
+  "pu_erh_tea": [],
+  "pudding": [
+    "milk"
+  ],
+  "puff_pastry": [
+    "gluten",
+    "milk"
+  ],
+  "puffer_fish": [
+    "fish"
+  ],
+  "pumpkin": [],
+  "pumpkin_leaf": [],
+  "pumpkin_pie_spice": [],
+  "pumpkin_seed": [],
+  "pumpkin_seed_oil": [],
+  "punch": [],
+  "purple_gynura": [],
+  "purple_sweet_potato": [],
+  "purple_yam": [],
+  "purslane": [],
+  "puzi_leaf": [],
+  "qingbu_liang": [],
+  "qingjiang_fish": [
+    "fish"
+  ],
+  "qingtou_mushroom": [],
+  "quail": [],
+  "quail_egg": [
+    "eggs"
+  ],
+  "quark": [
+    "milk"
+  ],
+  "queso_anejo": [
+    "milk"
+  ],
+  "queso_blanco": [
+    "milk"
+  ],
+  "queso_fresco": [
+    "milk"
+  ],
+  "quince": [],
+  "quince_paste": [],
+  "quinoa": [],
+  "quorn": [],
+  "rabbit": [],
+  "raclette_cheese": [
+    "milk"
+  ],
+  "radicchio": [],
+  "radish": [],
+  "radish_cake": [],
+  "ragi": [],
+  "raisin": [
+    "sulphites"
+  ],
+  "raita": [
+    "milk"
+  ],
+  "rakkyo": [],
+  "rambutan": [],
+  "ramen_noodle": [
+    "gluten"
+  ],
+  "ramp": [],
+  "ranch_dressing": [
+    "eggs",
+    "milk"
+  ],
+  "rapeseed": [],
+  "ras_el_hanout": [],
+  "raspberry": [],
+  "ravioli": [
+    "eggs",
+    "gluten"
+  ],
+  "ray": [
+    "fish"
+  ],
+  "razor_clam": [
+    "molluscs"
+  ],
+  "red_bean": [],
+  "red_bean_paste": [],
+  "red_currant": [],
+  "red_curry_paste": [
+    "crustaceans"
+  ],
+  "red_date": [],
+  "red_drum": [
+    "fish"
+  ],
+  "red_hots": [],
+  "red_leicester_cheese": [
+    "milk"
+  ],
+  "red_onion": [],
+  "red_pepper": [],
+  "red_rice": [],
+  "red_snapper": [
+    "fish"
+  ],
+  "red_wine": [
+    "sulphites"
+  ],
+  "red_wine_vinegar": [
+    "sulphites"
+  ],
+  "red_yeast": [],
+  "reed_leaf": [],
+  "refried_beans": [],
+  "remoulade_sauce": [
+    "eggs",
+    "mustard"
+  ],
+  "rhubarb": [],
+  "rice": [],
+  "rice_bran_oil": [],
+  "rice_cake": [],
+  "rice_milk": [],
+  "rice_noodle": [],
+  "rice_paddy_herb": [],
+  "rice_paper": [],
+  "rice_tofu": [],
+  "rice_vinegar": [],
+  "rice_wine": [
+    "sulphites"
+  ],
+  "ricotta_cheese": [
+    "milk"
+  ],
+  "ricotta_salata": [
+    "milk"
+  ],
+  "robiola_cheese": [
+    "milk"
+  ],
+  "rock_sugar": [],
+  "rock_tripe": [],
+  "rockfish": [
+    "fish"
+  ],
+  "rocoto_pepper": [],
+  "romanesco": [],
+  "romano_cheese": [
+    "milk"
+  ],
+  "romesco_sauce": [
+    "tree_nuts"
+  ],
+  "rompope": [
+    "eggs",
+    "milk"
+  ],
+  "rooibos_tea": [],
+  "root_beer": [],
+  "roquefort_cheese": [
+    "milk"
+  ],
+  "rose_syrup": [],
+  "rose_wine": [
+    "sulphites"
+  ],
+  "rosehip": [],
+  "rosemary": [],
+  "rosewater": [],
+  "roti": [
+    "gluten"
+  ],
+  "rouille": [],
+  "roux": [
+    "gluten",
+    "milk"
+  ],
+  "rowan_berry": [],
+  "royal_icing": [],
+  "rum": [],
+  "rusk": [
+    "gluten",
+    "milk"
+  ],
+  "rutabaga": [],
+  "ryazhenka": [
+    "milk"
+  ],
+  "rye": [
+    "gluten"
+  ],
+  "rye_bread": [
+    "gluten"
+  ],
+  "sachima": [
+    "eggs",
+    "gluten"
+  ],
+  "safflower": [],
+  "safflower_oil": [],
+  "saffron": [],
+  "sage": [],
+  "sago": [],
+  "sake": [
+    "sulphites"
+  ],
+  "salad_cream": [
+    "eggs",
+    "mustard"
+  ],
+  "salad_dressing": [],
+  "salad_greens": [],
+  "salam_leaf": [],
+  "salami": [],
+  "salep": [],
+  "salmon": [
+    "fish"
+  ],
+  "salmon_roe": [
+    "fish"
+  ],
+  "salsa": [],
+  "salsa_verde": [],
+  "salsify": [],
+  "salt": [],
+  "salt_cod": [
+    "fish"
+  ],
+  "salt_pork": [],
+  "salted_duck_egg": [
+    "eggs"
+  ],
+  "sambal": [],
+  "sambal_oelek": [],
+  "sambar_powder": [],
+  "sambuca": [],
+  "sand_ginger": [],
+  "sand_worm": [],
+  "sangria": [
+    "sulphites"
+  ],
+  "sansho_pepper": [],
+  "sanzi": [],
+  "sardine": [
+    "fish"
+  ],
+  "saskatoon_berry": [],
+  "sau_fruit": [],
+  "sauerkraut": [],
+  "sausage": [],
+  "sauternes": [
+    "sulphites"
+  ],
+  "savory": [],
+  "sazon": [],
+  "scad": [
+    "fish"
+  ],
+  "scallion": [],
+  "scallion_oil": [],
+  "scallop": [
+    "molluscs"
+  ],
+  "scamorza": [
+    "milk"
+  ],
+  "schisandra_berry": [],
+  "schnapps": [],
+  "scotch_bonnet_pepper": [],
+  "sea_bass": [
+    "fish"
+  ],
+  "sea_bream": [
+    "fish"
+  ],
+  "sea_buckthorn": [],
+  "sea_coconut": [],
+  "sea_cucumber": [],
+  "sea_grape": [],
+  "sea_hare": [
+    "molluscs"
+  ],
+  "sea_lettuce": [],
+  "sea_moss": [],
+  "sea_snail": [
+    "molluscs"
+  ],
+  "sea_urchin": [],
+  "seafood": [
+    "crustaceans",
+    "fish",
+    "molluscs"
+  ],
+  "seafood_sauce": [
+    "crustaceans",
+    "fish",
+    "molluscs"
+  ],
+  "seafood_seasoning": [
+    "crustaceans",
+    "fish",
+    "molluscs"
+  ],
+  "seafood_stock": [
+    "crustaceans",
+    "fish",
+    "molluscs"
+  ],
+  "seasoning_sauce": [],
+  "seaweed": [],
+  "semolina": [
+    "gluten"
+  ],
+  "senbei": [],
+  "serrano_ham": [],
+  "serrano_pepper": [],
+  "sesame_oil": [
+    "sesame"
+  ],
+  "sesame_paste": [
+    "sesame"
+  ],
+  "sesame_seed": [
+    "sesame"
+  ],
+  "sev": [],
+  "shacha_sauce": [
+    "crustaceans",
+    "fish"
+  ],
+  "shallot": [],
+  "shaobing": [
+    "gluten",
+    "sesame"
+  ],
+  "shaoxing_wine": [
+    "sulphites"
+  ],
+  "shark": [
+    "fish"
+  ],
+  "shark_fin": [
+    "fish"
+  ],
+  "shellfish": [
+    "crustaceans",
+    "molluscs"
+  ],
+  "shepherds_purse": [],
+  "sherbet": [],
+  "sherry": [
+    "sulphites"
+  ],
+  "sherry_vinegar": [
+    "sulphites"
+  ],
+  "shichimi_togarashi": [
+    "sesame"
+  ],
+  "shiitake_mushroom": [],
+  "shio_koji": [
+    "gluten"
+  ],
+  "shirasu": [
+    "fish"
+  ],
+  "shirataki_noodle": [],
+  "shochu": [],
+  "shortcake": [
+    "gluten",
+    "milk"
+  ],
+  "shortening": [],
+  "shrimp": [
+    "crustaceans"
+  ],
+  "shrimp_mushroom": [],
+  "shrimp_paste": [
+    "crustaceans"
+  ],
+  "sichuan_peppercorn": [],
+  "silkworm_pupa": [],
+  "simit": [
+    "gluten",
+    "sesame"
+  ],
+  "skate": [
+    "fish"
+  ],
+  "smelt": [
+    "fish"
+  ],
+  "smoked_cheese": [
+    "milk"
+  ],
+  "smoked_meat": [],
+  "smoked_paprika": [],
+  "smoked_salmon": [
+    "fish"
+  ],
+  "smoked_salt": [],
+  "snail": [
+    "molluscs"
+  ],
+  "snail_rice_noodle": [],
+  "snake": [],
+  "snake_gourd": [],
+  "snakehead_fish": [
+    "fish"
+  ],
+  "snow_fungus": [],
+  "snow_pea": [],
+  "snow_vegetable": [],
+  "sobrasada": [],
+  "sofrito": [],
+  "soju": [],
+  "sole": [
+    "fish"
+  ],
+  "somen_noodle": [
+    "gluten",
+    "soy"
+  ],
+  "soppressata": [],
+  "sorghum": [],
+  "sorghum_syrup": [],
+  "sorrel": [],
+  "sour_bamboo_shoot": [],
+  "sour_broth": [],
+  "sour_cream": [
+    "milk"
+  ],
+  "sour_mix": [],
+  "soursop": [],
+  "southern_comfort": [],
+  "soy_milk": [
+    "soy"
+  ],
+  "soy_protein_isolate": [
+    "soy"
+  ],
+  "soy_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "soy_yogurt": [
+    "soy"
+  ],
+  "soybean": [
+    "soy"
+  ],
+  "soybean_oil": [],
+  "soybean_paste": [
+    "gluten",
+    "soy"
+  ],
+  "soybean_sprout": [
+    "soy"
+  ],
+  "spaetzle": [
+    "eggs",
+    "gluten"
+  ],
+  "sparkling_water": [],
+  "sparkling_wine": [
+    "sulphites"
+  ],
+  "speck": [],
+  "speculoos_cookie": [
+    "gluten"
+  ],
+  "spelt": [
+    "gluten"
+  ],
+  "spice_mix": [],
+  "spinach": [],
+  "spirulina": [],
+  "sponge_cake": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "sprat": [
+    "fish"
+  ],
+  "spring_roll": [
+    "gluten"
+  ],
+  "spring_roll_wrapper": [
+    "gluten"
+  ],
+  "sprinkles": [],
+  "squash": [],
+  "squash_blossom": [],
+  "squid": [
+    "molluscs"
+  ],
+  "squid_ink": [
+    "molluscs"
+  ],
+  "squirrel": [],
+  "sriracha": [],
+  "ssamjang": [],
+  "star_anise": [],
+  "starch": [],
+  "starfruit": [],
+  "steak_sauce": [
+    "gluten"
+  ],
+  "steamed_bun": [
+    "gluten"
+  ],
+  "stevia": [],
+  "stilton_cheese": [
+    "milk"
+  ],
+  "stinky_mandarin_fish": [
+    "fish"
+  ],
+  "stinky_tofu": [
+    "soy"
+  ],
+  "stir_fry_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "stout": [
+    "gluten",
+    "sulphites"
+  ],
+  "stracchino_cheese": [
+    "milk"
+  ],
+  "straw_mushroom": [],
+  "strawberry": [],
+  "strega_liqueur": [],
+  "sturgeon": [
+    "fish"
+  ],
+  "sucuk": [],
+  "suet": [],
+  "sugar": [],
+  "sugar_snap_pea": [],
+  "sugarcane": [],
+  "sukiyaki_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "sulguni_cheese": [
+    "milk"
+  ],
+  "sumac": [],
+  "summer_sausage": [],
+  "sun_dried_tomato": [],
+  "sunfish": [
+    "fish"
+  ],
+  "sunflower_oil": [],
+  "sunflower_seed": [],
+  "superior_stock": [],
+  "sushi_vinegar": [],
+  "sushki": [],
+  "sweet_and_sour_sauce": [],
+  "sweet_bean_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "sweet_chili_sauce": [],
+  "sweet_potato": [],
+  "sweet_potato_leaf": [],
+  "sweet_potato_starch": [],
+  "sweet_preserved_mustard_green": [
+    "mustard"
+  ],
+  "sweet_roll": [
+    "gluten",
+    "milk"
+  ],
+  "sweet_soy_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "sweet_vermouth": [
+    "sulphites"
+  ],
+  "sweetbread": [],
+  "swiss_chard": [],
+  "swiss_cheese": [
+    "milk"
+  ],
+  "swiss_roll": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "sword_bean": [],
+  "swordfish": [
+    "fish"
+  ],
+  "syrup": [],
+  "ta_cai": [],
+  "tabasco_pepper": [],
+  "taco_sauce": [],
+  "taco_seasoning": [],
+  "taco_shell": [],
+  "tahini": [
+    "sesame"
+  ],
+  "tajin": [],
+  "taleggio_cheese": [
+    "milk"
+  ],
+  "tallow": [],
+  "tamale": [],
+  "tamari": [
+    "soy"
+  ],
+  "tamarillo": [],
+  "tamarind": [],
+  "tandoori_masala": [
+    "milk"
+  ],
+  "tangelo": [],
+  "tangerine": [],
+  "tapenade": [],
+  "tapioca": [],
+  "tapioca_pearl": [],
+  "tarako": [
+    "fish"
+  ],
+  "tarhana": [
+    "gluten",
+    "milk"
+  ],
+  "taro": [],
+  "taro_stem": [],
+  "tarragon": [],
+  "tartar_sauce": [
+    "eggs"
+  ],
+  "tasso": [],
+  "tatsoi": [],
+  "tauco": [],
+  "tea": [],
+  "tea_tree_mushroom": [],
+  "teff": [],
+  "tempeh": [
+    "soy"
+  ],
+  "tempura_flour": [
+    "gluten"
+  ],
+  "tenkasu": [],
+  "tequila": [],
+  "teriyaki_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "termite_mushroom": [],
+  "textured_soy_protein": [
+    "soy"
+  ],
+  "thai_basil": [],
+  "thai_tea": [],
+  "thousand_island_dressing": [
+    "eggs"
+  ],
+  "thyme": [],
+  "tiger_milk_mushroom": [],
+  "tikka_masala": [
+    "milk"
+  ],
+  "tilapia": [
+    "fish"
+  ],
+  "tkemali_sauce": [],
+  "toffee": [
+    "milk"
+  ],
+  "tofu": [
+    "soy"
+  ],
+  "tofu_pudding": [
+    "soy"
+  ],
+  "tofu_skin": [
+    "soy"
+  ],
+  "tom_yum_paste": [
+    "crustaceans",
+    "fish"
+  ],
+  "tomatillo": [],
+  "tomato": [],
+  "tonguefish": [
+    "fish"
+  ],
+  "tonic_water": [],
+  "tonka_bean": [],
+  "tonkatsu_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "toor_dal": [],
+  "topmouth_culter": [
+    "fish"
+  ],
+  "tortellini": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "tortilla": [
+    "gluten"
+  ],
+  "trehalose": [],
+  "triple_sec": [],
+  "trout": [
+    "fish"
+  ],
+  "truffle_oil": [],
+  "tsao_ko": [],
+  "tteokbokki_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "tulum_cheese": [
+    "milk"
+  ],
+  "tuna": [
+    "fish"
+  ],
+  "turbot": [
+    "fish"
+  ],
+  "turkey": [],
+  "turkey_sausage": [],
+  "turkey_stock": [],
+  "turkish_delight": [],
+  "turmeric": [],
+  "turmeric_leaf": [],
+  "turnip": [],
+  "turnip_green": [],
+  "turtle": [],
+  "tzatziki": [
+    "milk"
+  ],
+  "udon_noodle": [
+    "gluten"
+  ],
+  "umami_sauce": [],
+  "ume": [],
+  "umeboshi": [],
+  "umeboshi_vinegar": [],
+  "unagi_kabayaki": [
+    "fish"
+  ],
+  "unagi_sauce": [
+    "fish"
+  ],
+  "urad_dal": [],
+  "utskho_suneli": [],
+  "vadouvan": [],
+  "vanilla": [],
+  "veal": [],
+  "vegemite": [
+    "gluten"
+  ],
+  "vegeta_seasoning": [],
+  "vegetable_extract": [],
+  "vegetable_juice": [],
+  "vegetable_oil": [],
+  "vegetable_puree": [],
+  "vegetable_stock": [
+    "celery"
+  ],
+  "vegetarian_oyster_sauce": [],
+  "velveeta_cheese": [
+    "milk"
+  ],
+  "venison": [],
+  "verjuice": [
+    "sulphites"
+  ],
+  "vermicelli": [
+    "gluten"
+  ],
+  "vermouth": [
+    "sulphites"
+  ],
+  "viburnum": [],
+  "vienna_sausage": [],
+  "vietnamese_balm": [],
+  "vietnamese_coriander": [],
+  "vietnamese_pork_roll": [],
+  "vin_santo": [
+    "sulphites"
+  ],
+  "vinaigrette": [],
+  "vinegar": [],
+  "violet": [],
+  "vodka": [],
+  "wafer": [
+    "gluten",
+    "milk"
+  ],
+  "waffle": [
+    "eggs",
+    "gluten",
+    "milk"
+  ],
+  "wakame": [],
+  "walleye": [
+    "fish"
+  ],
+  "walnut": [
+    "tree_nuts"
+  ],
+  "walnut_oil": [
+    "tree_nuts"
+  ],
+  "wampee": [],
+  "wasabi": [],
+  "water": [],
+  "water_bamboo": [],
+  "water_celery": [
+    "celery"
+  ],
+  "water_chestnut": [],
+  "water_lily_flower": [],
+  "water_mimosa": [],
+  "water_shield": [],
+  "water_spinach": [],
+  "watercress": [],
+  "watermelon": [],
+  "watermelon_radish": [],
+  "wax_apple": [],
+  "weipa": [],
+  "wheat": [
+    "gluten"
+  ],
+  "wheat_germ": [
+    "gluten"
+  ],
+  "wheat_gluten": [
+    "gluten"
+  ],
+  "whelk": [
+    "molluscs"
+  ],
+  "whey": [
+    "milk"
+  ],
+  "whipped_topping": [],
+  "whiskey": [],
+  "white_bean": [],
+  "white_chocolate": [],
+  "white_pepper": [],
+  "white_soy_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "white_tea": [],
+  "white_truffle": [],
+  "white_vinegar": [],
+  "white_wine": [
+    "sulphites"
+  ],
+  "white_wine_vinegar": [
+    "sulphites"
+  ],
+  "whitebait": [
+    "fish"
+  ],
+  "whitefish": [
+    "fish"
+  ],
+  "whiting": [
+    "fish"
+  ],
+  "whole_wheat_flour": [
+    "gluten"
+  ],
+  "wild_betel_leaf": [],
+  "wild_boar": [],
+  "wild_garlic": [],
+  "wild_ginger": [],
+  "wild_rice": [],
+  "wine": [
+    "sulphites"
+  ],
+  "wine_lees": [
+    "sulphites"
+  ],
+  "winged_bean": [],
+  "winter_melon": [],
+  "wintergreen": [],
+  "wisteria_flower": [],
+  "wolfberry_leaf": [],
+  "wolffish": [
+    "fish"
+  ],
+  "wonton": [
+    "gluten"
+  ],
+  "wood_ear_mushroom": [],
+  "worcestershire_sauce": [
+    "fish",
+    "gluten"
+  ],
+  "wuchang_fish": [
+    "fish"
+  ],
+  "xanthan_gum": [],
+  "xo_sauce": [
+    "crustaceans",
+    "fish",
+    "molluscs"
+  ],
+  "xylitol": [],
+  "yacon": [],
+  "yak_meat": [],
+  "yakiniku_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "yakisoba_sauce": [
+    "gluten",
+    "soy"
+  ],
+  "yam": [],
+  "yard_long_bean": [],
+  "yeast": [],
+  "yellow_croaker": [
+    "fish"
+  ],
+  "yellow_curry_paste": [
+    "crustaceans"
+  ],
+  "yibin_yacai": [],
+  "yogurt": [
+    "milk"
+  ],
+  "youtiao": [
+    "gluten"
+  ],
+  "yu_choy": [],
+  "yufka": [
+    "gluten"
+  ],
+  "yuzu": [],
+  "yuzu_kosho": [],
+  "zaatar": [
+    "sesame"
+  ],
+  "zao_lu": [],
+  "zha_cai": [],
+  "zhajiang_sauce": [],
+  "zucchini": [],
+  "zucchini_flower": []
+}
