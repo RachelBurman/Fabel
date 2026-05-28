@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit } from '@/lib/types'
 
 interface FableContextType {
   preferences: UserPreferences
@@ -9,7 +9,16 @@ interface FableContextType {
   toggleAllergen: (allergenId: string) => void
   toggleCustomAllergen: (ingredient: string) => void
   setIngredients: (ingredients: IngredientItem[]) => void
-  addIngredient: (name: string, options?: { area?: IngredientArea; useByDate?: string }) => void
+  addIngredient: (name: string, options?: {
+    area?: IngredientArea
+    displayName?: string
+    subtype?: string
+    quantity?: string
+    unit?: IngredientUnit
+    dateType?: IngredientDateType
+    useByDate?: string
+    boughtDate?: string
+  }) => void
   removeIngredient: (name: string) => void
   addSafeIngredient: (ingredient: string) => void
   removeSafeIngredient: (ingredient: string) => void
@@ -198,7 +207,16 @@ export function FableProvider({ children }: { children: ReactNode }) {
     setPreferences(prev => ({ ...prev, ingredients }))
   }, [])
 
-  const addIngredient = useCallback((name: string, options?: { area?: IngredientArea; useByDate?: string }) => {
+  const addIngredient = useCallback((name: string, options?: {
+    area?: IngredientArea
+    displayName?: string
+    subtype?: string
+    quantity?: string
+    unit?: IngredientUnit
+    dateType?: IngredientDateType
+    useByDate?: string
+    boughtDate?: string
+  }) => {
     const normalized = name.trim().toLowerCase()
     if (!normalized) return
     setPreferences(prev => {
@@ -208,7 +226,13 @@ export function FableProvider({ children }: { children: ReactNode }) {
         name: normalized,
         area: options?.area ?? 'fridge',
         addedAt: new Date().toISOString().split('T')[0],
+        ...(options?.displayName ? { displayName: options.displayName } : {}),
+        ...(options?.subtype ? { subtype: options.subtype } : {}),
+        ...(options?.quantity ? { quantity: options.quantity } : {}),
+        ...(options?.unit ? { unit: options.unit } : {}),
+        ...(options?.dateType ? { dateType: options.dateType } : {}),
         ...(options?.useByDate ? { useByDate: options.useByDate } : {}),
+        ...(options?.boughtDate ? { boughtDate: options.boughtDate } : {}),
       }
       return { ...prev, ingredients: [...prev.ingredients, item] }
     })

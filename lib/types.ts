@@ -42,13 +42,23 @@ export interface GeneratedRecipe {
 }
 
 export type IngredientArea = 'fridge' | 'freezer' | 'cupboard' | 'pantry'
+export type IngredientDateType = 'use-by' | 'bought'
+
+export const INGREDIENT_UNITS = ['pieces', 'grams', 'kg', 'ml', 'litres', 'tbsp', 'tsp', 'cups'] as const
+export type IngredientUnit = typeof INGREDIENT_UNITS[number]
 
 export interface IngredientItem {
   id: string
-  name: string
+  name: string           // Epicure key (e.g. "chicken")
+  displayName?: string   // User-visible label (e.g. "Chicken Breast")
+  subtype?: string       // Specific cut/variety (e.g. "breast", "ribeye", "baby")
+  quantity?: string      // e.g. "2"
+  unit?: IngredientUnit  // e.g. "pieces"
   area: IngredientArea
-  useByDate?: string // YYYY-MM-DD, optional
-  addedAt: string   // YYYY-MM-DD
+  dateType?: IngredientDateType
+  useByDate?: string     // YYYY-MM-DD, set when dateType='use-by'
+  boughtDate?: string    // YYYY-MM-DD, set when dateType='bought'
+  addedAt: string        // YYYY-MM-DD
 }
 
 export interface UserPreferences {
