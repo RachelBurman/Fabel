@@ -27,6 +27,7 @@ export type CookTime = 'quick' | 'medium' | 'slow'
 export interface RecipeFilters {
   mealType: MealType
   cookTime: CookTime
+  kitchenOnly: boolean
 }
 
 const MEAL_TYPES: { value: MealType; label: string }[] = [
@@ -141,6 +142,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
   // Filter state
   const [mealType, setMealType] = useState<MealType>('main')
   const [cookTime, setCookTime] = useState<CookTime>('medium')
+  const [kitchenOnly, setKitchenOnly] = useState(false)
 
   // Portal dropdown positioning
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -239,7 +241,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
 
   const dropdownItems = searchResults.filter(r => !preferences.ingredients.some(i => i.name === r))
   const addedNames = new Set(preferences.ingredients.map(i => i.name))
-  const filters: RecipeFilters = { mealType, cookTime }
+  const filters: RecipeFilters = { mealType, cookTime, kitchenOnly }
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
@@ -542,6 +544,28 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                   >{label}</button>
                 ))}
               </div>
+            </div>
+
+            {/* Kitchen-only toggle */}
+            <div className="flex items-center justify-between gap-4 py-0.5">
+              <div>
+                <p className="text-sm font-medium text-foreground">Use my kitchen only</p>
+                <p className="text-xs text-muted-foreground">No extras — recipes use exactly what you&apos;ve added</p>
+              </div>
+              <button
+                role="switch"
+                aria-checked={kitchenOnly}
+                onClick={() => setKitchenOnly(v => !v)}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                  kitchenOnly ? 'bg-primary' : 'bg-secondary'
+                )}
+              >
+                <span className={cn(
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                  kitchenOnly ? 'translate-x-5' : 'translate-x-0'
+                )} />
+              </button>
             </div>
           </div>
 

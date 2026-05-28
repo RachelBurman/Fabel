@@ -34,7 +34,7 @@ function FableAppContent() {
 
   const [pairings, setPairings] = useState<PairingSuggestion[]>([])
   const [isLoadingPairings, setIsLoadingPairings] = useState(false)
-  const [recipeFilters, setRecipeFilters] = useState<RecipeFilters>({ mealType: 'main', cookTime: 'medium' })
+  const [recipeFilters, setRecipeFilters] = useState<RecipeFilters>({ mealType: 'main', cookTime: 'medium', kitchenOnly: false })
 
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
@@ -75,6 +75,7 @@ function FableAppContent() {
           mode: 'avoid',
           mealType: filters.mealType,
           cookTime: filters.cookTime,
+          kitchenOnly: filters.kitchenOnly,
           ...sfPayload,
         }),
       })
@@ -104,21 +105,26 @@ function FableAppContent() {
       : {}
 
     try {
-      const pairingsRes = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: preferences.ingredients,
-          allergens: preferences.allergens,
-          customAllergens: preferences.customAllergens,
-          mode: 'avoid',
-          mealType: filters.mealType,
-          cookTime: filters.cookTime,
-          ...sfPayload,
-        }),
-      })
-      if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
-      const pairingsData: { suggestions: PairingSuggestion[] } = await pairingsRes.json()
+      // When kitchen-only, skip Epicure pairings — Claude will work within the listed ingredients
+      let suggestionNames: string[] = []
+      if (!filters.kitchenOnly) {
+        const pairingsRes = await fetch('/api/recipes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ingredients: preferences.ingredients,
+            allergens: preferences.allergens,
+            customAllergens: preferences.customAllergens,
+            mode: 'avoid',
+            mealType: filters.mealType,
+            cookTime: filters.cookTime,
+            ...sfPayload,
+          }),
+        })
+        if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
+        const pairingsData: { suggestions: PairingSuggestion[] } = await pairingsRes.json()
+        suggestionNames = pairingsData.suggestions.map(s => s.ingredient)
+      }
 
       setLoadingStep('recipe')
       const recipeRes = await fetch('/api/generate-recipe', {
@@ -126,11 +132,12 @@ function FableAppContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ingredients: preferences.ingredients,
-          suggestions: pairingsData.suggestions.map(s => s.ingredient),
+          suggestions: suggestionNames,
           allergens: preferences.allergens,
           customAllergens: preferences.customAllergens,
           mealType: filters.mealType,
           cookTime: filters.cookTime,
+          kitchenOnly: filters.kitchenOnly,
           ...sfPayload,
         }),
       })
@@ -169,6 +176,7 @@ function FableAppContent() {
           customAllergens: preferences.customAllergens,
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
+          kitchenOnly: recipeFilters.kitchenOnly,
           ...sfPayload,
         }),
       })

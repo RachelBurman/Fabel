@@ -185,6 +185,7 @@ export async function POST(req: NextRequest) {
     cookTime?: unknown;
     safeFoodsMode?: unknown;
     safeIngredients?: unknown;
+    kitchenOnly?: unknown;
   };
   try {
     body = await req.json();
@@ -268,6 +269,7 @@ export async function POST(req: NextRequest) {
     : [];
 
   const safeFoodsMode = body.safeFoodsMode === true;
+  const kitchenOnly = body.kitchenOnly === true;
   const safeIngredients = Array.isArray(body.safeIngredients)
     ? (body.safeIngredients as unknown[]).filter(
         (s): s is string => typeof s === "string"
@@ -319,6 +321,10 @@ export async function POST(req: NextRequest) {
       : `Salt/seasoning: NO salt or seasoning appears in the safe list. Do NOT add salt, pepper, spices, herbs, or any seasoning unless it explicitly appears in the approved list. If a step would normally call for seasoning, use the ingredient name "seasoning of choice" and include this note in the step: "(use any salt or seasoning you can safely consume, or omit entirely)".`
     : "";
 
+  const kitchenConstraint = kitchenOnly
+    ? `KITCHEN CONSTRAINT: Only use the exact ingredients listed. Do not suggest, add, or imply any other ingredients. Work creatively within only what the user has available.\n\n`
+    : "";
+
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
       ? `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
@@ -328,16 +334,18 @@ export async function POST(req: NextRequest) {
         `The user's safety depends on strict adherence to this list.\n\n` +
         `${liquidInstruction}\n\n` +
         `${saltInstruction}\n\n` +
+        `${kitchenConstraint}` +
         `The user has these approved ingredients available today (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
         `Create a ${mealType} that takes ${cookTimeLabel}. ` +
         `Focus on technique, texture, and preparation to make the most of simple ingredients.\n\n` +
         `REMINDER: Every ingredient name in your JSON response MUST appear in this approved list (or be "liquid of choice" / "seasoning of choice" per the rules above): ${humanSafe}. ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`
-      : `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
+      : `${kitchenConstraint}` +
+        `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
-        `Also consider these suggested pairings: ${suggestions.join(", ")}. ` +
+        (kitchenOnly ? `` : `Also consider these suggested pairings: ${suggestions.join(", ")}. `) +
         `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;
 
