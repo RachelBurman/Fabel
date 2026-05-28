@@ -8,6 +8,17 @@ This repository is linked to a [v0](https://v0.app) project. You can continue de
 
 [Continue working on v0 →](https://v0.app/chat/projects/prj_RarHht55dcYauwe5CHkLo8Bd1cVV)
 
+## Environment Variables
+
+Copy `.env.local.example` to `.env.local` and fill in the values before running:
+
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | Anthropic API key — used by `/api/generate-recipe` to call Claude |
+| `AWS_REGION` | Yes | AWS region for DynamoDB (e.g. `eu-west-2`) |
+| `AWS_ACCESS_KEY_ID` | Yes | AWS credentials for DynamoDB |
+| `AWS_SECRET_ACCESS_KEY` | Yes | AWS credentials for DynamoDB |
+
 ## Getting Started
 
 First, run the development server:
