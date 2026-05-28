@@ -62,14 +62,22 @@ pnpm dev
 
 ### Ingredient Input
 - Searchable across all 1,790 Epicure ingredients with autocomplete
+- Staging panel on ingredient selection — set subtype, quantity, unit, and date before confirming
+  - **Subtype** — e.g. "breast", "ribeye", "baby"; appends to display name and improves recipe accuracy
+  - **Quantity + unit** — pieces, grams, kg, ml, litres, tbsp, tsp, cups
+  - **Date mode** — "Use by date" (user-entered) or "Bought date" (expected expiry auto-calculated from shelf-life table)
+- Kitchen area badges on every ingredient tag — 🧊 Fridge, ❄️ Freezer, 🗄️ Cupboard, 🏠 Pantry
+- Expiry warnings on ingredient tags — amber at 2 days, red with "Use today!" at 0–1 days
 - Quick-add chips for popular ingredients (adapts to Safe Foods list when mode is active)
 - Meal type filter — Snack, Starter, Main Course, Dessert
 - Cook time filter — Quick (<30 min), Medium (30–60 min), Slow Cook (60 min+)
-- Ingredient list persisted in DynamoDB with debounced auto-save
+- Ingredient list persisted in DynamoDB with debounced auto-save; old string-array profiles migrated automatically
 
 ### Recipe Generation
 - **Show Pairings** — Epicure similarity search surfaces safe, flavour-matched ingredients
 - **Generate Recipe** — Claude generates novel, restaurant-quality recipes
+- Ingredients sorted by expiry date (ascending) before being passed to Claude — expiring items get used first
+- Claude receives rich descriptions (e.g. `"2 pieces Chicken Breast (Epicure: chicken)"`) for cut-accurate recipes
 - Recipes respect allergen profile, meal type, and cook time
 - Prompt caching on the system prompt (~90% cost reduction on repeated calls)
 - Food-themed gradient hero on every recipe card with title-hash colour variation across five palettes
@@ -109,7 +117,9 @@ Vercel — Next.js 16 (App Router)
        └── saved-recipes       DynamoDB read/write (full recipe objects)
 
 DynamoDB tables
-  ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode, ingredients)
+  ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
+  │                            ingredients[]{name, displayName, subtype, quantity, unit,
+  │                            area, dateType, useByDate, boughtDate, addedAt})
   └── fable-saved-recipes      Saved recipes with full recipe JSON
 
 In-memory (loaded at server startup)
@@ -121,8 +131,6 @@ In-memory (loaded at server startup)
 
 ## In Progress
 
-- [ ] Kitchen areas — organise ingredients by location (fridge, freezer, cupboard, pantry)
-- [ ] Use-by date tracking — flag expiring ingredients and prioritise them in recipe suggestions
 - [ ] Collections — organise saved recipes into named collections
 - [ ] Drink pairings — Epicure-powered beverage suggestions matched to the recipe's flavour profile
 - [ ] Macros toggle — opt-in nutritional information (off by default, eating disorder recovery users in mind)
@@ -135,7 +143,6 @@ In-memory (loaded at server startup)
 - [ ] Ingredient substitutes mode — paste any recipe, get allergen-safe ingredient swaps
 - [ ] Diet restriction presets — vegan, vegetarian, keto, low-FODMAP
 - [ ] Medication flags — e.g. "take Lactaid before eating this" for lactose intolerance
-- [ ] Store cupboard quantities — track amounts (3 eggs, 200 g flour) and surface expiry warnings
 - [ ] High histamine preset — for MCAS users who react to histamine-rich foods
 
 ### Medium Term
