@@ -22,6 +22,7 @@ export interface Recipe {
   allergens: string[] // allergens NOT present (safe)
   ingredients: string[]
   isSaved?: boolean
+  fullRecipe?: GeneratedRecipe // full AI-generated recipe data when saved from generation
 }
 
 export interface GeneratedRecipeIngredient {

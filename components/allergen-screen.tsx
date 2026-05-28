@@ -53,7 +53,7 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
                   transition={{ delay: index * 0.02, duration: 0.15 }}
                   onClick={() => toggleAllergen(allergen.id)}
                   className={cn(
-                    'relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-200',
+                    'relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200',
                     isSelected
                       ? 'border-primary bg-primary/5'
                       : 'border-border bg-card hover:border-primary/50'
@@ -63,12 +63,12 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center"
+                      className="absolute top-2 right-2 w-4 h-4 rounded-full bg-primary flex items-center justify-center"
                     >
                       <Check className="w-2.5 h-2.5 text-primary-foreground" />
                     </motion.div>
                   )}
-                  <span className="text-xl">{allergen.icon}</span>
+                  <span className="text-2xl">{allergen.icon}</span>
                   <span className={cn('text-xs font-medium text-center leading-tight', isSelected ? 'text-primary' : 'text-foreground')}>
                     {allergen.name}
                   </span>

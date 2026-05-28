@@ -162,6 +162,7 @@ function FableAppContent() {
       matchScore: 100,
       allergens: [],
       ingredients: generatedRecipe.ingredients.map(i => i.name),
+      fullRecipe: generatedRecipe, // preserve for full detail view in Saved tab
     })
     setGeneratedRecipeSaved(true)
   }, [generatedRecipe, saveRecipe])
@@ -170,6 +171,15 @@ function FableAppContent() {
   const handleViewHistoryRecipe = useCallback((recipe: GeneratedRecipe) => {
     setGeneratedRecipe(recipe)
     setGeneratedRecipeSaved(false)
+    setLoadingStep(null)
+    navigate('generated')
+  }, [navigate])
+
+  // ── View a saved recipe ────────────────────────────────────────────────────────
+  const handleViewSavedRecipe = useCallback((recipe: import('@/lib/types').Recipe) => {
+    if (!recipe.fullRecipe) return
+    setGeneratedRecipe(recipe.fullRecipe)
+    setGeneratedRecipeSaved(true) // already saved — show heart as filled
     setLoadingStep(null)
     navigate('generated')
   }, [navigate])
@@ -265,7 +275,7 @@ function FableAppContent() {
               <GeneratedRecipeScreen
                 recipe={generatedRecipe}
                 loadingStep={loadingStep}
-                onBack={() => navigate('ingredients')}
+                onBack={() => navigate(prevScreen)}
                 onSave={handleSaveGeneratedRecipe}
                 isSaved={generatedRecipeSaved}
               />
@@ -296,7 +306,10 @@ function FableAppContent() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <SavedRecipesScreen onBack={() => navigate('ingredients')} />
+              <SavedRecipesScreen
+                onBack={() => navigate('ingredients')}
+                onViewRecipe={handleViewSavedRecipe}
+              />
             </motion.div>
           )}
 

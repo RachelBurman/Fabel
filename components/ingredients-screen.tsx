@@ -88,7 +88,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
   const dropdownItems = searchResults.filter(r => !preferences.ingredients.includes(r))
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
 
