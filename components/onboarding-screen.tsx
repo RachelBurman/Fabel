@@ -7,6 +7,7 @@ import { useFable } from '@/lib/fable-context'
 import { Check, Leaf, ArrowRight, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { CustomAllergenSearch } from '@/components/custom-allergen-search'
 
 interface OnboardingScreenProps {
   onComplete: () => void
@@ -162,6 +163,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                     </motion.button>
                   )
                 })}
+              </div>
+
+              {/* Custom allergen search */}
+              <div className="mb-6">
+                <CustomAllergenSearch />
               </div>
 
               {/* Footer */}
