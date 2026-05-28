@@ -144,7 +144,7 @@ export function PairingsScreen({
                     key={s.ingredient}
                     suggestion={s}
                     index={i}
-                    isAdded={preferences.ingredients.includes(s.ingredient)}
+                    isAdded={preferences.ingredients.some(i => i.name === s.ingredient)}
                     onAdd={onAddIngredient}
                   />
                 ))}

@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
-import { Plus, X, Search, ChefHat, Sparkles, Layers, Check } from 'lucide-react'
+import { type IngredientArea } from '@/lib/types'
+import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -46,10 +47,32 @@ const COOK_TIMES: { value: CookTime; label: string }[] = [
   { value: 'slow',   label: 'Slow Cook (60m+)' },
 ]
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Area config ──────────────────────────────────────────────────────────────
 
-// Extended pool of popular ingredients. The quick-add list is built by
-// taking the first 12 entries that don't conflict with the user's allergens.
+const AREAS: { value: IngredientArea; emoji: string; label: string }[] = [
+  { value: 'fridge',   emoji: '🧊', label: 'Fridge' },
+  { value: 'freezer',  emoji: '❄️', label: 'Freezer' },
+  { value: 'cupboard', emoji: '🗄️', label: 'Cupboard' },
+  { value: 'pantry',   emoji: '🏠', label: 'Pantry' },
+]
+
+function areaConfig(area: IngredientArea) {
+  return AREAS.find(a => a.value === area) ?? AREAS[0]
+}
+
+// ─── Expiry helpers ───────────────────────────────────────────────────────────
+
+function getDaysUntilExpiry(useByDate?: string): number | null {
+  if (!useByDate) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expiry = new Date(useByDate)
+  expiry.setHours(0, 0, 0, 0)
+  return Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+// ─── Popular pool ─────────────────────────────────────────────────────────────
+
 const POPULAR_POOL = [
   'chicken', 'garlic', 'onion', 'tomato', 'lemon',
   'olive_oil', 'ginger', 'rice', 'egg', 'butter',
@@ -103,6 +126,11 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchResults, setSearchResults] = useState<string[]>([])
 
+  // Staging state — ingredient selected from search, awaiting area/date config
+  const [pendingName, setPendingName] = useState<string | null>(null)
+  const [pendingArea, setPendingArea] = useState<IngredientArea>('fridge')
+  const [pendingDate, setPendingDate] = useState('')
+
   // Filter state
   const [mealType, setMealType] = useState<MealType>('main')
   const [cookTime, setCookTime] = useState<CookTime>('medium')
@@ -142,37 +170,60 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
     if (showDropdown) recomputeCoords()
   }, [showDropdown, recomputeCoords])
 
-  const handleAddIngredient = useCallback((ingredient: string) => {
-    addIngredient(ingredient)
+  // Select from search → open staging area
+  const handleSelectFromSearch = useCallback((name: string) => {
+    setPendingName(name)
+    setPendingArea('fridge')
+    setPendingDate('')
     setInputValue('')
     setSearchResults([])
     setShowDropdown(false)
+  }, [])
+
+  // Confirm staging → add to context
+  const handleConfirmAdd = useCallback(() => {
+    if (!pendingName) return
+    addIngredient(pendingName, {
+      area: pendingArea,
+      useByDate: pendingDate || undefined,
+    })
+    setPendingName(null)
+    setPendingDate('')
+    setPendingArea('fridge')
+  }, [pendingName, pendingArea, pendingDate, addIngredient])
+
+  // Quick-add chip → add immediately with fridge default
+  const handleQuickAdd = useCallback((name: string) => {
+    addIngredient(name, { area: 'fridge' })
   }, [addIngredient])
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && inputValue.trim()) {
-      handleAddIngredient(
-        dropdownItems.length > 0
-          ? dropdownItems[0]
-          : inputValue.trim().toLowerCase().replace(/\s+/g, '_')
+      const first = dropdownItems[0]
+      handleSelectFromSearch(
+        first ?? inputValue.trim().toLowerCase().replace(/\s+/g, '_')
       )
     }
     if (e.key === 'Escape') setShowDropdown(false)
   }
 
-  const dropdownItems = searchResults.filter(r => !preferences.ingredients.includes(r))
+  const dropdownItems = searchResults.filter(
+    r => !preferences.ingredients.some(i => i.name === r)
+  )
+
   const filters: RecipeFilters = { mealType, cookTime }
+  const addedNames = new Set(preferences.ingredients.map(i => i.name))
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
 
-          {/* Header — label changes when Safe Foods Mode is active */}
+          {/* Header */}
           <IngredientsHeader safeFoodsActive={preferences.safeFoodsMode && preferences.safeIngredients.length > 0} />
 
           {/* Search input */}
-          <div className="relative mb-6">
+          <div className="relative mb-4">
             <div ref={inputWrapperRef} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
@@ -194,6 +245,77 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             </div>
           </div>
 
+          {/* Staging area — appears after selecting from search */}
+          <AnimatePresence>
+            {pendingName && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -8, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="mb-4 overflow-hidden"
+              >
+                <div className="bg-card border border-primary/20 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-foreground">{displayName(pendingName)}</span>
+                    <button
+                      onClick={() => setPendingName(null)}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Area picker */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {AREAS.map(({ value, emoji, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setPendingArea(value)}
+                          className={cn(
+                            'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-colors',
+                            pendingArea === value
+                              ? 'bg-primary/15 text-primary border-primary/30'
+                              : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
+                          )}
+                        >
+                          <span>{emoji}</span>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Use-by date */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Use by (optional)</p>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <input
+                        type="date"
+                        value={pendingDate}
+                        onChange={e => setPendingDate(e.target.value)}
+                        className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      {pendingDate && (
+                        <button onClick={() => setPendingDate('')} className="text-muted-foreground hover:text-foreground">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button size="sm" onClick={handleConfirmAdd} className="w-full rounded-full gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add {displayName(pendingName)}
+                  </Button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Selected ingredients */}
           {preferences.ingredients.length > 0 && (
             <div className="mb-6">
@@ -202,20 +324,38 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               </h3>
               <div className="flex flex-wrap gap-2">
                 <AnimatePresence mode="popLayout">
-                  {preferences.ingredients.map(ingredient => (
-                    <motion.button
-                      key={ingredient}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      layout
-                      onClick={() => removeIngredient(ingredient)}
-                      className="group flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-full border border-primary/20 hover:bg-primary/20 transition-colors"
-                    >
-                      <span>{displayName(ingredient)}</span>
-                      <X className="w-4 h-4 opacity-60 group-hover:opacity-100" />
-                    </motion.button>
-                  ))}
+                  {preferences.ingredients.map(ingredient => {
+                    const days = getDaysUntilExpiry(ingredient.useByDate)
+                    const isRed = days !== null && days <= 1
+                    const isAmber = days !== null && days === 2
+                    const cfg = areaConfig(ingredient.area)
+
+                    return (
+                      <motion.button
+                        key={ingredient.id}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        layout
+                        onClick={() => removeIngredient(ingredient.name)}
+                        className={cn(
+                          'group flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors',
+                          isRed
+                            ? 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20 dark:text-red-400 dark:border-red-400/20 dark:bg-red-400/10'
+                            : isAmber
+                              ? 'bg-amber-500/10 text-amber-700 border-amber-500/20 hover:bg-amber-500/20 dark:text-amber-400 dark:border-amber-400/20 dark:bg-amber-400/10'
+                              : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+                        )}
+                      >
+                        <span className="text-xs opacity-80">{cfg.emoji}</span>
+                        <span className="text-sm">{displayName(ingredient.name)}</span>
+                        {isRed && (
+                          <span className="text-xs font-medium opacity-90">Use today!</span>
+                        )}
+                        <X className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 shrink-0" />
+                      </motion.button>
+                    )
+                  })}
                 </AnimatePresence>
               </div>
             </div>
@@ -228,9 +368,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               ? preferences.ingredients.length === 0 ? 'Your safe ingredients:' : 'Add more from your safe list:'
               : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
 
-            // Build the displayed list, excluding allergen-flagged items.
-            // In default mode: draw from POPULAR_POOL until we have QUICK_ADD_COUNT safe ones.
-            // In safe foods mode: show all of the user's safe ingredients that aren't flagged.
             const isFlagged = (name: string) =>
               hasUserAllergen(name, preferences.allergens, preferences.customAllergens)
 
@@ -239,35 +376,34 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               : POPULAR_POOL.filter(name => !isFlagged(name)).slice(0, QUICK_ADD_COUNT)
 
             return (
-          <div className="flex-1">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
-            <div className="flex flex-wrap gap-2">
-              {quickAddList.map(name => {
-                const selected = preferences.ingredients.includes(name)
-                return (
-                  <button
-                    key={name}
-                    onClick={() => selected ? removeIngredient(name) : handleAddIngredient(name)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors',
-                      selected
-                        ? 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    )}
-                  >
-                    {selected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 opacity-50" />}
-                    {displayName(name)}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
+                <div className="flex flex-wrap gap-2">
+                  {quickAddList.map(name => {
+                    const selected = addedNames.has(name)
+                    return (
+                      <button
+                        key={name}
+                        onClick={() => selected ? removeIngredient(name) : handleQuickAdd(name)}
+                        className={cn(
+                          'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors',
+                          selected
+                            ? 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'
+                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                        )}
+                      >
+                        {selected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 opacity-50" />}
+                        {displayName(name)}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             )
           })()}
 
-          {/* ── Filters ── */}
+          {/* Filters */}
           <div className="mt-6 space-y-4">
-            {/* Meal type */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
               <div className="flex flex-wrap gap-2">
@@ -288,7 +424,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               </div>
             </div>
 
-            {/* Cook time */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
               <div className="flex flex-wrap gap-2">
@@ -334,7 +469,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             <p className="text-xs text-center text-muted-foreground">
               {preferences.safeFoodsMode && preferences.safeIngredients.length > 0
                 ? 'Recipes will use only ingredients from your safe foods list'
-                : 'We\'ll find recipes that match your ingredients and avoid your allergens'}
+                : "We'll find recipes that match your ingredients and avoid your allergens"}
             </p>
           </div>
 
@@ -363,7 +498,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                 <button
                   key={name}
                   onMouseDown={e => e.preventDefault()}
-                  onClick={() => handleAddIngredient(name)}
+                  onClick={() => handleSelectFromSearch(name)}
                   className={cn(
                     'w-full text-left px-4 py-3 text-foreground hover:bg-secondary transition-colors',
                     index !== dropdownItems.length - 1 && 'border-b border-border'
