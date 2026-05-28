@@ -26,13 +26,7 @@ type Screen =
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, isRecipeSaved } = useFable()
 
-  if (isLoadingProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    )
-  }
+  // All hooks must be declared before any early return (Rules of Hooks)
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
   const [prevScreen, setPrevScreen] = useState<Screen>('ingredients')
 
@@ -220,6 +214,14 @@ function FableAppContent() {
 
   const handleNavigate = (screen: 'ingredients' | 'pairings' | 'saved' | 'history') => {
     navigate(screen)
+  }
+
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    )
   }
 
   return (
