@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion } from '@/lib/types'
 import { OnboardingScreen } from '@/components/onboarding-screen'
-import { IngredientsScreen } from '@/components/ingredients-screen'
+import { IngredientsScreen, type RecipeFilters } from '@/components/ingredients-screen'
 import { AllergenScreen } from '@/components/allergen-screen'
 import { PairingsScreen } from '@/components/pairings-screen'
 import { GeneratedRecipeScreen, type LoadingStep } from '@/components/generated-recipe-screen'
@@ -29,6 +29,7 @@ function FableAppContent() {
 
   const [pairings, setPairings] = useState<PairingSuggestion[]>([])
   const [isLoadingPairings, setIsLoadingPairings] = useState(false)
+  const [recipeFilters, setRecipeFilters] = useState<RecipeFilters>({ mealType: 'main', cookTime: 'medium' })
 
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
@@ -48,7 +49,8 @@ function FableAppContent() {
   const handleOnboardingComplete = () => setCurrentScreen('ingredients')
 
   // ── Show Pairings ────────────────────────────────────────────────────────────
-  const handleShowPairings = useCallback(async () => {
+  const handleShowPairings = useCallback(async (filters: RecipeFilters) => {
+    setRecipeFilters(filters)
     setIsLoadingPairings(true)
     navigate('pairings')
 
@@ -61,6 +63,8 @@ function FableAppContent() {
           allergens: preferences.allergens,
           customAllergens: preferences.customAllergens,
           mode: 'avoid',
+          mealType: filters.mealType,
+          cookTime: filters.cookTime,
         }),
       })
       if (!res.ok) throw new Error(`API error: ${res.status}`)
@@ -75,7 +79,8 @@ function FableAppContent() {
   }, [preferences, navigate])
 
   // ── Generate Recipe from scratch ─────────────────────────────────────────────
-  const handleGenerateRecipe = useCallback(async () => {
+  const handleGenerateRecipe = useCallback(async (filters: RecipeFilters) => {
+    setRecipeFilters(filters)
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
     setLoadingStep('pairings')
@@ -90,6 +95,8 @@ function FableAppContent() {
           allergens: preferences.allergens,
           customAllergens: preferences.customAllergens,
           mode: 'avoid',
+          mealType: filters.mealType,
+          cookTime: filters.cookTime,
         }),
       })
       if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
@@ -104,6 +111,8 @@ function FableAppContent() {
           suggestions: pairingsData.suggestions.map(s => s.ingredient),
           allergens: preferences.allergens,
           customAllergens: preferences.customAllergens,
+          mealType: filters.mealType,
+          cookTime: filters.cookTime,
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
@@ -135,6 +144,8 @@ function FableAppContent() {
           suggestions: pairings.map(s => s.ingredient),
           allergens: preferences.allergens,
           customAllergens: preferences.customAllergens,
+          mealType: recipeFilters.mealType,
+          cookTime: recipeFilters.cookTime,
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)

@@ -9,10 +9,30 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
-interface IngredientsScreenProps {
-  onShowPairings: () => void
-  onGenerateRecipe: () => void
+// ─── Filter types ─────────────────────────────────────────────────────────────
+
+export type MealType = 'snack' | 'starter' | 'main' | 'dessert'
+export type CookTime = 'quick' | 'medium' | 'slow'
+
+export interface RecipeFilters {
+  mealType: MealType
+  cookTime: CookTime
 }
+
+const MEAL_TYPES: { value: MealType; label: string }[] = [
+  { value: 'snack',   label: 'Snack' },
+  { value: 'starter', label: 'Starter' },
+  { value: 'main',    label: 'Main Course' },
+  { value: 'dessert', label: 'Dessert' },
+]
+
+const COOK_TIMES: { value: CookTime; label: string }[] = [
+  { value: 'quick',  label: 'Quick (<30m)' },
+  { value: 'medium', label: 'Medium (30–60m)' },
+  { value: 'slow',   label: 'Slow Cook (60m+)' },
+]
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 // Curated popular ingredients from the Epicure dataset
 const POPULAR_INGREDIENTS = [
@@ -25,11 +45,20 @@ export function displayName(raw: string): string {
   return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+interface IngredientsScreenProps {
+  onShowPairings: (filters: RecipeFilters) => void
+  onGenerateRecipe: (filters: RecipeFilters) => void
+}
+
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: IngredientsScreenProps) {
   const { preferences, addIngredient, removeIngredient } = useFable()
   const [inputValue, setInputValue] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchResults, setSearchResults] = useState<string[]>([])
+
+  // Filter state
+  const [mealType, setMealType] = useState<MealType>('main')
+  const [cookTime, setCookTime] = useState<CookTime>('medium')
 
   // Portal dropdown positioning
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -62,7 +91,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
     return () => clearTimeout(id)
   }, [inputValue, recomputeCoords])
 
-  // Update coords whenever the dropdown is about to open
   useEffect(() => {
     if (showDropdown) recomputeCoords()
   }, [showDropdown, recomputeCoords])
@@ -86,6 +114,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
   }
 
   const dropdownItems = searchResults.filter(r => !preferences.ingredients.includes(r))
+  const filters: RecipeFilters = { mealType, cookTime }
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
@@ -105,7 +134,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             </p>
           </div>
 
-          {/* Search input — ref tracked for portal positioning */}
+          {/* Search input */}
           <div className="relative mb-6">
             <div ref={inputWrapperRef} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -155,7 +184,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             </div>
           )}
 
-          {/* Quick-add chips — always visible, checkmark if already selected */}
+          {/* Quick-add chips */}
           <div className="flex-1">
             <h3 className="text-sm font-medium text-muted-foreground mb-3">
               {preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'}
@@ -174,10 +203,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                         : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                     )}
                   >
-                    {selected
-                      ? <Check className="w-3.5 h-3.5" />
-                      : <Plus className="w-3.5 h-3.5 opacity-50" />
-                    }
+                    {selected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 opacity-50" />}
                     {displayName(name)}
                   </button>
                 )
@@ -185,11 +211,56 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             </div>
           </div>
 
+          {/* ── Filters ── */}
+          <div className="mt-6 space-y-4">
+            {/* Meal type */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
+              <div className="flex flex-wrap gap-2">
+                {MEAL_TYPES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setMealType(value)}
+                    className={cn(
+                      'px-3 py-1.5 text-sm rounded-full transition-colors',
+                      mealType === value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Cook time */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
+              <div className="flex flex-wrap gap-2">
+                {COOK_TIMES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setCookTime(value)}
+                    className={cn(
+                      'px-3 py-1.5 text-sm rounded-full transition-colors',
+                      cookTime === value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Actions */}
-          <div className="pt-4 border-t border-border space-y-3 mt-8">
+          <div className="pt-4 border-t border-border space-y-3 mt-6">
             <Button
               size="lg"
-              onClick={onGenerateRecipe}
+              onClick={() => onGenerateRecipe(filters)}
               disabled={preferences.ingredients.length === 0}
               className="w-full rounded-full gap-2 py-6"
             >
@@ -199,7 +270,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             <Button
               size="lg"
               variant="outline"
-              onClick={onShowPairings}
+              onClick={() => onShowPairings(filters)}
               disabled={preferences.ingredients.length === 0}
               className="w-full rounded-full gap-2"
             >
@@ -214,7 +285,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
         </div>
       </div>
 
-      {/* Autocomplete dropdown rendered in a portal to escape stacking contexts */}
+      {/* Autocomplete dropdown — portal to escape stacking contexts */}
       {isMounted && createPortal(
         <AnimatePresence>
           {showDropdown && dropdownItems.length > 0 && (
@@ -235,8 +306,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               {dropdownItems.map((name, index) => (
                 <button
                   key={name}
-                  // onMouseDown prevents the input from losing focus (and thus
-                  // the 200ms blur timeout from hiding the dropdown before onClick fires)
                   onMouseDown={e => e.preventDefault()}
                   onClick={() => handleAddIngredient(name)}
                   className={cn(

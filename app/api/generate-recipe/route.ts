@@ -8,7 +8,7 @@ const SYSTEM_PROMPT =
   "You are a creative chef who specialises in allergen-safe cooking. Generate exciting, restaurant-quality recipes. Always respond with valid JSON only, no markdown.";
 
 export async function POST(req: NextRequest) {
-  let body: { ingredients?: unknown; suggestions?: unknown; allergens?: unknown; customAllergens?: unknown };
+  let body: { ingredients?: unknown; suggestions?: unknown; allergens?: unknown; customAllergens?: unknown; mealType?: unknown; cookTime?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -31,6 +31,18 @@ export async function POST(req: NextRequest) {
     ? (body.customAllergens as unknown[]).filter((a): a is string => typeof a === "string")
     : [];
 
+  const mealType = typeof body.mealType === "string" ? body.mealType : "main course";
+
+  const COOK_TIME_LABELS: Record<string, string> = {
+    quick:  "under 30 minutes",
+    medium: "between 30 and 60 minutes",
+    slow:   "over 60 minutes, using slow cooking techniques where appropriate",
+  };
+  const cookTimeLabel =
+    typeof body.cookTime === "string"
+      ? (COOK_TIME_LABELS[body.cookTime] ?? body.cookTime)
+      : "between 30 and 60 minutes";
+
   const allergenClause =
     allergens.length > 0 ? allergens.join(", ") : "none";
 
@@ -40,7 +52,8 @@ export async function POST(req: NextRequest) {
       : "";
 
   const userPrompt =
-    `Create one creative recipe using some or all of these ingredients: ${ingredients.join(", ")} ` +
+    `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
+    `Use some or all of these ingredients: ${ingredients.join(", ")} ` +
     `and suggested pairings: ${suggestions.join(", ")}. ` +
     `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
     `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;

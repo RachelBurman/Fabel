@@ -13,7 +13,7 @@ interface Suggestion {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { ingredients?: unknown; allergens?: unknown; customAllergens?: unknown; mode?: unknown };
+  let body: { ingredients?: unknown; allergens?: unknown; customAllergens?: unknown; mode?: unknown; mealType?: unknown; cookTime?: unknown };
   try {
     body = await req.json();
   } catch {
