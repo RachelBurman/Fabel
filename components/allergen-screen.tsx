@@ -40,9 +40,9 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
             </div>
           </div>
 
-          {/* EU Big 14 grid — compact */}
+          {/* EU Big 14 grid — fills available height */}
           <h2 className="text-sm font-medium text-muted-foreground mb-2">EU Big 14 Allergens</h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-5">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 grid-rows-7 sm:grid-rows-4 md:grid-rows-2 gap-2 mb-3">
             {ALLERGENS.map((allergen, index) => {
               const isSelected = preferences.allergens.includes(allergen.id)
               return (
@@ -53,7 +53,7 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
                   transition={{ delay: index * 0.02, duration: 0.15 }}
                   onClick={() => toggleAllergen(allergen.id)}
                   className={cn(
-                    'relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200',
+                    'relative flex flex-col items-center justify-center gap-2 h-full rounded-xl border-2 transition-all duration-200',
                     isSelected
                       ? 'border-primary bg-primary/5'
                       : 'border-border bg-card hover:border-primary/50'
@@ -68,7 +68,7 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
                       <Check className="w-2.5 h-2.5 text-primary-foreground" />
                     </motion.div>
                   )}
-                  <span className="text-2xl">{allergen.icon}</span>
+                  <span className="text-3xl">{allergen.icon}</span>
                   <span className={cn('text-xs font-medium text-center leading-tight', isSelected ? 'text-primary' : 'text-foreground')}>
                     {allergen.name}
                   </span>
