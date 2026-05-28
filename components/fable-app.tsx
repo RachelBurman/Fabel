@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Loader2 } from 'lucide-react'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion } from '@/lib/types'
 import { OnboardingScreen } from '@/components/onboarding-screen'
@@ -23,7 +24,15 @@ type Screen =
   | 'saved'
 
 function FableAppContent() {
-  const { hasCompletedOnboarding, preferences, addIngredient, addToHistory, saveRecipe, isRecipeSaved } = useFable()
+  const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, isRecipeSaved } = useFable()
+
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      </div>
+    )
+  }
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
   const [prevScreen, setPrevScreen] = useState<Screen>('ingredients')
 

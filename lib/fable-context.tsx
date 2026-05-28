@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry } from '@/lib/types'
 
 interface FableContextType {
@@ -19,9 +19,27 @@ interface FableContextType {
   addToHistory: (entry: HistoryEntry) => void
   hasCompletedOnboarding: boolean
   completeOnboarding: () => void
+  isLoadingProfile: boolean
 }
 
 const FableContext = createContext<FableContextType | undefined>(undefined)
+
+// Map a DynamoDB item back to the Recipe shape
+function itemToRecipe(item: Record<string, unknown>): Recipe {
+  return {
+    id: String(item.id ?? item.recipeId ?? ''),
+    title: String(item.title ?? ''),
+    description: String(item.description ?? ''),
+    image: String(item.image ?? ''),
+    cookTime: String(item.cookTime ?? ''),
+    servings: Number(item.servings ?? 1),
+    matchScore: Number(item.matchScore ?? 100),
+    allergens: Array.isArray(item.allergens) ? (item.allergens as string[]) : [],
+    ingredients: Array.isArray(item.ingredients) ? (item.ingredients as string[]) : [],
+    isSaved: true,
+    fullRecipe: item.fullRecipe as GeneratedRecipe | undefined,
+  }
+}
 
 export function FableProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -33,6 +51,96 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+
+  const userIdRef = useRef<string>('')
+
+  // ── Initialise: load userId + fetch profile + saved recipes ─────────────────
+  useEffect(() => {
+    const init = async () => {
+      let uid = localStorage.getItem('fable_user_id')
+      if (!uid) {
+        uid = crypto.randomUUID()
+        localStorage.setItem('fable_user_id', uid)
+        // New user — no profile to fetch
+        userIdRef.current = uid
+        setIsLoadingProfile(false)
+        return
+      }
+
+      userIdRef.current = uid
+
+      try {
+        const [profileRes, savedRes] = await Promise.all([
+          fetch(`/api/user/profile?userId=${uid}`),
+          fetch(`/api/user/saved-recipes?userId=${uid}`),
+        ])
+
+        if (profileRes.ok) {
+          const profile: { allergens?: string[]; customAllergens?: string[]; ingredients?: string[] } =
+            await profileRes.json()
+          // Only restore state if the profile has actual data
+          if (profile.allergens !== undefined || profile.ingredients !== undefined) {
+            setPreferences(prev => ({
+              ...prev,
+              allergens: profile.allergens ?? prev.allergens,
+              customAllergens: profile.customAllergens ?? prev.customAllergens,
+              ingredients: profile.ingredients ?? prev.ingredients,
+            }))
+            setHasCompletedOnboarding(true)
+          }
+        }
+
+        if (savedRes.ok) {
+          const data: { recipes: Record<string, unknown>[] } = await savedRes.json()
+          if (data.recipes?.length) {
+            const recipes = data.recipes.map(itemToRecipe)
+            setSavedRecipes(recipes)
+            setPreferences(prev => ({
+              ...prev,
+              savedRecipes: recipes.map(r => r.id),
+            }))
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load profile from DynamoDB:', err)
+        // Fail silently — the app works offline with local defaults
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+
+    init()
+  }, [])
+
+  // ── Debounced auto-save: persist the full profile whenever it changes ────────
+  const syncingRef = useRef(false)
+  useEffect(() => {
+    if (isLoadingProfile || !userIdRef.current) return
+    const id = setTimeout(async () => {
+      if (syncingRef.current) return
+      syncingRef.current = true
+      try {
+        await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: userIdRef.current,
+            allergens: preferences.allergens,
+            customAllergens: preferences.customAllergens,
+            ingredients: preferences.ingredients,
+          }),
+        })
+      } catch (err) {
+        console.error('Failed to sync profile:', err)
+      } finally {
+        syncingRef.current = false
+      }
+    }, 1500)
+    return () => clearTimeout(id)
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients])
+
+  // ── Preference mutators ──────────────────────────────────────────────────────
 
   const setAllergens = useCallback((allergens: string[]) => {
     setPreferences(prev => ({ ...prev, allergens }))
@@ -78,6 +186,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
+
   const saveRecipe = useCallback((recipe: Recipe) => {
     setSavedRecipes(prev => {
       if (prev.some(r => r.id === recipe.id)) return prev
@@ -89,6 +199,14 @@ export function FableProvider({ children }: { children: ReactNode }) {
         ? prev.savedRecipes
         : [...prev.savedRecipes, recipe.id],
     }))
+    // Persist to DynamoDB (fire and forget)
+    if (userIdRef.current) {
+      fetch('/api/user/saved-recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userIdRef.current, recipe }),
+      }).catch(err => console.error('Failed to persist saved recipe:', err))
+    }
   }, [])
 
   const unsaveRecipe = useCallback((recipeId: string) => {
@@ -97,15 +215,26 @@ export function FableProvider({ children }: { children: ReactNode }) {
       ...prev,
       savedRecipes: prev.savedRecipes.filter(id => id !== recipeId),
     }))
+    // Delete from DynamoDB (fire and forget)
+    if (userIdRef.current) {
+      fetch(
+        `/api/user/saved-recipes/${encodeURIComponent(recipeId)}?userId=${userIdRef.current}`,
+        { method: 'DELETE' }
+      ).catch(err => console.error('Failed to delete saved recipe:', err))
+    }
   }, [])
 
   const isRecipeSaved = useCallback((recipeId: string) => {
     return savedRecipes.some(r => r.id === recipeId)
   }, [savedRecipes])
 
+  // ── History (session-only) ───────────────────────────────────────────────────
+
   const addToHistory = useCallback((entry: HistoryEntry) => {
     setRecipeHistory(prev => [entry, ...prev])
   }, [])
+
+  // ── Onboarding ───────────────────────────────────────────────────────────────
 
   const completeOnboarding = useCallback(() => {
     setHasCompletedOnboarding(true)
@@ -129,6 +258,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         addToHistory,
         hasCompletedOnboarding,
         completeOnboarding,
+        isLoadingProfile,
       }}
     >
       {children}
