@@ -8,6 +8,20 @@ import { Plus, X, Search, ChefHat, Sparkles, Layers, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import allergenMapData from '@/data/allergen-map.json'
+
+const allergenMap = allergenMapData as Record<string, string[]>
+
+/** True if the ingredient contains any of the user's selected allergens or custom blocks. */
+function hasUserAllergen(
+  ingredient: string,
+  userAllergens: string[],
+  customAllergens: string[]
+): boolean {
+  if (customAllergens.includes(ingredient)) return true
+  const codes = allergenMap[ingredient] ?? []
+  return codes.some(code => userAllergens.includes(code))
+}
 
 // ─── Filter types ─────────────────────────────────────────────────────────────
 
@@ -203,16 +217,30 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
           {/* Quick-add chips */}
           {(() => {
             const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-            const quickAddList = safeFoodsActive ? preferences.safeIngredients : POPULAR_INGREDIENTS
+            const baseList = safeFoodsActive ? preferences.safeIngredients : POPULAR_INGREDIENTS
             const label = safeFoodsActive
               ? preferences.ingredients.length === 0 ? 'Your safe ingredients:' : 'Add more from your safe list:'
               : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
+
+            // Split into safe and allergen-flagged, keep relative order within each group
+            const safe: string[] = []
+            const flagged: string[] = []
+            for (const name of baseList) {
+              if (hasUserAllergen(name, preferences.allergens, preferences.customAllergens)) {
+                flagged.push(name)
+              } else {
+                safe.push(name)
+              }
+            }
+            const ordered = [...safe, ...flagged]
+
             return (
           <div className="flex-1">
             <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
             <div className="flex flex-wrap gap-2">
-              {quickAddList.map(name => {
+              {ordered.map(name => {
                 const selected = preferences.ingredients.includes(name)
+                const isFlagged = flagged.includes(name)
                 return (
                   <button
                     key={name}
@@ -221,10 +249,16 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                       'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors',
                       selected
                         ? 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                        : isFlagged
+                          ? 'bg-secondary/50 text-muted-foreground/60 hover:bg-secondary/70'
+                          : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                     )}
                   >
-                    {selected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 opacity-50" />}
+                    {selected
+                      ? <Check className="w-3.5 h-3.5" />
+                      : isFlagged
+                        ? <span className="w-2 h-2 rounded-full bg-amber-400/70 shrink-0" />
+                        : <Plus className="w-3.5 h-3.5 opacity-50" />}
                     {displayName(name)}
                   </button>
                 )
