@@ -24,6 +24,22 @@ export interface Recipe {
   isSaved?: boolean
 }
 
+export interface GeneratedRecipeIngredient {
+  name: string
+  amount: number | string
+  unit: string
+}
+
+export interface GeneratedRecipe {
+  title: string
+  description: string
+  ingredients: GeneratedRecipeIngredient[]
+  steps: string[]
+  cookTime: string
+  servings: number
+  allergenFree: boolean
+}
+
 export interface UserPreferences {
   allergens: string[]
   ingredients: string[]

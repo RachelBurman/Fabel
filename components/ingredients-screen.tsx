@@ -3,13 +3,14 @@
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
-import { Plus, X, Search, ChefHat, Sparkles } from 'lucide-react'
+import { Plus, X, Search, ChefHat, Sparkles, Layers } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
 interface IngredientsScreenProps {
-  onFindRecipes: () => void
+  onShowPairings: () => void
+  onGenerateRecipe: () => void
 }
 
 const SUGGESTED_INGREDIENTS = [
@@ -18,7 +19,7 @@ const SUGGESTED_INGREDIENTS = [
   'broccoli', 'salmon', 'pasta', 'eggs', 'cheese',
 ]
 
-export function IngredientsScreen({ onFindRecipes }: IngredientsScreenProps) {
+export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: IngredientsScreenProps) {
   const { preferences, addIngredient, removeIngredient } = useFable()
   const [inputValue, setInputValue] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -148,18 +149,28 @@ export function IngredientsScreen({ onFindRecipes }: IngredientsScreenProps) {
             )}
           </div>
 
-          {/* Find Recipes Button */}
-          <div className="pt-4 border-t border-border">
+          {/* Actions */}
+          <div className="pt-4 border-t border-border space-y-3">
             <Button
               size="lg"
-              onClick={onFindRecipes}
+              onClick={onGenerateRecipe}
               disabled={preferences.ingredients.length === 0}
               className="w-full rounded-full gap-2 py-6"
             >
               <Sparkles className="w-5 h-5" />
-              Find Safe Recipes
+              Generate Recipe
             </Button>
-            <p className="text-xs text-center text-muted-foreground mt-3">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onShowPairings}
+              disabled={preferences.ingredients.length === 0}
+              className="w-full rounded-full gap-2"
+            >
+              <Layers className="w-5 h-5" />
+              Show Pairings
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
               We&apos;ll find recipes that match your ingredients and avoid your allergens
             </p>
           </div>
