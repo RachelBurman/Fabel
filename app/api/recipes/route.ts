@@ -29,8 +29,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Accept either string[] (legacy) or IngredientItem[] — normalize to sorted names
+  type NormIngredient = { name: string; useByDate: string | undefined };
   const inputIngredients: string[] = Array.isArray(ingredients)
-    ? ingredients.filter((i): i is string => typeof i === "string")
+    ? ((ingredients as unknown[])
+        .map((i): NormIngredient | null => {
+          if (typeof i === "string") return { name: i, useByDate: undefined };
+          if (typeof i === "object" && i !== null && "name" in i) {
+            const obj = i as Record<string, unknown>;
+            return { name: String(obj.name), useByDate: obj.useByDate as string | undefined };
+          }
+          return null;
+        })
+        .filter((x): x is NormIngredient => x !== null) as NormIngredient[])
+        .sort((a, b) => {
+          if (!a.useByDate && !b.useByDate) return 0;
+          if (!a.useByDate) return 1;
+          if (!b.useByDate) return -1;
+          return a.useByDate.localeCompare(b.useByDate);
+        })
+        .map((x) => x.name)
     : [];
 
   // Silently drop any allergen codes that aren't in the EU Big 14 list

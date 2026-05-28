@@ -191,8 +191,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const ingredients = Array.isArray(body.ingredients)
-    ? body.ingredients.filter((i): i is string => typeof i === "string")
+  // Accept either string[] (legacy) or IngredientItem[] — normalize and sort by use-by date
+  type NormIngredient = { name: string; useByDate: string | undefined };
+  const ingredients: string[] = Array.isArray(body.ingredients)
+    ? ((body.ingredients as unknown[])
+        .map((i): NormIngredient | null => {
+          if (typeof i === "string") return { name: i, useByDate: undefined };
+          if (typeof i === "object" && i !== null && "name" in i) {
+            const obj = i as Record<string, unknown>;
+            return { name: String(obj.name), useByDate: obj.useByDate as string | undefined };
+          }
+          return null;
+        })
+        .filter((x): x is NormIngredient => x !== null) as NormIngredient[])
+        .sort((a, b) => {
+          if (!a.useByDate && !b.useByDate) return 0;
+          if (!a.useByDate) return 1;
+          if (!b.useByDate) return -1;
+          return a.useByDate.localeCompare(b.useByDate);
+        })
+        .map((x) => x.name)
     : [];
 
   const suggestions = Array.isArray(body.suggestions)
@@ -270,14 +288,16 @@ export async function POST(req: NextRequest) {
         `The user's safety depends on strict adherence to this list.\n\n` +
         `${liquidInstruction}\n\n` +
         `${saltInstruction}\n\n` +
-        `The user has these approved ingredients available today: ${humanAvailable}. ` +
+        `The user has these approved ingredients available today (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
+        `Prioritise using ingredients that expire soonest. ` +
         `Create a ${mealType} that takes ${cookTimeLabel}. ` +
         `Focus on technique, texture, and preparation to make the most of simple ingredients.\n\n` +
         `REMINDER: Every ingredient name in your JSON response MUST appear in this approved list (or be "liquid of choice" / "seasoning of choice" per the rules above): ${humanSafe}. ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`
       : `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
-        `Use some or all of these ingredients: ${ingredients.join(", ")} ` +
-        `and suggested pairings: ${suggestions.join(", ")}. ` +
+        `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
+        `Prioritise using ingredients that expire soonest. ` +
+        `Also consider these suggested pairings: ${suggestions.join(", ")}. ` +
         `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;
 
