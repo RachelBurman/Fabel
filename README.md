@@ -71,6 +71,7 @@ pnpm dev
 - Quick-add chips for popular ingredients (adapts to Safe Foods list when mode is active)
 - Meal type filter — Snack, Starter, Main Course, Dessert
 - Cook time filter — Quick (<30 min), Medium (30–60 min), Slow Cook (60 min+)
+- **Use my kitchen only** toggle — constrains recipe generation to exactly the ingredients added; skips Epicure pairings and adds a hard prompt constraint so Claude adds nothing extra
 - Ingredient list persisted in DynamoDB with debounced auto-save; old string-array profiles migrated automatically
 
 ### Recipe Generation
