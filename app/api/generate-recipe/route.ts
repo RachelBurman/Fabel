@@ -8,7 +8,7 @@ const SYSTEM_PROMPT =
   "You are a creative chef who specialises in allergen-safe cooking. Generate exciting, restaurant-quality recipes. Always respond with valid JSON only, no markdown.";
 
 export async function POST(req: NextRequest) {
-  let body: { ingredients?: unknown; suggestions?: unknown; allergens?: unknown };
+  let body: { ingredients?: unknown; suggestions?: unknown; allergens?: unknown; customAllergens?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -27,13 +27,22 @@ export async function POST(req: NextRequest) {
     ? body.allergens.filter((a): a is string => typeof a === "string")
     : [];
 
+  const customAllergens = Array.isArray(body.customAllergens)
+    ? (body.customAllergens as unknown[]).filter((a): a is string => typeof a === "string")
+    : [];
+
   const allergenClause =
     allergens.length > 0 ? allergens.join(", ") : "none";
+
+  const customClause =
+    customAllergens.length > 0
+      ? ` Also avoid these specific ingredients entirely: ${customAllergens.map(a => a.replace(/_/g, " ")).join(", ")}.`
+      : "";
 
   const userPrompt =
     `Create one creative recipe using some or all of these ingredients: ${ingredients.join(", ")} ` +
     `and suggested pairings: ${suggestions.join(", ")}. ` +
-    `This recipe must contain absolutely zero of these allergens: ${allergenClause}. ` +
+    `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
     `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;
 
   try {

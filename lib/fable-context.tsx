@@ -1,12 +1,13 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
-import { type UserPreferences, type Recipe } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry } from '@/lib/types'
 
 interface FableContextType {
   preferences: UserPreferences
   setAllergens: (allergens: string[]) => void
   toggleAllergen: (allergenId: string) => void
+  toggleCustomAllergen: (ingredient: string) => void
   setIngredients: (ingredients: string[]) => void
   addIngredient: (ingredient: string) => void
   removeIngredient: (ingredient: string) => void
@@ -14,6 +15,8 @@ interface FableContextType {
   saveRecipe: (recipe: Recipe) => void
   unsaveRecipe: (recipeId: string) => void
   isRecipeSaved: (recipeId: string) => boolean
+  recipeHistory: HistoryEntry[]
+  addToHistory: (entry: HistoryEntry) => void
   hasCompletedOnboarding: boolean
   completeOnboarding: () => void
 }
@@ -23,10 +26,12 @@ const FableContext = createContext<FableContextType | undefined>(undefined)
 export function FableProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<UserPreferences>({
     allergens: [],
+    customAllergens: [],
     ingredients: [],
     savedRecipes: [],
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
+  const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
 
   const setAllergens = useCallback((allergens: string[]) => {
@@ -39,6 +44,15 @@ export function FableProvider({ children }: { children: ReactNode }) {
       allergens: prev.allergens.includes(allergenId)
         ? prev.allergens.filter(a => a !== allergenId)
         : [...prev.allergens, allergenId],
+    }))
+  }, [])
+
+  const toggleCustomAllergen = useCallback((ingredient: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      customAllergens: prev.customAllergens.includes(ingredient)
+        ? prev.customAllergens.filter(a => a !== ingredient)
+        : [...prev.customAllergens, ingredient],
     }))
   }, [])
 
@@ -89,6 +103,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
     return savedRecipes.some(r => r.id === recipeId)
   }, [savedRecipes])
 
+  const addToHistory = useCallback((entry: HistoryEntry) => {
+    setRecipeHistory(prev => [entry, ...prev])
+  }, [])
+
   const completeOnboarding = useCallback(() => {
     setHasCompletedOnboarding(true)
   }, [])
@@ -99,6 +117,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         preferences,
         setAllergens,
         toggleAllergen,
+        toggleCustomAllergen,
         setIngredients,
         addIngredient,
         removeIngredient,
@@ -106,6 +125,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
         saveRecipe,
         unsaveRecipe,
         isRecipeSaved,
+        recipeHistory,
+        addToHistory,
         hasCompletedOnboarding,
         completeOnboarding,
       }}

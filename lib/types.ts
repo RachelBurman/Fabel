@@ -42,8 +42,15 @@ export interface GeneratedRecipe {
 
 export interface UserPreferences {
   allergens: string[]
+  customAllergens: string[] // specific Epicure ingredients to avoid
   ingredients: string[]
   savedRecipes: string[]
+}
+
+export interface HistoryEntry {
+  id: string
+  recipe: GeneratedRecipe
+  timestamp: number
 }
 
 // List of all allergens

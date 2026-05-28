@@ -13,14 +13,14 @@ interface Suggestion {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { ingredients?: unknown; allergens?: unknown; mode?: unknown };
+  let body: { ingredients?: unknown; allergens?: unknown; customAllergens?: unknown; mode?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { ingredients, allergens, mode } = body;
+  const { ingredients, allergens, customAllergens, mode } = body;
 
   if (mode !== "avoid" && mode !== "safe-only") {
     return NextResponse.json(
@@ -57,18 +57,22 @@ export async function POST(req: NextRequest) {
 
   const blockedSet = new Set<string>(validAllergens);
 
+  // Specific Epicure ingredients the user wants to avoid entirely
+  const customBlockedSet = new Set<string>(
+    Array.isArray(customAllergens)
+      ? (customAllergens as unknown[]).filter((a): a is string => typeof a === "string")
+      : []
+  );
+
   const allCandidates = Array.from(scoreMap.entries()).map(([name, score]) => ({
     name,
     score,
     allergenList: getAllergensForIngredient(name),
   }));
 
-  const kept = allCandidates.filter(({ allergenList }) => {
-    if (mode === "safe-only") {
-      // Only suggest ingredients that are completely allergen-free
-      return allergenList.length === 0;
-    }
-    // avoid: drop anything containing one of the user's allergens
+  const kept = allCandidates.filter(({ name, allergenList }) => {
+    if (customBlockedSet.has(name)) return false;
+    if (mode === "safe-only") return allergenList.length === 0;
     return !allergenList.some((a) => blockedSet.has(a));
   });
 

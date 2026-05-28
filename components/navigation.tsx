@@ -1,21 +1,22 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChefHat, Search, Heart, Settings, Leaf } from 'lucide-react'
+import { ChefHat, Search, Heart, Settings, Leaf, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type Screen = 'ingredients' | 'results' | 'saved'
+type NavScreen = 'ingredients' | 'results' | 'saved' | 'history'
 
 interface BottomNavigationProps {
-  currentScreen: Screen
-  onNavigate: (screen: Screen) => void
+  currentScreen: NavScreen
+  onNavigate: (screen: NavScreen) => void
 }
 
 export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigationProps) {
   const navItems = [
     { id: 'ingredients' as const, label: 'Ingredients', icon: ChefHat },
-    { id: 'results' as const, label: 'Recipes', icon: Search },
-    { id: 'saved' as const, label: 'Saved', icon: Heart },
+    { id: 'results'     as const, label: 'Recipes',     icon: Search  },
+    { id: 'history'     as const, label: 'History',     icon: Clock   },
+    { id: 'saved'       as const, label: 'Saved',       icon: Heart   },
   ]
 
   return (
