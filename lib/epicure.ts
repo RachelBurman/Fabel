@@ -116,6 +116,18 @@ export function findSimilarIngredients(ingredient: string, k: number): string[] 
     .map(({ name }) => name);
 }
 
+/** Returns every ingredient scored by cosine similarity to the query ingredient, sorted descending. Returns [] for unknown ingredients. */
+export function rankSimilar(ingredient: string): { name: string; score: number }[] {
+  const emb = getEmbeddings();
+  const query = emb[ingredient];
+  if (!query) return [];
+
+  return Object.entries(emb)
+    .filter(([name]) => name !== ingredient)
+    .map(([name, vec]) => ({ name, score: cosineSimilarity(query, vec) }))
+    .sort((a, b) => b.score - a.score);
+}
+
 /**
  * Finds flavour-matched suggestions for the given ingredients, excluding
  * anything that contains one or more of the specified allergen codes.
