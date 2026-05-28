@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { type GeneratedRecipe } from '@/lib/types'
-import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck } from 'lucide-react'
+import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -12,6 +12,8 @@ interface GeneratedRecipeScreenProps {
   recipe: GeneratedRecipe | null
   loadingStep: LoadingStep | null
   onBack: () => void
+  onSave?: () => void
+  isSaved?: boolean
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -19,7 +21,7 @@ const STEPS: { key: LoadingStep; label: string }[] = [
   { key: 'recipe', label: 'Crafting your recipe' },
 ]
 
-export function GeneratedRecipeScreen({ recipe, loadingStep, onBack }: GeneratedRecipeScreenProps) {
+export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isSaved }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
 
@@ -28,7 +30,7 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack }: Generated
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto">
 
-          {/* Back + title */}
+          {/* Back + title + save */}
           <div className="flex items-center gap-4 mb-8">
             <Button
               variant="ghost"
@@ -39,9 +41,23 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack }: Generated
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl md:text-3xl font-semibold text-foreground text-balance">
+            <h1 className="flex-1 text-2xl md:text-3xl font-semibold text-foreground text-balance">
               {isLoading ? 'Generating Recipe…' : recipe ? recipe.title : 'Recipe'}
             </h1>
+            {!isLoading && recipe && onSave && (
+              <button
+                onClick={onSave}
+                className={cn(
+                  'shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200',
+                  isSaved
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-card border border-border text-muted-foreground hover:text-primary hover:border-primary/50'
+                )}
+                aria-label={isSaved ? 'Saved' : 'Save recipe'}
+              >
+                <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
+              </button>
+            )}
           </div>
 
           {/* Loading */}

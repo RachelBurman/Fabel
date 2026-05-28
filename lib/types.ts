@@ -47,6 +47,12 @@ export interface UserPreferences {
   savedRecipes: string[]
 }
 
+export interface PairingSuggestion {
+  ingredient: string
+  score: number
+  allergens: string[]
+}
+
 export interface HistoryEntry {
   id: string
   recipe: GeneratedRecipe

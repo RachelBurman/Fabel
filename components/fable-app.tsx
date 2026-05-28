@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { FableProvider, useFable } from '@/lib/fable-context'
-import { type Recipe, type GeneratedRecipe, type HistoryEntry } from '@/lib/types'
+import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion } from '@/lib/types'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen } from '@/components/ingredients-screen'
 import { AllergenScreen } from '@/components/allergen-screen'
-import { RecipeResultsScreen } from '@/components/recipe-results-screen'
+import { PairingsScreen } from '@/components/pairings-screen'
 import { GeneratedRecipeScreen, type LoadingStep } from '@/components/generated-recipe-screen'
 import { HistoryScreen } from '@/components/history-screen'
 import { SavedRecipesScreen } from '@/components/saved-recipes-screen'
@@ -17,19 +17,22 @@ type Screen =
   | 'onboarding'
   | 'allergens'
   | 'ingredients'
-  | 'results'
+  | 'pairings'
   | 'generated'
   | 'history'
   | 'saved'
 
 function FableAppContent() {
-  const { hasCompletedOnboarding, preferences, addToHistory } = useFable()
+  const { hasCompletedOnboarding, preferences, addIngredient, addToHistory, saveRecipe, isRecipeSaved } = useFable()
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
   const [prevScreen, setPrevScreen] = useState<Screen>('ingredients')
-  const [recipes, setRecipes] = useState<Recipe[]>([])
-  const [isLoadingRecipes, setIsLoadingRecipes] = useState(false)
+
+  const [pairings, setPairings] = useState<PairingSuggestion[]>([])
+  const [isLoadingPairings, setIsLoadingPairings] = useState(false)
+
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
+  const [generatedRecipeSaved, setGeneratedRecipeSaved] = useState(false)
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -38,16 +41,16 @@ function FableAppContent() {
   }, [hasCompletedOnboarding, currentScreen])
 
   const navigate = useCallback((screen: Screen) => {
-    setPrevScreen(currentScreen)
+    setPrevScreen(prev => (prev !== screen ? currentScreen : prev))
     setCurrentScreen(screen)
   }, [currentScreen])
 
   const handleOnboardingComplete = () => setCurrentScreen('ingredients')
 
-  // Show Pairings — /api/recipes → ingredient suggestion grid
+  // ── Show Pairings ────────────────────────────────────────────────────────────
   const handleShowPairings = useCallback(async () => {
-    setIsLoadingRecipes(true)
-    navigate('results')
+    setIsLoadingPairings(true)
+    navigate('pairings')
 
     try {
       const res = await fetch('/api/recipes', {
@@ -61,37 +64,20 @@ function FableAppContent() {
         }),
       })
       if (!res.ok) throw new Error(`API error: ${res.status}`)
-
-      const data: { suggestions: { ingredient: string; score: number; allergens: string[] }[] } =
-        await res.json()
-
-      setRecipes(
-        data.suggestions.map(s => ({
-          id: s.ingredient,
-          title: s.ingredient.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-          description:
-            s.allergens.length > 0
-              ? `Contains: ${s.allergens.map(a => a.replace(/_/g, ' ')).join(', ')}`
-              : 'No major allergens',
-          image: '',
-          cookTime: 'Ingredient suggestion',
-          servings: 1,
-          matchScore: Math.round(s.score * 100),
-          allergens: s.allergens,
-          ingredients: [s.ingredient],
-        }))
-      )
+      const data: { suggestions: PairingSuggestion[] } = await res.json()
+      setPairings(data.suggestions)
     } catch (error) {
       console.error('Error fetching pairings:', error)
-      setRecipes([])
+      setPairings([])
     } finally {
-      setIsLoadingRecipes(false)
+      setIsLoadingPairings(false)
     }
   }, [preferences, navigate])
 
-  // Generate Recipe — /api/recipes → /api/generate-recipe → history
+  // ── Generate Recipe from scratch ─────────────────────────────────────────────
   const handleGenerateRecipe = useCallback(async () => {
     setGeneratedRecipe(null)
+    setGeneratedRecipeSaved(false)
     setLoadingStep('pairings')
     navigate('generated')
 
@@ -107,9 +93,7 @@ function FableAppContent() {
         }),
       })
       if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
-      const pairingsData: {
-        suggestions: { ingredient: string; score: number; allergens: string[] }[]
-      } = await pairingsRes.json()
+      const pairingsData: { suggestions: PairingSuggestion[] } = await pairingsRes.json()
 
       setLoadingStep('recipe')
       const recipeRes = await fetch('/api/generate-recipe', {
@@ -134,26 +118,79 @@ function FableAppContent() {
     }
   }, [preferences, navigate, addToHistory])
 
-  // View a recipe from history
+  // ── Generate Recipe from existing pairings ────────────────────────────────────
+  const handleGenerateFromPairings = useCallback(async () => {
+    setGeneratedRecipe(null)
+    setGeneratedRecipeSaved(false)
+    // Pairings step already done — skip straight to recipe step in the loading UI
+    setLoadingStep('recipe')
+    navigate('generated')
+
+    try {
+      const recipeRes = await fetch('/api/generate-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: preferences.ingredients,
+          suggestions: pairings.map(s => s.ingredient),
+          allergens: preferences.allergens,
+          customAllergens: preferences.customAllergens,
+        }),
+      })
+      if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
+      const recipe: GeneratedRecipe = await recipeRes.json()
+      setGeneratedRecipe(recipe)
+      addToHistory({ id: Date.now().toString(), recipe, timestamp: Date.now() })
+    } catch (error) {
+      console.error('Error generating recipe from pairings:', error)
+      setGeneratedRecipe(null)
+    } finally {
+      setLoadingStep(null)
+    }
+  }, [pairings, preferences, navigate, addToHistory])
+
+  // ── Save generated recipe to Saved tab ───────────────────────────────────────
+  const handleSaveGeneratedRecipe = useCallback(() => {
+    if (!generatedRecipe) return
+    saveRecipe({
+      id: `gen-${Date.now()}`,
+      title: generatedRecipe.title,
+      description: generatedRecipe.description,
+      image: '',
+      cookTime: generatedRecipe.cookTime,
+      servings: generatedRecipe.servings,
+      matchScore: 100,
+      allergens: [],
+      ingredients: generatedRecipe.ingredients.map(i => i.name),
+    })
+    setGeneratedRecipeSaved(true)
+  }, [generatedRecipe, saveRecipe])
+
+  // ── View a recipe from history ────────────────────────────────────────────────
   const handleViewHistoryRecipe = useCallback((recipe: GeneratedRecipe) => {
     setGeneratedRecipe(recipe)
+    setGeneratedRecipeSaved(false)
     setLoadingStep(null)
     navigate('generated')
   }, [navigate])
 
-  const handleNavigate = (screen: 'ingredients' | 'results' | 'saved' | 'history') => {
-    navigate(screen)
-  }
+  const { recipeHistory } = useFable()
 
   const showNavigation = currentScreen !== 'onboarding' && currentScreen !== 'allergens'
 
-  // Map screens that don't have their own nav tab to the closest tab
-  const bottomNavScreen: 'ingredients' | 'results' | 'saved' | 'history' =
-    currentScreen === 'generated' ? 'results' :
-    currentScreen === 'onboarding' || currentScreen === 'allergens' ? 'ingredients' :
-    currentScreen as 'ingredients' | 'results' | 'saved' | 'history'
+  const navScreenMap: Record<Screen, 'ingredients' | 'pairings' | 'saved' | 'history'> = {
+    onboarding:   'ingredients',
+    allergens:    'ingredients',
+    ingredients:  'ingredients',
+    pairings:     'pairings',
+    generated:    'pairings',
+    history:      'history',
+    saved:        'saved',
+  }
 
-  const { recipeHistory } = useFable()
+  const handleNavigate = (screen: 'ingredients' | 'pairings' | 'saved' | 'history') => {
+    navigate(screen)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -178,7 +215,9 @@ function FableAppContent() {
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.25 }}
             >
-              <AllergenScreen onDone={() => navigate(prevScreen === 'allergens' ? 'ingredients' : prevScreen)} />
+              <AllergenScreen
+                onDone={() => navigate(prevScreen === 'allergens' ? 'ingredients' : prevScreen)}
+              />
             </motion.div>
           )}
 
@@ -190,22 +229,27 @@ function FableAppContent() {
               exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
-              <IngredientsScreen onShowPairings={handleShowPairings} onGenerateRecipe={handleGenerateRecipe} />
+              <IngredientsScreen
+                onShowPairings={handleShowPairings}
+                onGenerateRecipe={handleGenerateRecipe}
+              />
             </motion.div>
           )}
 
-          {currentScreen === 'results' && (
+          {currentScreen === 'pairings' && (
             <motion.div
-              key="results"
+              key="pairings"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <RecipeResultsScreen
-                recipes={recipes}
-                isLoading={isLoadingRecipes}
+              <PairingsScreen
+                suggestions={pairings}
+                isLoading={isLoadingPairings}
                 onBack={() => navigate('ingredients')}
+                onAddIngredient={addIngredient}
+                onGenerateFromPairings={handleGenerateFromPairings}
               />
             </motion.div>
           )}
@@ -222,6 +266,8 @@ function FableAppContent() {
                 recipe={generatedRecipe}
                 loadingStep={loadingStep}
                 onBack={() => navigate('ingredients')}
+                onSave={handleSaveGeneratedRecipe}
+                isSaved={generatedRecipeSaved}
               />
             </motion.div>
           )}
@@ -258,7 +304,10 @@ function FableAppContent() {
       </main>
 
       {showNavigation && (
-        <BottomNavigation currentScreen={bottomNavScreen} onNavigate={handleNavigate} />
+        <BottomNavigation
+          currentScreen={navScreenMap[currentScreen]}
+          onNavigate={handleNavigate}
+        />
       )}
     </div>
   )

@@ -235,7 +235,10 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               {dropdownItems.map((name, index) => (
                 <button
                   key={name}
-                  onMouseDown={e => { e.preventDefault(); handleAddIngredient(name) }}
+                  // onMouseDown prevents the input from losing focus (and thus
+                  // the 200ms blur timeout from hiding the dropdown before onClick fires)
+                  onMouseDown={e => e.preventDefault()}
+                  onClick={() => handleAddIngredient(name)}
                   className={cn(
                     'w-full text-left px-4 py-3 text-foreground hover:bg-secondary transition-colors',
                     index !== dropdownItems.length - 1 && 'border-b border-border'
