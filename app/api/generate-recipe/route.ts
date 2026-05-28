@@ -8,36 +8,48 @@ const SYSTEM_PROMPT =
 
 // ─── Safe-foods validation ─────────────────────────────────────────────────────
 
-// Water, salt, and ice are universally fine even if not explicitly listed.
-const UNIVERSAL_BASICS = new Set(["water", "salt", "ice"]);
+// Only truly universal items that are safe for essentially everyone.
+// Salt is deliberately excluded — users with MCAS control it via their safe list.
+const UNIVERSAL_BASICS = new Set(["water", "ice"]);
+
+// Placeholder names Claude uses when a class of ingredient isn't in the safe list.
+// These must never be stripped by the validator.
+const SPECIAL_PLACEHOLDERS = new Set(["liquid of choice", "seasoning of choice"]);
 
 // Words that describe cooking form, technique, or cut — they don't identify
 // the ingredient itself. Stripped before matching against the safe list.
 const QUALIFIERS = new Set([
-  // freshness / state
   "fresh", "dried", "frozen", "raw", "cooked", "whole", "organic",
   "ripe", "firm", "baby", "unripe",
-  // size
   "large", "small", "medium",
-  // cooking techniques
   "minced", "chopped", "sliced", "diced", "grated", "roasted", "steamed",
   "shredded", "cubed", "mashed", "pureed", "blended", "crushed", "peeled",
   "ground", "toasted", "blanched", "sauteed", "fried", "grilled", "baked",
-  // cut / piece nouns
   "piece", "pieces", "fillet", "fillets", "floret", "florets",
   "clove", "cloves", "stalk", "stalks", "leaf", "leaves",
   "sprig", "sprigs", "chunk", "chunks", "strip", "strips", "cube",
   "slice", "slices", "wedge", "wedges", "ring", "rings",
-  // meat cuts
   "breast", "thigh", "wing", "drumstick", "tenderloin", "loin",
-  "chop", "chops", "cutlet", "cutlets", "fillet", "rack",
-  // misc
+  "chop", "chops", "cutlet", "cutlets", "rack",
   "boneless", "skinless",
 ]);
 
-/**
- * Build a normalised Set from Epicure-style keys ("olive_oil" → "olive oil").
- */
+// Common liquid ingredients. Used to detect whether the safe list contains
+// any liquid, so the prompt can instruct Claude appropriately.
+const LIQUID_TERMS = [
+  "water", "broth", "stock", "milk", "juice", "cream", "wine", "beer",
+  "coconut milk", "oat milk", "almond milk", "rice milk", "soy milk",
+  "buttermilk", "kefir", "tea", "coffee", "cider", "vinegar",
+  "consomme", "dashi", "gravy", "syrup", "nectar",
+];
+
+// Common salt / seasoning ingredients.
+const SALT_TERMS = [
+  "salt", "sea salt", "kosher salt", "himalayan salt", "table salt",
+  "fleur de sel", "rock salt", "pickling salt",
+];
+
+/** Build a normalised Set from Epicure-style keys ("olive_oil" → "olive oil"). */
 function buildSafeSet(safeIngredients: string[]): Set<string> {
   return new Set(
     safeIngredients.map((s) => s.replace(/_/g, " ").toLowerCase().trim())
@@ -45,54 +57,80 @@ function buildSafeSet(safeIngredients: string[]): Set<string> {
 }
 
 /**
- * Return the word itself plus common singular/plural variants so
- * "blueberries" matches "blueberry" and "mushroom" matches "mushrooms".
+ * Find all entries in safeSet that match any of the given term strings
+ * using whole-word matching. Returns the display form of matching safe entries.
  */
+function findInSafeSet(safeSet: Set<string>, terms: string[]): string[] {
+  const found: string[] = [];
+  for (const safe of safeSet) {
+    for (const term of terms) {
+      const esc = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (new RegExp(`\\b${esc}\\b`, "i").test(safe)) {
+        found.push(safe);
+        break;
+      }
+    }
+  }
+  return found;
+}
+
+/** Return the word plus common singular/plural variants. */
 function wordVariants(word: string): string[] {
   const out = [word];
-  // ies → y  (berries → berry, cherries → cherry)
-  if (word.endsWith("ies") && word.length > 4)
-    out.push(word.slice(0, -3) + "y");
-  // ves → f  (loaves → loaf)
-  if (word.endsWith("ves") && word.length > 4)
-    out.push(word.slice(0, -3) + "f");
-  // es → (drop es)  (tomatoes → tomat — imperfect but harmless)
+  if (word.endsWith("ies") && word.length > 4) out.push(word.slice(0, -3) + "y");
+  if (word.endsWith("ves") && word.length > 4) out.push(word.slice(0, -3) + "f");
   if (word.endsWith("es") && word.length > 4 && !word.endsWith("ies"))
     out.push(word.slice(0, -2));
-  // s → (drop s)  (mushrooms → mushroom, carrots → carrot)
   if (word.endsWith("s") && !word.endsWith("ss") && word.length > 4)
     out.push(word.slice(0, -1));
   return out;
 }
 
 /**
- * Returns true when the recipe ingredient `name` can be traced to an entry
- * in the user's safe list.
+ * Returns true when a recipe ingredient can be traced to the user's safe list.
  *
  * Matching order:
- *  1. Universal basics (water, salt, ice).
- *  2. Exact normalised match.
- *  3. Any safe phrase appears verbatim (whole-word) inside the recipe name.
- *  4. After stripping cooking qualifiers, each remaining core word (plus
- *     its singular/plural variants) is checked against the first token of
- *     every safe ingredient — e.g. "broccoli" (core of "broccoli florets")
- *     matches safe entry "broccoli"; "blueberry" (singular of "blueberries"
- *     after stripping "fresh") matches safe entry "blueberry".
+ *  1. Universal basics (water, ice).
+ *  2. Special placeholders ("liquid of choice", "seasoning of choice").
+ *  3. If the name is a salt-family term and any salt is in the safe list — pass,
+ *     so "salt" matches "sea salt" in the safe list and vice-versa.
+ *  4. Exact normalised match against the safe set.
+ *  5. Whole-phrase: a safe entry appears verbatim inside the recipe name.
+ *  6. Core-word: after stripping qualifiers, each remaining word (plus its
+ *     singular/plural variants) is checked against the first token of every
+ *     safe entry. This makes "broccoli florets" → "broccoli" match the safe
+ *     entry "broccoli" and "blueberries" → "blueberry" match "blueberry".
  */
-function isSafe(name: string, safeSet: Set<string>): boolean {
+function isSafe(
+  name: string,
+  safeSet: Set<string>,
+  safeSalts: string[]
+): boolean {
   const norm = name.toLowerCase().trim();
 
   if (UNIVERSAL_BASICS.has(norm)) return true;
+  if (SPECIAL_PLACEHOLDERS.has(norm)) return true;
+
+  // Salt-family match: any salt recipe ingredient passes if the user has any salt.
+  if (
+    safeSalts.length > 0 &&
+    SALT_TERMS.some((st) => {
+      const esc = st.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`\\b${esc}\\b`, "i").test(norm);
+    })
+  ) {
+    return true;
+  }
+
   if (safeSet.has(norm)) return true;
 
-  // Whole-phrase match: safe entry appears verbatim inside recipe name
+  // Whole-phrase check
   for (const safe of safeSet) {
     const esc = safe.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     if (new RegExp(`\\b${esc}\\b`, "i").test(norm)) return true;
   }
 
-  // Core-word match: strip qualifiers, try singular/plural variants,
-  // match against the leading token(s) of each safe ingredient.
+  // Core-word check: strip qualifiers, try variants, match first token of safe entries
   const cores = norm
     .split(/\s+/)
     .filter((w) => w.length > 1 && !QUALIFIERS.has(w));
@@ -100,10 +138,7 @@ function isSafe(name: string, safeSet: Set<string>): boolean {
   for (const core of cores) {
     for (const variant of wordVariants(core)) {
       for (const safe of safeSet) {
-        const safeTokens = safe.split(/\s+/);
-        // Variant must equal the whole safe entry OR its first token
-        // (prevents "oil" matching "olive oil" while "olive" would match it).
-        if (safe === variant || safeTokens[0] === variant) return true;
+        if (safe === variant || safe.split(/\s+/)[0] === variant) return true;
       }
     }
   }
@@ -112,12 +147,13 @@ function isSafe(name: string, safeSet: Set<string>): boolean {
 }
 
 /**
- * Strip any ingredient in the recipe that is not on the user's safe list.
- * Returns the cleaned recipe and a list of what was removed.
+ * Strip recipe ingredients not on the safe list.
+ * Returns the cleaned recipe plus a list of what was removed.
  */
 function validateSafeFoods(
   recipe: Record<string, unknown>,
-  safeSet: Set<string>
+  safeSet: Set<string>,
+  safeSalts: string[]
 ): { recipe: Record<string, unknown>; violations: string[] } {
   const raw = recipe.ingredients;
   if (!Array.isArray(raw)) return { recipe, violations: [] };
@@ -128,7 +164,7 @@ function validateSafeFoods(
     const ing = item as Record<string, unknown>;
     const ingName = typeof ing.name === "string" ? ing.name.trim() : "";
     if (!ingName) return true;
-    if (isSafe(ingName, safeSet)) return true;
+    if (isSafe(ingName, safeSet, safeSalts)) return true;
     violations.push(ingName);
     return false;
   });
@@ -203,9 +239,27 @@ export async function POST(req: NextRequest) {
           .join(", ")}.`
       : "";
 
-  // Human-readable forms for the prompt (Epicure keys use underscores)
+  // Human-readable forms for the prompt
   const humanSafe = safeIngredients.map((s) => s.replace(/_/g, " ")).join(", ");
   const humanAvailable = ingredients.map((i) => i.replace(/_/g, " ")).join(", ");
+
+  // ── Safe-foods liquid and salt detection ────────────────────────────────────
+  // Build the safe set early so we can inspect it for the prompt.
+  const safeSet = safeFoodsMode ? buildSafeSet(safeIngredients) : new Set<string>();
+  const safeLiquids = safeFoodsMode ? findInSafeSet(safeSet, LIQUID_TERMS) : [];
+  const safeSalts   = safeFoodsMode ? findInSafeSet(safeSet, SALT_TERMS)   : [];
+
+  const liquidInstruction = safeFoodsMode
+    ? safeLiquids.length > 0
+      ? `Liquid handling: the following liquid(s) are on the safe list and may be used normally: ${safeLiquids.join(", ")}.`
+      : `Liquid handling: NO liquid appears in the safe list. If the recipe would benefit from a liquid, use the ingredient name "liquid of choice" with the amount/unit as appropriate, and include this note in parentheses in the relevant step: "(use whatever liquid you can safely consume — water, broth, juice, or another suitable substitute)". If the recipe genuinely does not need a liquid, do not add one.`
+    : "";
+
+  const saltInstruction = safeFoodsMode
+    ? safeSalts.length > 0
+      ? `Salt/seasoning: the following is on the safe list and may be used normally: ${safeSalts.join(", ")}.`
+      : `Salt/seasoning: NO salt or seasoning appears in the safe list. Do NOT add salt, pepper, spices, herbs, or any seasoning unless it explicitly appears in the approved list. If a step would normally call for seasoning, use the ingredient name "seasoning of choice" and include this note in the step: "(use any salt or seasoning you can safely consume, or omit entirely)".`
+    : "";
 
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
@@ -213,13 +267,13 @@ export async function POST(req: NextRequest) {
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
-        `Do not add salt, oil, pepper, spices, or any seasoning unless it explicitly appears in the approved list above. ` +
-        `If you cannot make a complete dish from these ingredients alone, make the simplest possible preparation that uses only what is available. ` +
         `The user's safety depends on strict adherence to this list.\n\n` +
+        `${liquidInstruction}\n\n` +
+        `${saltInstruction}\n\n` +
         `The user has these approved ingredients available today: ${humanAvailable}. ` +
         `Create a ${mealType} that takes ${cookTimeLabel}. ` +
         `Focus on technique, texture, and preparation to make the most of simple ingredients.\n\n` +
-        `REMINDER: Every ingredient name in your JSON response MUST be one of: ${humanSafe}. ` +
+        `REMINDER: Every ingredient name in your JSON response MUST appear in this approved list (or be "liquid of choice" / "seasoning of choice" per the rules above): ${humanSafe}. ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`
       : `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients: ${ingredients.join(", ")} ` +
@@ -271,20 +325,17 @@ export async function POST(req: NextRequest) {
       typeof recipe === "object" &&
       recipe !== null
     ) {
-      const safeSet = buildSafeSet(safeIngredients);
       const { recipe: cleaned, violations } = validateSafeFoods(
         recipe as Record<string, unknown>,
-        safeSet
+        safeSet,
+        safeSalts
       );
       if (violations.length > 0) {
         console.warn(
-          `[safe-foods] Stripped ${violations.length} unsafe ingredient(s) from recipe: ${violations.join(", ")}`
+          `[safe-foods] Stripped ${violations.length} unsafe ingredient(s): ${violations.join(", ")}`
         );
       }
-      return NextResponse.json({
-        ...cleaned,
-        safeFoodsViolations: violations,
-      });
+      return NextResponse.json({ ...cleaned, safeFoodsViolations: violations });
     }
 
     return NextResponse.json(recipe);
