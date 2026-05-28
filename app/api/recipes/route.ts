@@ -5,6 +5,7 @@ import {
   ALLERGEN_CODES,
   type AllergenCode,
 } from "@/lib/epicure";
+import { getShelfLifeDays, addDays } from "@/lib/shelf-life";
 
 interface Suggestion {
   ingredient: string;
@@ -30,23 +31,43 @@ export async function POST(req: NextRequest) {
   }
 
   // Accept either string[] (legacy) or IngredientItem[] — normalize to sorted names
-  type NormIngredient = { name: string; useByDate: string | undefined };
+  type NormIngredient = {
+    name: string;
+    dateType?: string;
+    useByDate?: string;
+    boughtDate?: string;
+  };
+
+  function effectiveExpiry(i: NormIngredient): string | undefined {
+    if (i.dateType === "bought" && i.boughtDate) {
+      return addDays(i.boughtDate, getShelfLifeDays(i.name));
+    }
+    return i.useByDate;
+  }
+
   const inputIngredients: string[] = Array.isArray(ingredients)
     ? ((ingredients as unknown[])
         .map((i): NormIngredient | null => {
-          if (typeof i === "string") return { name: i, useByDate: undefined };
+          if (typeof i === "string") return { name: i };
           if (typeof i === "object" && i !== null && "name" in i) {
             const obj = i as Record<string, unknown>;
-            return { name: String(obj.name), useByDate: obj.useByDate as string | undefined };
+            return {
+              name: String(obj.name),
+              dateType: obj.dateType ? String(obj.dateType) : undefined,
+              useByDate: obj.useByDate ? String(obj.useByDate) : undefined,
+              boughtDate: obj.boughtDate ? String(obj.boughtDate) : undefined,
+            };
           }
           return null;
         })
         .filter((x): x is NormIngredient => x !== null) as NormIngredient[])
         .sort((a, b) => {
-          if (!a.useByDate && !b.useByDate) return 0;
-          if (!a.useByDate) return 1;
-          if (!b.useByDate) return -1;
-          return a.useByDate.localeCompare(b.useByDate);
+          const ae = effectiveExpiry(a);
+          const be = effectiveExpiry(b);
+          if (!ae && !be) return 0;
+          if (!ae) return 1;
+          if (!be) return -1;
+          return ae.localeCompare(be);
         })
         .map((x) => x.name)
     : [];
