@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
-import { type IngredientArea } from '@/lib/types'
+import { type IngredientArea, type IngredientUnit, INGREDIENT_UNITS } from '@/lib/types'
+import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
 import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,15 +14,9 @@ import allergenMapData from '@/data/allergen-map.json'
 
 const allergenMap = allergenMapData as Record<string, string[]>
 
-/** True if the ingredient contains any of the user's selected allergens or custom blocks. */
-function hasUserAllergen(
-  ingredient: string,
-  userAllergens: string[],
-  customAllergens: string[]
-): boolean {
+function hasUserAllergen(ingredient: string, userAllergens: string[], customAllergens: string[]): boolean {
   if (customAllergens.includes(ingredient)) return true
-  const codes = allergenMap[ingredient] ?? []
-  return codes.some(code => userAllergens.includes(code))
+  return (allergenMap[ingredient] ?? []).some(code => userAllergens.includes(code))
 }
 
 // ─── Filter types ─────────────────────────────────────────────────────────────
@@ -47,7 +42,7 @@ const COOK_TIMES: { value: CookTime; label: string }[] = [
   { value: 'slow',   label: 'Slow Cook (60m+)' },
 ]
 
-// ─── Area config ──────────────────────────────────────────────────────────────
+// ─── Area + unit config ───────────────────────────────────────────────────────
 
 const AREAS: { value: IngredientArea; emoji: string; label: string }[] = [
   { value: 'fridge',   emoji: '🧊', label: 'Fridge' },
@@ -59,19 +54,6 @@ const AREAS: { value: IngredientArea; emoji: string; label: string }[] = [
 function areaConfig(area: IngredientArea) {
   return AREAS.find(a => a.value === area) ?? AREAS[0]
 }
-
-// ─── Expiry helpers ───────────────────────────────────────────────────────────
-
-function getDaysUntilExpiry(useByDate?: string): number | null {
-  if (!useByDate) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const expiry = new Date(useByDate)
-  expiry.setHours(0, 0, 0, 0)
-  return Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-}
-
-// ─── Popular pool ─────────────────────────────────────────────────────────────
 
 const POPULAR_POOL = [
   'chicken', 'garlic', 'onion', 'tomato', 'lemon',
@@ -86,8 +68,26 @@ const POPULAR_POOL = [
 const QUICK_ADD_COUNT = 12
 
 export function displayName(raw: string): string {
-  return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
+
+// ─── Expiry helpers ───────────────────────────────────────────────────────────
+
+function getDaysUntilExpiry(effectiveDate?: string): number | null {
+  if (!effectiveDate) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expiry = new Date(effectiveDate)
+  expiry.setHours(0, 0, 0, 0)
+  return Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
   return (
@@ -115,6 +115,8 @@ function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
   )
 }
 
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 interface IngredientsScreenProps {
   onShowPairings: (filters: RecipeFilters) => void
   onGenerateRecipe: (filters: RecipeFilters) => void
@@ -126,10 +128,15 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchResults, setSearchResults] = useState<string[]>([])
 
-  // Staging state — ingredient selected from search, awaiting area/date config
+  // Staging state
   const [pendingName, setPendingName] = useState<string | null>(null)
   const [pendingArea, setPendingArea] = useState<IngredientArea>('fridge')
-  const [pendingDate, setPendingDate] = useState('')
+  const [pendingSubtype, setPendingSubtype] = useState('')
+  const [pendingQuantity, setPendingQuantity] = useState('1')
+  const [pendingUnit, setPendingUnit] = useState<IngredientUnit>('pieces')
+  const [pendingDateType, setPendingDateType] = useState<'use-by' | 'bought'>('use-by')
+  const [pendingDate, setPendingDate] = useState('')      // use-by date
+  const [pendingBoughtDate, setPendingBoughtDate] = useState('') // bought date
 
   // Filter state
   const [mealType, setMealType] = useState<MealType>('main')
@@ -149,7 +156,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
     }
   }, [])
 
-  // Debounced search against the Epicure ingredient list
   useEffect(() => {
     const q = inputValue.trim()
     if (!q) { setSearchResults([]); return }
@@ -170,59 +176,79 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
     if (showDropdown) recomputeCoords()
   }, [showDropdown, recomputeCoords])
 
-  // Select from search → open staging area
+  const resetStaging = useCallback(() => {
+    setPendingName(null)
+    setPendingArea('fridge')
+    setPendingSubtype('')
+    setPendingQuantity('1')
+    setPendingUnit('pieces')
+    setPendingDateType('use-by')
+    setPendingDate('')
+    setPendingBoughtDate('')
+  }, [])
+
   const handleSelectFromSearch = useCallback((name: string) => {
     setPendingName(name)
     setPendingArea('fridge')
+    setPendingSubtype('')
+    setPendingQuantity('1')
+    setPendingUnit('pieces')
+    setPendingDateType('use-by')
     setPendingDate('')
+    setPendingBoughtDate('')
     setInputValue('')
     setSearchResults([])
     setShowDropdown(false)
   }, [])
 
-  // Confirm staging → add to context
   const handleConfirmAdd = useCallback(() => {
     if (!pendingName) return
+    const sub = pendingSubtype.trim()
+    const label = sub
+      ? `${displayName(pendingName)} ${sub.charAt(0).toUpperCase()}${sub.slice(1)}`
+      : undefined
+
     addIngredient(pendingName, {
       area: pendingArea,
-      useByDate: pendingDate || undefined,
+      displayName: label,
+      subtype: sub || undefined,
+      quantity: pendingQuantity !== '1' || pendingUnit !== 'pieces' ? pendingQuantity : undefined,
+      unit: pendingUnit,
+      dateType: pendingDate || pendingBoughtDate ? pendingDateType : undefined,
+      useByDate: pendingDateType === 'use-by' ? (pendingDate || undefined) : undefined,
+      boughtDate: pendingDateType === 'bought' ? (pendingBoughtDate || undefined) : undefined,
     })
-    setPendingName(null)
-    setPendingDate('')
-    setPendingArea('fridge')
-  }, [pendingName, pendingArea, pendingDate, addIngredient])
+    resetStaging()
+  }, [pendingName, pendingArea, pendingSubtype, pendingQuantity, pendingUnit, pendingDateType, pendingDate, pendingBoughtDate, addIngredient, resetStaging])
 
-  // Quick-add chip → add immediately with fridge default
   const handleQuickAdd = useCallback((name: string) => {
     addIngredient(name, { area: 'fridge' })
   }, [addIngredient])
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && inputValue.trim()) {
-      const first = dropdownItems[0]
-      handleSelectFromSearch(
-        first ?? inputValue.trim().toLowerCase().replace(/\s+/g, '_')
-      )
+      handleSelectFromSearch(dropdownItems[0] ?? inputValue.trim().toLowerCase().replace(/\s+/g, '_'))
     }
     if (e.key === 'Escape') setShowDropdown(false)
   }
 
-  const dropdownItems = searchResults.filter(
-    r => !preferences.ingredients.some(i => i.name === r)
-  )
+  // Calculated expected expiry preview for the "bought date" mode
+  const expectedExpiry = pendingName && pendingBoughtDate
+    ? addDays(pendingBoughtDate, getShelfLifeDays(pendingName))
+    : null
 
-  const filters: RecipeFilters = { mealType, cookTime }
+  const dropdownItems = searchResults.filter(r => !preferences.ingredients.some(i => i.name === r))
   const addedNames = new Set(preferences.ingredients.map(i => i.name))
+  const filters: RecipeFilters = { mealType, cookTime }
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
 
-          {/* Header */}
           <IngredientsHeader safeFoodsActive={preferences.safeFoodsMode && preferences.safeIngredients.length > 0} />
 
-          {/* Search input */}
+          {/* Search */}
           <div className="relative mb-4">
             <div ref={inputWrapperRef} className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -230,22 +256,16 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                 type="text"
                 placeholder="Search 1,790 ingredients…"
                 value={inputValue}
-                onChange={e => {
-                  setInputValue(e.target.value)
-                  setShowDropdown(e.target.value.length > 0)
-                }}
+                onChange={e => { setInputValue(e.target.value); setShowDropdown(e.target.value.length > 0) }}
                 onKeyDown={handleInputKeyDown}
-                onFocus={() => {
-                  if (inputValue.length > 0) setShowDropdown(true)
-                  recomputeCoords()
-                }}
+                onFocus={() => { if (inputValue.length > 0) setShowDropdown(true); recomputeCoords() }}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
                 className="pl-12 pr-4 py-6 text-base rounded-xl bg-card border-border"
               />
             </div>
           </div>
 
-          {/* Staging area — appears after selecting from search */}
+          {/* ── Staging panel ── */}
           <AnimatePresence>
             {pendingName && (
               <motion.div
@@ -255,18 +275,54 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                 transition={{ duration: 0.2 }}
                 className="mb-4 overflow-hidden"
               >
-                <div className="bg-card border border-primary/20 rounded-xl p-4 space-y-3">
+                <div className="bg-card border border-primary/20 rounded-xl p-4 space-y-4">
+
+                  {/* Title row */}
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-foreground">{displayName(pendingName)}</span>
-                    <button
-                      onClick={() => setPendingName(null)}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
+                    <button onClick={resetStaging} className="text-muted-foreground hover:text-foreground transition-colors">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
 
-                  {/* Area picker */}
+                  {/* Subtype */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Specify type <span className="opacity-60">(optional)</span></p>
+                    <input
+                      type="text"
+                      placeholder="e.g. breast, thighs, ribeye, baby"
+                      value={pendingSubtype}
+                      onChange={e => setPendingSubtype(e.target.value)}
+                      className="w-full text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                    />
+                    <p className="text-[11px] text-muted-foreground/60 mt-1">Helps generate more accurate recipes</p>
+                  </div>
+
+                  {/* Quantity + Unit */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={pendingQuantity}
+                        onChange={e => setPendingQuantity(e.target.value)}
+                        className="w-20 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      />
+                      <select
+                        value={pendingUnit}
+                        onChange={e => setPendingUnit(e.target.value as IngredientUnit)}
+                        className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      >
+                        {INGREDIENT_UNITS.map(u => (
+                          <option key={u} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Area */}
                   <div>
                     <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
                     <div className="flex flex-wrap gap-2">
@@ -281,42 +337,86 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                               : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
                           )}
                         >
-                          <span>{emoji}</span>
-                          {label}
+                          <span>{emoji}</span>{label}
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Use-by date */}
+                  {/* Date type toggle + picker */}
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Use by (optional)</p>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <input
-                        type="date"
-                        value={pendingDate}
-                        onChange={e => setPendingDate(e.target.value)}
-                        className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
-                      />
-                      {pendingDate && (
-                        <button onClick={() => setPendingDate('')} className="text-muted-foreground hover:text-foreground">
-                          <X className="w-3.5 h-3.5" />
+                    <p className="text-xs text-muted-foreground mb-2">Date</p>
+                    <div className="flex gap-2 mb-2">
+                      {(['use-by', 'bought'] as const).map(dt => (
+                        <button
+                          key={dt}
+                          onClick={() => setPendingDateType(dt)}
+                          className={cn(
+                            'flex-1 py-1.5 text-sm rounded-lg border transition-colors',
+                            pendingDateType === dt
+                              ? 'bg-primary/15 text-primary border-primary/30'
+                              : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
+                          )}
+                        >
+                          {dt === 'use-by' ? 'Use by date' : 'Bought date'}
                         </button>
-                      )}
+                      ))}
                     </div>
+
+                    {pendingDateType === 'use-by' ? (
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <input
+                          type="date"
+                          value={pendingDate}
+                          onChange={e => setPendingDate(e.target.value)}
+                          className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                        />
+                        {pendingDate && (
+                          <button onClick={() => setPendingDate('')} className="text-muted-foreground hover:text-foreground">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <input
+                            type="date"
+                            value={pendingBoughtDate}
+                            onChange={e => setPendingBoughtDate(e.target.value)}
+                            className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                          />
+                          {pendingBoughtDate && (
+                            <button onClick={() => setPendingBoughtDate('')} className="text-muted-foreground hover:text-foreground">
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {expectedExpiry && (
+                          <p className="text-[11px] text-muted-foreground pl-6">
+                            Expected to last until{' '}
+                            <span className="font-medium text-foreground">{formatDate(expectedExpiry)}</span>
+                            {' '}· {getShelfLifeDays(pendingName!)}d shelf life
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <Button size="sm" onClick={handleConfirmAdd} className="w-full rounded-full gap-2">
                     <Plus className="w-4 h-4" />
-                    Add {displayName(pendingName)}
+                    Add {pendingSubtype
+                      ? `${displayName(pendingName)} ${pendingSubtype}`
+                      : displayName(pendingName)}
                   </Button>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Selected ingredients */}
+          {/* ── Selected ingredients ── */}
           {preferences.ingredients.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-medium text-muted-foreground mb-3">
@@ -325,10 +425,14 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               <div className="flex flex-wrap gap-2">
                 <AnimatePresence mode="popLayout">
                   {preferences.ingredients.map(ingredient => {
-                    const days = getDaysUntilExpiry(ingredient.useByDate)
-                    const isRed = days !== null && days <= 1
+                    const effectiveDate = getEffectiveUseByDate(ingredient)
+                    const days = getDaysUntilExpiry(effectiveDate)
+                    const isRed   = days !== null && days <= 1
                     const isAmber = days !== null && days === 2
                     const cfg = areaConfig(ingredient.area)
+                    const label = ingredient.displayName ?? displayName(ingredient.name)
+                    const showQty = ingredient.quantity &&
+                      (ingredient.quantity !== '1' || ingredient.unit !== 'pieces')
 
                     return (
                       <motion.button
@@ -339,7 +443,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                         layout
                         onClick={() => removeIngredient(ingredient.name)}
                         className={cn(
-                          'group flex items-center gap-2 px-3 py-1.5 rounded-full border transition-colors',
+                          'group flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors',
                           isRed
                             ? 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20 dark:text-red-400 dark:border-red-400/20 dark:bg-red-400/10'
                             : isAmber
@@ -347,11 +451,12 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                               : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
                         )}
                       >
-                        <span className="text-xs opacity-80">{cfg.emoji}</span>
-                        <span className="text-sm">{displayName(ingredient.name)}</span>
-                        {isRed && (
-                          <span className="text-xs font-medium opacity-90">Use today!</span>
+                        {showQty && (
+                          <span className="text-xs opacity-75">{ingredient.quantity} {ingredient.unit}</span>
                         )}
+                        <span className="text-xs opacity-80">{cfg.emoji}</span>
+                        <span className="text-sm">{label}</span>
+                        {isRed && <span className="text-xs font-medium opacity-90">Use today!</span>}
                         <X className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 shrink-0" />
                       </motion.button>
                     )
@@ -361,7 +466,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             </div>
           )}
 
-          {/* Quick-add chips */}
+          {/* ── Quick-add chips ── */}
           {(() => {
             const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
             const label = safeFoodsActive
@@ -402,7 +507,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             )
           })()}
 
-          {/* Filters */}
+          {/* ── Filters ── */}
           <div className="mt-6 space-y-4">
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
@@ -417,13 +522,10 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                         ? 'bg-primary/15 text-primary border border-primary/30'
                         : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                     )}
-                  >
-                    {label}
-                  </button>
+                  >{label}</button>
                 ))}
               </div>
             </div>
-
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
               <div className="flex flex-wrap gap-2">
@@ -437,15 +539,13 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                         ? 'bg-primary/15 text-primary border border-primary/30'
                         : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                     )}
-                  >
-                    {label}
-                  </button>
+                  >{label}</button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Actions */}
+          {/* ── Actions ── */}
           <div className="pt-4 border-t border-border space-y-3 mt-6">
             <Button
               size="lg"
@@ -476,7 +576,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
         </div>
       </div>
 
-      {/* Autocomplete dropdown — portal to escape stacking contexts */}
+      {/* Autocomplete dropdown */}
       {isMounted && createPortal(
         <AnimatePresence>
           {showDropdown && dropdownItems.length > 0 && (
@@ -485,13 +585,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
-              style={{
-                position: 'fixed',
-                top: coords.top,
-                left: coords.left,
-                width: coords.width,
-                zIndex: 200,
-              }}
+              style={{ position: 'fixed', top: coords.top, left: coords.left, width: coords.width, zIndex: 200 }}
               className="bg-card border border-border rounded-xl shadow-xl overflow-hidden"
             >
               {dropdownItems.map((name, index) => (
