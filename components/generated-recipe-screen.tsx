@@ -2,9 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { type GeneratedRecipe } from '@/lib/types'
-import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart } from 'lucide-react'
+import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { RecipeGradient } from '@/components/recipe-gradient'
 
 export type LoadingStep = 'pairings' | 'recipe'
 
@@ -14,6 +15,8 @@ interface GeneratedRecipeScreenProps {
   onBack: () => void
   onSave?: () => void
   isSaved?: boolean
+  attempted: boolean
+  onGoToIngredients?: () => void
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -21,7 +24,15 @@ const STEPS: { key: LoadingStep; label: string }[] = [
   { key: 'recipe', label: 'Crafting your recipe' },
 ]
 
-export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isSaved }: GeneratedRecipeScreenProps) {
+export function GeneratedRecipeScreen({
+  recipe,
+  loadingStep,
+  onBack,
+  onSave,
+  isSaved,
+  attempted,
+  onGoToIngredients,
+}: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
 
@@ -30,7 +41,7 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isS
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto">
 
-          {/* Back + title + save */}
+          {/* Back + title (during load / empty states) + save */}
           <div className="flex items-center gap-4 mb-8">
             <Button
               variant="ghost"
@@ -41,9 +52,17 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isS
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <h1 className="flex-1 text-2xl md:text-3xl font-semibold text-foreground text-balance">
-              {isLoading ? 'Generating Recipe…' : recipe ? recipe.title : 'Recipe'}
-            </h1>
+
+            {/* Show title in header only when there's no recipe yet */}
+            {(isLoading || !recipe) && (
+              <h1 className="flex-1 text-xl md:text-2xl font-semibold text-foreground">
+                {isLoading ? 'Generating Recipe…' : 'Recipe'}
+              </h1>
+            )}
+
+            {/* Spacer when recipe is shown (title lives in the gradient hero) */}
+            {!isLoading && recipe && <div className="flex-1" />}
+
             {!isLoading && recipe && onSave && (
               <button
                 onClick={onSave}
@@ -76,7 +95,7 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isS
                     <div key={key} className="flex items-center gap-3">
                       <div className={cn(
                         'w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300',
-                        isDone  ? 'bg-primary text-primary-foreground' :
+                        isDone   ? 'bg-primary text-primary-foreground' :
                         isActive ? 'bg-primary/20 text-primary' :
                                    'bg-secondary text-muted-foreground'
                       )}>
@@ -105,6 +124,18 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isS
               animate={{ opacity: 1, y: 0 }}
               className="space-y-8"
             >
+              {/* Hero gradient */}
+              <RecipeGradient title={recipe.title} className="w-full h-52 rounded-2xl">
+                <div className="absolute inset-0 flex flex-col justify-end p-5">
+                  <p className="text-white/60 text-xs font-medium uppercase tracking-widest mb-1.5">
+                    Recipe
+                  </p>
+                  <h2 className="text-white text-xl md:text-2xl font-bold leading-snug text-balance drop-shadow">
+                    {recipe.title}
+                  </h2>
+                </div>
+              </RecipeGradient>
+
               <p className="text-muted-foreground leading-relaxed text-pretty">
                 {recipe.description}
               </p>
@@ -160,8 +191,28 @@ export function GeneratedRecipeScreen({ recipe, loadingStep, onBack, onSave, isS
             </motion.div>
           )}
 
-          {/* Error */}
-          {!isLoading && !recipe && (
+          {/* Empty state — no recipe generated yet */}
+          {!isLoading && !recipe && !attempted && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-16"
+            >
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-amber-500/20 to-rose-500/20 flex items-center justify-center mx-auto mb-6">
+                <BookOpen className="w-10 h-10 text-amber-600" />
+              </div>
+              <h2 className="text-xl font-semibold text-foreground mb-2">No recipe yet</h2>
+              <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+                Head to Ingredients to build your kitchen and generate your first recipe.
+              </p>
+              <Button onClick={onGoToIngredients} className="rounded-full">
+                Go to Ingredients
+              </Button>
+            </motion.div>
+          )}
+
+          {/* Error state — generation was attempted but failed */}
+          {!isLoading && !recipe && attempted && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}

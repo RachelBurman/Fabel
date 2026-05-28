@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { type HistoryEntry, type GeneratedRecipe } from '@/lib/types'
 import { Clock, Users, History } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { RecipeGradient } from '@/components/recipe-gradient'
 
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts
@@ -29,27 +30,34 @@ function HistoryCard({ entry, index, onView }: HistoryCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.25 }}
       onClick={() => onView(recipe)}
-      className="w-full text-left bg-card border border-border rounded-2xl p-5 hover:shadow-md hover:border-primary/30 transition-all duration-200 group"
+      className="w-full text-left bg-card border border-border rounded-2xl overflow-hidden hover:shadow-md hover:border-primary/30 transition-all duration-200 group"
     >
-      <div className="flex items-start justify-between gap-4 mb-2">
-        <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors text-balance leading-snug">
-          {recipe.title}
-        </h3>
-        <span className="text-xs text-muted-foreground whitespace-nowrap shrink-0 mt-0.5">
+      {/* Gradient thumbnail */}
+      <RecipeGradient title={recipe.title} className="w-full h-32">
+        <div className="absolute inset-0 flex flex-col justify-end p-4">
+          <h3 className="text-white text-sm font-semibold leading-snug text-balance line-clamp-2 drop-shadow">
+            {recipe.title}
+          </h3>
+        </div>
+        <span className="absolute top-3 right-3 text-xs text-white/70 bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full">
           {relativeTime(timestamp)}
         </span>
-      </div>
-      <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-        {recipe.description}
-      </p>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <Clock className="w-3.5 h-3.5" />
-          <span>{recipe.cookTime}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Users className="w-3.5 h-3.5" />
-          <span>{recipe.servings} servings</span>
+      </RecipeGradient>
+
+      {/* Content */}
+      <div className="p-4">
+        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+          {recipe.description}
+        </p>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3.5 h-3.5" />
+            <span>{recipe.cookTime}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5" />
+            <span>{recipe.servings} servings</span>
+          </div>
         </div>
       </div>
     </motion.button>

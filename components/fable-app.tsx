@@ -37,6 +37,7 @@ function FableAppContent() {
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
   const [generatedRecipeSaved, setGeneratedRecipeSaved] = useState(false)
+  const [recipeAttempted, setRecipeAttempted] = useState(false)
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -86,6 +87,7 @@ function FableAppContent() {
     setRecipeFilters(filters)
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
+    setRecipeAttempted(true)
     setLoadingStep('pairings')
     navigate('generated')
 
@@ -134,6 +136,7 @@ function FableAppContent() {
   const handleGenerateFromPairings = useCallback(async () => {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
+    setRecipeAttempted(true)
     // Pairings step already done — skip straight to recipe step in the loading UI
     setLoadingStep('recipe')
     navigate('generated')
@@ -202,18 +205,22 @@ function FableAppContent() {
 
   const showNavigation = currentScreen !== 'onboarding' && currentScreen !== 'allergens'
 
-  const navScreenMap: Record<Screen, 'ingredients' | 'pairings' | 'saved' | 'history'> = {
+  const navScreenMap: Record<Screen, 'ingredients' | 'recipe' | 'saved' | 'history'> = {
     onboarding:   'ingredients',
     allergens:    'ingredients',
     ingredients:  'ingredients',
-    pairings:     'pairings',
-    generated:    'pairings',
+    pairings:     'ingredients',
+    generated:    'recipe',
     history:      'history',
     saved:        'saved',
   }
 
-  const handleNavigate = (screen: 'ingredients' | 'pairings' | 'saved' | 'history') => {
-    navigate(screen)
+  const handleNavigate = (screen: 'ingredients' | 'recipe' | 'saved' | 'history') => {
+    if (screen === 'recipe') {
+      navigate('generated')
+    } else {
+      navigate(screen)
+    }
   }
 
   if (isLoadingProfile) {
@@ -300,6 +307,8 @@ function FableAppContent() {
                 onBack={() => navigate(prevScreen)}
                 onSave={handleSaveGeneratedRecipe}
                 isSaved={generatedRecipeSaved}
+                attempted={recipeAttempted}
+                onGoToIngredients={() => navigate('ingredients')}
               />
             </motion.div>
           )}

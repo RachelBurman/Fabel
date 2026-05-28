@@ -6,6 +6,7 @@ import { useFable } from '@/lib/fable-context'
 import { Clock, Users, Heart, Trash2, BookmarkX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { RecipeGradient } from '@/components/recipe-gradient'
 
 interface SavedRecipeCardProps {
   recipe: Recipe
@@ -30,35 +31,33 @@ function SavedRecipeCard({ recipe, index, onRemove, onView }: SavedRecipeCardPro
         canView ? 'cursor-pointer hover:shadow-lg hover:border-primary/30' : ''
       )}
     >
-      {/* Image Placeholder */}
-      <div className="relative aspect-[4/3] bg-gradient-to-br from-primary/20 to-secondary overflow-hidden">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-6xl opacity-50">🍽️</span>
+      {/* Gradient image */}
+      <RecipeGradient title={recipe.title} className="aspect-[4/3]">
+        {/* Title overlay */}
+        <div className="absolute bottom-0 inset-x-0 p-3">
+          <h3 className="text-white text-sm font-semibold leading-snug line-clamp-2 drop-shadow">
+            {recipe.title}
+          </h3>
         </div>
 
-        {/* Saved Badge */}
-        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-full">
-          <Heart className="w-4 h-4 fill-current" />
-          <span className="text-sm font-medium">Saved</span>
+        {/* Saved badge */}
+        <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/40 backdrop-blur-sm text-white rounded-full">
+          <Heart className="w-3.5 h-3.5 fill-current" />
+          <span className="text-xs font-medium">Saved</span>
         </div>
 
-        {/* Remove Button — stopPropagation so it doesn't trigger card click */}
+        {/* Remove button — stopPropagation so it doesn't trigger card click */}
         <button
           onClick={e => { e.stopPropagation(); onRemove(recipe.id) }}
-          className="absolute top-3 right-3 w-10 h-10 rounded-full bg-card/90 backdrop-blur-sm text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center transition-all duration-200 border border-border"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm text-white/80 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all duration-200"
+          aria-label="Remove recipe"
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         </button>
-      </div>
+      </RecipeGradient>
 
       {/* Content */}
       <div className="p-5">
-        <h3 className={cn(
-          'text-lg font-semibold text-foreground mb-2 text-balance transition-colors',
-          canView && 'group-hover:text-primary'
-        )}>
-          {recipe.title}
-        </h3>
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
           {recipe.description}
         </p>
