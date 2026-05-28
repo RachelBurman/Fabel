@@ -1,16 +1,16 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea } from '@/lib/types'
 
 interface FableContextType {
   preferences: UserPreferences
   setAllergens: (allergens: string[]) => void
   toggleAllergen: (allergenId: string) => void
   toggleCustomAllergen: (ingredient: string) => void
-  setIngredients: (ingredients: string[]) => void
-  addIngredient: (ingredient: string) => void
-  removeIngredient: (ingredient: string) => void
+  setIngredients: (ingredients: IngredientItem[]) => void
+  addIngredient: (name: string, options?: { area?: IngredientArea; useByDate?: string }) => void
+  removeIngredient: (name: string) => void
   addSafeIngredient: (ingredient: string) => void
   removeSafeIngredient: (ingredient: string) => void
   setSafeFoodsMode: (active: boolean) => void
@@ -26,6 +26,22 @@ interface FableContextType {
 }
 
 const FableContext = createContext<FableContextType | undefined>(undefined)
+
+// Convert old flat string[] format (or mixed) to IngredientItem[]
+function migrateIngredients(raw: (string | IngredientItem)[] | undefined): IngredientItem[] | undefined {
+  if (!raw) return undefined
+  return raw.map(item => {
+    if (typeof item === 'string') {
+      return {
+        id: crypto.randomUUID(),
+        name: item.trim().toLowerCase(),
+        area: 'fridge' as const,
+        addedAt: new Date().toISOString().split('T')[0],
+      }
+    }
+    return item
+  })
+}
 
 // Map a DynamoDB item back to the Recipe shape
 function itemToRecipe(item: Record<string, unknown>): Recipe {
@@ -48,7 +64,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<UserPreferences>({
     allergens: [],
     customAllergens: [],
-    ingredients: [],
+    ingredients: [] as IngredientItem[],
     savedRecipes: [],
     safeIngredients: [],
     safeFoodsMode: false,
@@ -85,7 +101,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
           const profile: {
             allergens?: string[]
             customAllergens?: string[]
-            ingredients?: string[]
+            ingredients?: (string | IngredientItem)[]
             safeIngredients?: string[]
             safeFoodsMode?: boolean
           } = await profileRes.json()
@@ -95,7 +111,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
               ...prev,
               allergens: profile.allergens ?? prev.allergens,
               customAllergens: profile.customAllergens ?? prev.customAllergens,
-              ingredients: profile.ingredients ?? prev.ingredients,
+              ingredients: migrateIngredients(profile.ingredients) ?? prev.ingredients,
               safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
               safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
             }))
@@ -178,25 +194,30 @@ export function FableProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
-  const setIngredients = useCallback((ingredients: string[]) => {
+  const setIngredients = useCallback((ingredients: IngredientItem[]) => {
     setPreferences(prev => ({ ...prev, ingredients }))
   }, [])
 
-  const addIngredient = useCallback((ingredient: string) => {
-    const normalized = ingredient.trim().toLowerCase()
+  const addIngredient = useCallback((name: string, options?: { area?: IngredientArea; useByDate?: string }) => {
+    const normalized = name.trim().toLowerCase()
     if (!normalized) return
-    setPreferences(prev => ({
-      ...prev,
-      ingredients: prev.ingredients.includes(normalized)
-        ? prev.ingredients
-        : [...prev.ingredients, normalized],
-    }))
+    setPreferences(prev => {
+      if (prev.ingredients.some(i => i.name === normalized)) return prev
+      const item: IngredientItem = {
+        id: crypto.randomUUID(),
+        name: normalized,
+        area: options?.area ?? 'fridge',
+        addedAt: new Date().toISOString().split('T')[0],
+        ...(options?.useByDate ? { useByDate: options.useByDate } : {}),
+      }
+      return { ...prev, ingredients: [...prev.ingredients, item] }
+    })
   }, [])
 
-  const removeIngredient = useCallback((ingredient: string) => {
+  const removeIngredient = useCallback((name: string) => {
     setPreferences(prev => ({
       ...prev,
-      ingredients: prev.ingredients.filter(i => i !== ingredient),
+      ingredients: prev.ingredients.filter(i => i.name !== name),
     }))
   }, [])
 

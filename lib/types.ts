@@ -41,10 +41,20 @@ export interface GeneratedRecipe {
   allergenFree: boolean
 }
 
+export type IngredientArea = 'fridge' | 'freezer' | 'cupboard' | 'pantry'
+
+export interface IngredientItem {
+  id: string
+  name: string
+  area: IngredientArea
+  useByDate?: string // YYYY-MM-DD, optional
+  addedAt: string   // YYYY-MM-DD
+}
+
 export interface UserPreferences {
   allergens: string[]
   customAllergens: string[] // specific Epicure ingredients to avoid
-  ingredients: string[]
+  ingredients: IngredientItem[]
   savedRecipes: string[]
   safeIngredients: string[] // ingredients the user can definitely eat (Safe Foods Mode)
   safeFoodsMode: boolean    // restrict generation to safeIngredients only
