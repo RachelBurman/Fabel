@@ -54,16 +54,15 @@ function FableAppContent() {
 
   const handleOnboardingComplete = () => setCurrentScreen('ingredients')
 
-  // Helper: build the safe foods payload appended to every API call
-  const safeFoodsPayload = () => preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-    ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
-    : {}
-
   // ── Show Pairings ────────────────────────────────────────────────────────────
   const handleShowPairings = useCallback(async (filters: RecipeFilters) => {
     setRecipeFilters(filters)
     setIsLoadingPairings(true)
     navigate('pairings')
+
+    const sfPayload = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+      ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
+      : {}
 
     try {
       const res = await fetch('/api/recipes', {
@@ -76,7 +75,7 @@ function FableAppContent() {
           mode: 'avoid',
           mealType: filters.mealType,
           cookTime: filters.cookTime,
-          ...safeFoodsPayload(),
+          ...sfPayload,
         }),
       })
       if (!res.ok) throw new Error(`API error: ${res.status}`)
@@ -99,6 +98,11 @@ function FableAppContent() {
     setLoadingStep('pairings')
     navigate('generated')
 
+    // Snapshot safe-foods state at call time to guarantee consistency across both fetches
+    const sfPayload = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+      ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
+      : {}
+
     try {
       const pairingsRes = await fetch('/api/recipes', {
         method: 'POST',
@@ -110,7 +114,7 @@ function FableAppContent() {
           mode: 'avoid',
           mealType: filters.mealType,
           cookTime: filters.cookTime,
-          ...safeFoodsPayload(),
+          ...sfPayload,
         }),
       })
       if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
@@ -127,7 +131,7 @@ function FableAppContent() {
           customAllergens: preferences.customAllergens,
           mealType: filters.mealType,
           cookTime: filters.cookTime,
-          ...safeFoodsPayload(),
+          ...sfPayload,
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
@@ -150,6 +154,10 @@ function FableAppContent() {
     setLoadingStep('recipe')
     navigate('generated')
 
+    const sfPayload = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+      ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
+      : {}
+
     try {
       const recipeRes = await fetch('/api/generate-recipe', {
         method: 'POST',
@@ -161,7 +169,7 @@ function FableAppContent() {
           customAllergens: preferences.customAllergens,
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
-          ...safeFoodsPayload(),
+          ...sfPayload,
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
