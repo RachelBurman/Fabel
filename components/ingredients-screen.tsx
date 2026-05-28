@@ -201,12 +201,17 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
           )}
 
           {/* Quick-add chips */}
+          {(() => {
+            const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+            const quickAddList = safeFoodsActive ? preferences.safeIngredients : POPULAR_INGREDIENTS
+            const label = safeFoodsActive
+              ? preferences.ingredients.length === 0 ? 'Your safe ingredients:' : 'Add more from your safe list:'
+              : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
+            return (
           <div className="flex-1">
-            <h3 className="text-sm font-medium text-muted-foreground mb-3">
-              {preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'}
-            </h3>
+            <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
             <div className="flex flex-wrap gap-2">
-              {POPULAR_INGREDIENTS.map(name => {
+              {quickAddList.map(name => {
                 const selected = preferences.ingredients.includes(name)
                 return (
                   <button
@@ -226,6 +231,8 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               })}
             </div>
           </div>
+            )
+          })()}
 
           {/* ── Filters ── */}
           <div className="mt-6 space-y-4">
