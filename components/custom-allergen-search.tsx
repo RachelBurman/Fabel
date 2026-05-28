@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
-import { Search, X, Plus } from 'lucide-react'
+import { Search, X, Plus, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { displayName } from '@/components/ingredients-screen'
@@ -12,6 +12,8 @@ import { displayName } from '@/components/ingredients-screen'
 export function CustomAllergenSearch() {
   const { preferences, toggleCustomAllergen } = useFable()
 
+  // Auto-expand if the user already has custom allergens selected
+  const [isExpanded, setIsExpanded] = useState(() => preferences.customAllergens.length > 0)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState<string[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
@@ -58,43 +60,68 @@ export function CustomAllergenSearch() {
     setShowDropdown(false)
   }, [preferences.customAllergens, toggleCustomAllergen])
 
-  const dropdownItems = searchResults.filter(
-    r => !preferences.customAllergens.includes(r)
-  )
+  const dropdownItems = searchResults.filter(r => !preferences.customAllergens.includes(r))
 
   return (
-    <div className="border-t border-border pt-6">
-      <h2 className="text-sm font-medium text-muted-foreground mb-1">
-        Have a specific allergy? Search all ingredients
-      </h2>
-      <p className="text-xs text-muted-foreground mb-4">
-        Add individual ingredients you need to avoid
-      </p>
+    <div className="border-t border-border pt-4">
 
-      <div ref={inputWrapperRef} className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          type="text"
-          placeholder="e.g. garlic, sesame oil, tofu…"
-          value={query}
-          onChange={e => {
-            setQuery(e.target.value)
-            setShowDropdown(e.target.value.length > 0)
-          }}
-          onFocus={() => {
-            if (query.length > 0) setShowDropdown(true)
-            recomputeCoords()
-          }}
-          onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && dropdownItems.length > 0) handleSelect(dropdownItems[0])
-            if (e.key === 'Escape') setShowDropdown(false)
-          }}
-          className="pl-10 pr-4 py-5 rounded-xl bg-card border-border"
-        />
-      </div>
+      {/* Toggle row */}
+      <button
+        onClick={() => setIsExpanded(v => !v)}
+        className="flex items-center justify-between w-full text-left group"
+      >
+        <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+          Have a specific allergy?
+        </span>
+        <span className="flex items-center gap-1 text-sm font-medium text-primary">
+          {isExpanded ? 'Close' : 'Search ingredients'}
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 transition-transform duration-200',
+              isExpanded && 'rotate-180'
+            )}
+          />
+        </span>
+      </button>
 
-      {/* Selected custom allergen tags */}
+      {/* Collapsible search input */}
+      <AnimatePresence initial={false}>
+        {isExpanded && (
+          <motion.div
+            key="search"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            className="overflow-hidden"
+          >
+            <div ref={inputWrapperRef} className="relative mt-3">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="e.g. garlic, sesame oil, tofu…"
+                value={query}
+                onChange={e => {
+                  setQuery(e.target.value)
+                  setShowDropdown(e.target.value.length > 0)
+                }}
+                onFocus={() => {
+                  if (query.length > 0) setShowDropdown(true)
+                  recomputeCoords()
+                }}
+                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && dropdownItems.length > 0) handleSelect(dropdownItems[0])
+                  if (e.key === 'Escape') setShowDropdown(false)
+                }}
+                className="pl-10 pr-4 py-5 rounded-xl bg-card border-border"
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Selected custom allergen tags — always visible */}
       {preferences.customAllergens.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-3">
           {preferences.customAllergens.map(ingredient => (

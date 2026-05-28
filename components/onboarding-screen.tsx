@@ -126,8 +126,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 </p>
               </div>
 
-              {/* Allergen Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8 flex-1 content-start">
+              {/* Allergen Grid — compact */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-5">
                 {ALLERGENS.map((allergen, index) => {
                   const isSelected = preferences.allergens.includes(allergen.id)
                   return (
@@ -138,7 +138,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                       transition={{ delay: index * 0.03, duration: 0.2 }}
                       onClick={() => toggleAllergen(allergen.id)}
                       className={cn(
-                        'relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200',
+                        'relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-200',
                         isSelected
                           ? 'border-primary bg-primary/5'
                           : 'border-border bg-card hover:border-primary/50'
@@ -148,14 +148,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center"
+                          className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center"
                         >
-                          <Check className="w-3 h-3 text-primary-foreground" />
+                          <Check className="w-2.5 h-2.5 text-primary-foreground" />
                         </motion.div>
                       )}
-                      <span className="text-2xl">{allergen.icon}</span>
+                      <span className="text-xl">{allergen.icon}</span>
                       <span className={cn(
-                        'text-sm font-medium',
+                        'text-xs font-medium text-center leading-tight',
                         isSelected ? 'text-primary' : 'text-foreground'
                       )}>
                         {allergen.name}
