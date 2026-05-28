@@ -127,7 +127,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               </div>
 
               {/* Allergen Grid — fills available height */}
-              <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 grid-rows-7 sm:grid-rows-4 md:grid-rows-2 gap-2 mb-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-3">
                 {ALLERGENS.map((allergen, index) => {
                   const isSelected = preferences.allergens.includes(allergen.id)
                   return (
@@ -138,7 +138,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                       transition={{ delay: index * 0.03, duration: 0.2 }}
                       onClick={() => toggleAllergen(allergen.id)}
                       className={cn(
-                        'relative flex flex-col items-center justify-center gap-2 h-full rounded-xl border-2 transition-all duration-200',
+                        'relative aspect-square flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 transition-all duration-200',
                         isSelected
                           ? 'border-primary bg-primary/5'
                           : 'border-border bg-card hover:border-primary/50'

@@ -42,7 +42,7 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
 
           {/* EU Big 14 grid — fills available height */}
           <h2 className="text-sm font-medium text-muted-foreground mb-2">EU Big 14 Allergens</h2>
-          <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 grid-rows-7 sm:grid-rows-4 md:grid-rows-2 gap-2 mb-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-3">
             {ALLERGENS.map((allergen, index) => {
               const isSelected = preferences.allergens.includes(allergen.id)
               return (
@@ -53,7 +53,7 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
                   transition={{ delay: index * 0.02, duration: 0.15 }}
                   onClick={() => toggleAllergen(allergen.id)}
                   className={cn(
-                    'relative flex flex-col items-center justify-center gap-2 h-full rounded-xl border-2 transition-all duration-200',
+                    'relative aspect-square flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 transition-all duration-200',
                     isSelected
                       ? 'border-primary bg-primary/5'
                       : 'border-border bg-card hover:border-primary/50'
