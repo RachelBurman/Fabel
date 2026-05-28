@@ -8,7 +8,7 @@ const SYSTEM_PROMPT =
   "You are a creative chef who specialises in allergen-safe cooking. Generate exciting, restaurant-quality recipes. Always respond with valid JSON only, no markdown.";
 
 export async function POST(req: NextRequest) {
-  let body: { ingredients?: unknown; suggestions?: unknown; allergens?: unknown; customAllergens?: unknown; mealType?: unknown; cookTime?: unknown };
+  let body: { ingredients?: unknown; suggestions?: unknown; allergens?: unknown; customAllergens?: unknown; mealType?: unknown; cookTime?: unknown; safeFoodsMode?: unknown; safeIngredients?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -31,6 +31,11 @@ export async function POST(req: NextRequest) {
     ? (body.customAllergens as unknown[]).filter((a): a is string => typeof a === "string")
     : [];
 
+  const safeFoodsMode = body.safeFoodsMode === true;
+  const safeIngredients = Array.isArray(body.safeIngredients)
+    ? (body.safeIngredients as unknown[]).filter((s): s is string => typeof s === "string")
+    : [];
+
   const mealType = typeof body.mealType === "string" ? body.mealType : "main course";
 
   const COOK_TIME_LABELS: Record<string, string> = {
@@ -51,12 +56,17 @@ export async function POST(req: NextRequest) {
       ? ` Also avoid these specific ingredients entirely: ${customAllergens.map(a => a.replace(/_/g, " ")).join(", ")}.`
       : "";
 
-  const userPrompt =
-    `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
-    `Use some or all of these ingredients: ${ingredients.join(", ")} ` +
-    `and suggested pairings: ${suggestions.join(", ")}. ` +
-    `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
-    `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;
+  const userPrompt = safeFoodsMode && safeIngredients.length > 0
+    ? `This user has MCAS or severe food allergies and can ONLY eat these specific ingredients: ${safeIngredients.join(", ")}. ` +
+      `Use NOTHING outside this list. ` +
+      `Today they have: ${ingredients.join(", ")}. ` +
+      `Create an extraordinary ${mealType} that takes ${cookTimeLabel} — focus on technique, texture, and creative preparation to elevate these ingredients into a restaurant-quality dish. ` +
+      `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`
+    : `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
+      `Use some or all of these ingredients: ${ingredients.join(", ")} ` +
+      `and suggested pairings: ${suggestions.join(", ")}. ` +
+      `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
+      `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;
 
   try {
     const message = await client.messages.create({

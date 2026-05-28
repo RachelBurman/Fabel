@@ -46,6 +46,8 @@ export interface UserPreferences {
   customAllergens: string[] // specific Epicure ingredients to avoid
   ingredients: string[]
   savedRecipes: string[]
+  safeIngredients: string[] // ingredients the user can definitely eat (Safe Foods Mode)
+  safeFoodsMode: boolean    // restrict generation to safeIngredients only
 }
 
 export interface PairingSuggestion {

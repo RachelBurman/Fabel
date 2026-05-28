@@ -3,17 +3,19 @@
 import { motion } from 'framer-motion'
 import { ALLERGENS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
 
 interface AllergenScreenProps {
   onDone: () => void
+  onManageSafeFoods?: () => void
 }
 
-export function AllergenScreen({ onDone }: AllergenScreenProps) {
-  const { preferences, toggleAllergen } = useFable()
+export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProps) {
+  const { preferences, toggleAllergen, setSafeFoodsMode } = useFable()
+  const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
   const totalCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
 
@@ -79,6 +81,55 @@ export function AllergenScreen({ onDone }: AllergenScreenProps) {
 
           <div className="mb-4">
             <CustomAllergenSearch />
+          </div>
+
+          {/* Safe Foods Mode section */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5" style={{ color: '#16a34a' }} />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Safe Foods Mode</p>
+                  <p className="text-xs text-muted-foreground">
+                    {preferences.safeIngredients.length === 0
+                      ? 'No safe ingredients configured'
+                      : `${preferences.safeIngredients.length} ingredients on your safe list`}
+                  </p>
+                </div>
+              </div>
+              {/* Toggle */}
+              <button
+                onClick={() => setSafeFoodsMode(!preferences.safeFoodsMode)}
+                disabled={preferences.safeIngredients.length === 0}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40"
+                style={{ backgroundColor: safeFoodsActive ? '#22c55e' : undefined }}
+                aria-label="Toggle Safe Foods Mode"
+              >
+                <span
+                  className={cn(
+                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                    safeFoodsActive ? 'translate-x-6' : 'translate-x-1'
+                  )}
+                />
+              </button>
+            </div>
+
+            {!safeFoodsActive && (
+              <p className="text-xs text-muted-foreground mb-3">
+                For MCAS, severe allergies, or highly restricted diets. Build a list of
+                ingredients you can safely eat and we&apos;ll generate recipes exclusively from it.
+              </p>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onManageSafeFoods}
+              className="w-full rounded-full gap-2"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              {preferences.safeIngredients.length === 0 ? 'Set up safe foods list' : 'Manage safe foods list'}
+            </Button>
           </div>
 
           {/* Done button */}

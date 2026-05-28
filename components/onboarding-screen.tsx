@@ -4,26 +4,40 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, Leaf, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Check, Leaf, ArrowRight, ShieldCheck, Shield } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
+import { SafeFoodsScreen } from '@/components/safe-foods-screen'
 
 interface OnboardingScreenProps {
   onComplete: () => void
 }
 
+type Step = 'welcome' | 'allergens' | 'safe-foods-intro' | 'safe-foods-setup'
+
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-  const { preferences, toggleAllergen, completeOnboarding } = useFable()
-  const [step, setStep] = useState<'welcome' | 'allergens'>('welcome')
+  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode } = useFable()
+  const [step, setStep] = useState<Step>('welcome')
 
   const handleContinue = () => {
-    if (step === 'welcome') {
-      setStep('allergens')
-    } else {
-      completeOnboarding()
-      onComplete()
-    }
+    if (step === 'welcome') setStep('allergens')
+    else if (step === 'allergens') setStep('safe-foods-intro')
+  }
+
+  const handleSkipSafeFoods = () => {
+    completeOnboarding()
+    onComplete()
+  }
+
+  const handleSetUpSafeFoods = () => {
+    setStep('safe-foods-setup')
+  }
+
+  const handleSafeFoodsDone = () => {
+    setSafeFoodsMode(true)
+    completeOnboarding()
+    onComplete()
   }
 
   return (
@@ -106,7 +120,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               </Button>
             </motion.div>
           </motion.div>
-        ) : (
+        ) : step === 'allergens' ? (
           <motion.div
             key="allergens"
             initial={{ opacity: 0, y: 20 }}
@@ -186,6 +200,96 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
+          </motion.div>
+        ) : step === 'safe-foods-intro' ? (
+          <motion.div
+            key="safe-foods-intro"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 flex flex-col items-center justify-center px-6 py-12"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              className="mb-8"
+            >
+              <div className="w-20 h-20 rounded-full flex items-center justify-center"
+                   style={{ backgroundColor: 'rgba(34,197,94,0.12)' }}>
+                <Shield className="w-10 h-10" style={{ color: '#16a34a' }} />
+              </div>
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.35 }}
+              className="text-3xl md:text-4xl font-semibold text-foreground mb-4 text-center text-balance"
+            >
+              Have a very restricted diet?
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.35 }}
+              className="text-lg text-muted-foreground text-center max-w-md mb-4 text-pretty"
+            >
+              Tell us exactly what you <span className="text-foreground font-medium">can</span> eat and
+              we&apos;ll work only within those ingredients — nothing outside your safe list.
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.35 }}
+              className="text-sm text-muted-foreground text-center max-w-sm mb-10"
+            >
+              Ideal for MCAS, severe allergies, or highly restricted therapeutic diets.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.35 }}
+              className="flex flex-col gap-3 w-full max-w-sm"
+            >
+              <Button
+                size="lg"
+                onClick={handleSetUpSafeFoods}
+                className="w-full rounded-full gap-2 py-6"
+              >
+                <ShieldCheck className="w-5 h-5" />
+                Yes, set up my safe foods list
+              </Button>
+              <Button
+                size="lg"
+                variant="ghost"
+                onClick={handleSkipSafeFoods}
+                className="w-full rounded-full gap-2"
+              >
+                No thanks, continue to the app
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="safe-foods-setup"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 flex flex-col px-6 py-8 md:py-12"
+          >
+            <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
+              <SafeFoodsScreen
+                onDone={handleSafeFoodsDone}
+                doneLabel="Save & Start Cooking"
+              />
             </div>
           </motion.div>
         )}

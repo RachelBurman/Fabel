@@ -11,6 +11,9 @@ interface FableContextType {
   setIngredients: (ingredients: string[]) => void
   addIngredient: (ingredient: string) => void
   removeIngredient: (ingredient: string) => void
+  addSafeIngredient: (ingredient: string) => void
+  removeSafeIngredient: (ingredient: string) => void
+  setSafeFoodsMode: (active: boolean) => void
   savedRecipes: Recipe[]
   saveRecipe: (recipe: Recipe) => void
   unsaveRecipe: (recipeId: string) => void
@@ -47,6 +50,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     customAllergens: [],
     ingredients: [],
     savedRecipes: [],
+    safeIngredients: [],
+    safeFoodsMode: false,
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -77,8 +82,13 @@ export function FableProvider({ children }: { children: ReactNode }) {
         ])
 
         if (profileRes.ok) {
-          const profile: { allergens?: string[]; customAllergens?: string[]; ingredients?: string[] } =
-            await profileRes.json()
+          const profile: {
+            allergens?: string[]
+            customAllergens?: string[]
+            ingredients?: string[]
+            safeIngredients?: string[]
+            safeFoodsMode?: boolean
+          } = await profileRes.json()
           // Only restore state if the profile has actual data
           if (profile.allergens !== undefined || profile.ingredients !== undefined) {
             setPreferences(prev => ({
@@ -86,6 +96,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
               allergens: profile.allergens ?? prev.allergens,
               customAllergens: profile.customAllergens ?? prev.customAllergens,
               ingredients: profile.ingredients ?? prev.ingredients,
+              safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
+              safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
             }))
             setHasCompletedOnboarding(true)
           }
@@ -129,6 +141,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             allergens: preferences.allergens,
             customAllergens: preferences.customAllergens,
             ingredients: preferences.ingredients,
+            safeIngredients: preferences.safeIngredients,
+            safeFoodsMode: preferences.safeFoodsMode,
           }),
         })
       } catch (err) {
@@ -138,7 +152,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -184,6 +198,28 @@ export function FableProvider({ children }: { children: ReactNode }) {
       ...prev,
       ingredients: prev.ingredients.filter(i => i !== ingredient),
     }))
+  }, [])
+
+  const addSafeIngredient = useCallback((ingredient: string) => {
+    const normalized = ingredient.trim().toLowerCase()
+    if (!normalized) return
+    setPreferences(prev => ({
+      ...prev,
+      safeIngredients: prev.safeIngredients.includes(normalized)
+        ? prev.safeIngredients
+        : [...prev.safeIngredients, normalized],
+    }))
+  }, [])
+
+  const removeSafeIngredient = useCallback((ingredient: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      safeIngredients: prev.safeIngredients.filter(i => i !== ingredient),
+    }))
+  }, [])
+
+  const setSafeFoodsMode = useCallback((active: boolean) => {
+    setPreferences(prev => ({ ...prev, safeFoodsMode: active }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -250,6 +286,9 @@ export function FableProvider({ children }: { children: ReactNode }) {
         setIngredients,
         addIngredient,
         removeIngredient,
+        addSafeIngredient,
+        removeSafeIngredient,
+        setSafeFoodsMode,
         savedRecipes,
         saveRecipe,
         unsaveRecipe,

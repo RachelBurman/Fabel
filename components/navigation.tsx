@@ -1,8 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock } from 'lucide-react'
+import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useFable } from '@/lib/fable-context'
 
 type NavScreen = 'ingredients' | 'recipe' | 'saved' | 'history'
 
@@ -55,6 +56,9 @@ interface HeaderProps {
 }
 
 export function Header({ onSettingsClick }: HeaderProps) {
+  const { preferences } = useFable()
+  const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between h-16 px-6">
@@ -63,6 +67,17 @@ export function Header({ onSettingsClick }: HeaderProps) {
             <Leaf className="w-4 h-4 text-primary" />
           </div>
           <span className="text-lg font-semibold text-foreground">Fable</span>
+          {safeFoodsActive && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+              style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#15803d' }}
+            >
+              <ShieldCheck className="w-3 h-3" />
+              Safe Foods
+            </motion.div>
+          )}
         </div>
         {onSettingsClick && (
           <button

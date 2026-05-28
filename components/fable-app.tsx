@@ -12,11 +12,13 @@ import { PairingsScreen } from '@/components/pairings-screen'
 import { GeneratedRecipeScreen, type LoadingStep } from '@/components/generated-recipe-screen'
 import { HistoryScreen } from '@/components/history-screen'
 import { SavedRecipesScreen } from '@/components/saved-recipes-screen'
+import { SafeFoodsScreen } from '@/components/safe-foods-screen'
 import { BottomNavigation, Header } from '@/components/navigation'
 
 type Screen =
   | 'onboarding'
   | 'allergens'
+  | 'safe-foods'
   | 'ingredients'
   | 'pairings'
   | 'generated'
@@ -24,7 +26,7 @@ type Screen =
   | 'saved'
 
 function FableAppContent() {
-  const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, isRecipeSaved } = useFable()
+  const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe } = useFable()
 
   // All hooks must be declared before any early return (Rules of Hooks)
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
@@ -52,6 +54,11 @@ function FableAppContent() {
 
   const handleOnboardingComplete = () => setCurrentScreen('ingredients')
 
+  // Helper: build the safe foods payload appended to every API call
+  const safeFoodsPayload = () => preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+    ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
+    : {}
+
   // ── Show Pairings ────────────────────────────────────────────────────────────
   const handleShowPairings = useCallback(async (filters: RecipeFilters) => {
     setRecipeFilters(filters)
@@ -69,6 +76,7 @@ function FableAppContent() {
           mode: 'avoid',
           mealType: filters.mealType,
           cookTime: filters.cookTime,
+          ...safeFoodsPayload(),
         }),
       })
       if (!res.ok) throw new Error(`API error: ${res.status}`)
@@ -80,7 +88,7 @@ function FableAppContent() {
     } finally {
       setIsLoadingPairings(false)
     }
-  }, [preferences, navigate])
+  }, [preferences, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Generate Recipe from scratch ─────────────────────────────────────────────
   const handleGenerateRecipe = useCallback(async (filters: RecipeFilters) => {
@@ -102,6 +110,7 @@ function FableAppContent() {
           mode: 'avoid',
           mealType: filters.mealType,
           cookTime: filters.cookTime,
+          ...safeFoodsPayload(),
         }),
       })
       if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
@@ -118,6 +127,7 @@ function FableAppContent() {
           customAllergens: preferences.customAllergens,
           mealType: filters.mealType,
           cookTime: filters.cookTime,
+          ...safeFoodsPayload(),
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
@@ -130,14 +140,13 @@ function FableAppContent() {
     } finally {
       setLoadingStep(null)
     }
-  }, [preferences, navigate, addToHistory])
+  }, [preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Generate Recipe from existing pairings ────────────────────────────────────
   const handleGenerateFromPairings = useCallback(async () => {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
     setRecipeAttempted(true)
-    // Pairings step already done — skip straight to recipe step in the loading UI
     setLoadingStep('recipe')
     navigate('generated')
 
@@ -152,6 +161,7 @@ function FableAppContent() {
           customAllergens: preferences.customAllergens,
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
+          ...safeFoodsPayload(),
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
@@ -164,9 +174,9 @@ function FableAppContent() {
     } finally {
       setLoadingStep(null)
     }
-  }, [pairings, preferences, navigate, addToHistory])
+  }, [pairings, preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Save generated recipe to Saved tab ───────────────────────────────────────
+  // ── Save generated recipe ────────────────────────────────────────────────────
   const handleSaveGeneratedRecipe = useCallback(() => {
     if (!generatedRecipe) return
     saveRecipe({
@@ -179,7 +189,7 @@ function FableAppContent() {
       matchScore: 100,
       allergens: [],
       ingredients: generatedRecipe.ingredients.map(i => i.name),
-      fullRecipe: generatedRecipe, // preserve for full detail view in Saved tab
+      fullRecipe: generatedRecipe,
     })
     setGeneratedRecipeSaved(true)
   }, [generatedRecipe, saveRecipe])
@@ -196,23 +206,24 @@ function FableAppContent() {
   const handleViewSavedRecipe = useCallback((recipe: import('@/lib/types').Recipe) => {
     if (!recipe.fullRecipe) return
     setGeneratedRecipe(recipe.fullRecipe)
-    setGeneratedRecipeSaved(true) // already saved — show heart as filled
+    setGeneratedRecipeSaved(true)
     setLoadingStep(null)
     navigate('generated')
   }, [navigate])
 
   const { recipeHistory } = useFable()
 
-  const showNavigation = currentScreen !== 'onboarding' && currentScreen !== 'allergens'
+  const showNavigation = currentScreen !== 'onboarding' && currentScreen !== 'allergens' && currentScreen !== 'safe-foods'
 
   const navScreenMap: Record<Screen, 'ingredients' | 'recipe' | 'saved' | 'history'> = {
-    onboarding:   'ingredients',
-    allergens:    'ingredients',
-    ingredients:  'ingredients',
-    pairings:     'ingredients',
-    generated:    'recipe',
-    history:      'history',
-    saved:        'saved',
+    onboarding:    'ingredients',
+    allergens:     'ingredients',
+    'safe-foods':  'ingredients',
+    ingredients:   'ingredients',
+    pairings:      'ingredients',
+    generated:     'recipe',
+    history:       'history',
+    saved:         'saved',
   }
 
   const handleNavigate = (screen: 'ingredients' | 'recipe' | 'saved' | 'history') => {
@@ -256,6 +267,24 @@ function FableAppContent() {
             >
               <AllergenScreen
                 onDone={() => navigate(prevScreen === 'allergens' ? 'ingredients' : prevScreen)}
+                onManageSafeFoods={() => navigate('safe-foods')}
+              />
+            </motion.div>
+          )}
+
+          {currentScreen === 'safe-foods' && (
+            <motion.div
+              key="safe-foods"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SafeFoodsScreen
+                fullPage
+                onBack={() => navigate('allergens')}
+                onDone={() => navigate('allergens')}
+                doneLabel="Done"
               />
             </motion.div>
           )}

@@ -12,17 +12,17 @@ export async function GET(req: NextRequest) {
 
   if (!result.Item) return NextResponse.json({});
 
-  const { allergens, customAllergens, ingredients } = result.Item;
-  return NextResponse.json({ allergens, customAllergens, ingredients });
+  const { allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode } = result.Item;
+  return NextResponse.json({ allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode });
 }
 
 export async function PUT(req: NextRequest) {
-  let body: { userId?: string; allergens?: string[]; customAllergens?: string[]; ingredients?: string[] };
+  let body: { userId?: string; allergens?: string[]; customAllergens?: string[]; ingredients?: string[]; safeIngredients?: string[]; safeFoodsMode?: boolean };
   try { body = await req.json() } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, allergens, customAllergens, ingredients } = body;
+  const { userId, allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode } = body;
   if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
   await dynamo.send(new PutCommand({
@@ -32,6 +32,8 @@ export async function PUT(req: NextRequest) {
       allergens: allergens ?? [],
       customAllergens: customAllergens ?? [],
       ingredients: ingredients ?? [],
+      safeIngredients: safeIngredients ?? [],
+      safeFoodsMode: safeFoodsMode ?? false,
       updatedAt: new Date().toISOString(),
     },
   }));

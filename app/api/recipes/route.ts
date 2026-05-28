@@ -13,14 +13,14 @@ interface Suggestion {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { ingredients?: unknown; allergens?: unknown; customAllergens?: unknown; mode?: unknown; mealType?: unknown; cookTime?: unknown };
+  let body: { ingredients?: unknown; allergens?: unknown; customAllergens?: unknown; mode?: unknown; mealType?: unknown; cookTime?: unknown; safeIngredients?: unknown; safeFoodsMode?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { ingredients, allergens, customAllergens, mode } = body;
+  const { ingredients, allergens, customAllergens, mode, safeIngredients, safeFoodsMode } = body;
 
   if (mode !== "avoid" && mode !== "safe-only") {
     return NextResponse.json(
@@ -64,6 +64,14 @@ export async function POST(req: NextRequest) {
       : []
   );
 
+  // Safe Foods Mode: restrict suggestions to only the user's verified safe list
+  const safeSet = new Set<string>(
+    Array.isArray(safeIngredients)
+      ? (safeIngredients as unknown[]).filter((a): a is string => typeof a === "string")
+      : []
+  );
+  const isSafeFoodsMode = safeFoodsMode === true && safeSet.size > 0;
+
   const allCandidates = Array.from(scoreMap.entries()).map(([name, score]) => ({
     name,
     score,
@@ -71,6 +79,7 @@ export async function POST(req: NextRequest) {
   }));
 
   const kept = allCandidates.filter(({ name, allergenList }) => {
+    if (isSafeFoodsMode) return safeSet.has(name);
     if (customBlockedSet.has(name)) return false;
     if (mode === "safe-only") return allergenList.length === 0;
     return !allergenList.some((a) => blockedSet.has(a));

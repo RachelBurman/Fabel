@@ -45,6 +45,32 @@ export function displayName(raw: string): string {
   return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
+  return (
+    <div className="text-center mb-8">
+      <div
+        className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+        style={safeFoodsActive
+          ? { backgroundColor: 'rgba(34,197,94,0.12)' }
+          : { backgroundColor: 'var(--primary-10, oklch(0.55 0.12 145 / 0.1))' }}
+      >
+        <ChefHat
+          className="w-8 h-8"
+          style={safeFoodsActive ? { color: '#16a34a' } : { color: 'var(--primary)' }}
+        />
+      </div>
+      <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
+        {safeFoodsActive ? 'Which safe ingredients do you have today?' : "What's in your kitchen?"}
+      </h1>
+      <p className="text-muted-foreground text-pretty">
+        {safeFoodsActive
+          ? 'Pick from your safe list — recipes will use only these ingredients'
+          : "Add the ingredients you have and we'll find matching recipes"}
+      </p>
+    </div>
+  )
+}
+
 interface IngredientsScreenProps {
   onShowPairings: (filters: RecipeFilters) => void
   onGenerateRecipe: (filters: RecipeFilters) => void
@@ -121,18 +147,8 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
       <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
 
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <ChefHat className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
-              What&apos;s in your kitchen?
-            </h1>
-            <p className="text-muted-foreground text-pretty">
-              Add the ingredients you have and we&apos;ll find matching recipes
-            </p>
-          </div>
+          {/* Header — label changes when Safe Foods Mode is active */}
+          <IngredientsHeader safeFoodsActive={preferences.safeFoodsMode && preferences.safeIngredients.length > 0} />
 
           {/* Search input */}
           <div className="relative mb-6">
@@ -278,7 +294,9 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
               Show Pairings
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              We&apos;ll find recipes that match your ingredients and avoid your allergens
+              {preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+                ? 'Recipes will use only ingredients from your safe foods list'
+                : 'We\'ll find recipes that match your ingredients and avoid your allergens'}
             </p>
           </div>
 
