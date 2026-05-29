@@ -102,7 +102,8 @@ export function SubstitutesScreen({
 
   const [mode, setMode] = useState<Mode>('from-kitchen')
   const [inputMode, setInputMode] = useState<InputMode>('full-recipe')
-  const [recipeText, setRecipeText] = useState('')
+  const [fullRecipeText, setFullRecipeText] = useState('')
+  const [ingredientsText, setIngredientsText] = useState('')
   const [parsedIngredients, setParsedIngredients] = useState<string[]>(() =>
     initialIngredient
       ? [initialIngredient, ...(initialContext ?? [])].filter(Boolean)
@@ -190,19 +191,20 @@ export function SubstitutesScreen({
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const currentText = inputMode === 'full-recipe' ? fullRecipeText : ingredientsText
+  const setCurrentText = inputMode === 'full-recipe' ? setFullRecipeText : setIngredientsText
+
   const handleParseRecipe = async () => {
-    if (!recipeText.trim()) return
+    if (!currentText.trim()) return
     setIsParsing(true)
     setSelectedIngredient(null)
     setResults([])
     try {
       let ingredientNames: string[]
       if (inputMode === 'full-recipe') {
-        // Claude extracts ingredient names from mixed recipe text first
-        ingredientNames = await extractViaClause(recipeText)
+        ingredientNames = await extractViaClause(fullRecipeText)
       } else {
-        // User already entered just ingredients — split by newline
-        ingredientNames = recipeText.split('\n').filter((l) => l.trim().length > 0)
+        ingredientNames = ingredientsText.split('\n').filter((l) => l.trim().length > 0)
       }
       const resolved = await parseIngredientLines(ingredientNames)
       setParsedIngredients(resolved)
@@ -212,10 +214,21 @@ export function SubstitutesScreen({
   }
 
   const handleClear = () => {
-    setRecipeText('')
+    setFullRecipeText('')
+    setIngredientsText('')
     setParsedIngredients([])
     setSelectedIngredient(null)
     setResults([])
+  }
+
+  const handleSetInputMode = (next: InputMode) => {
+    if (next === 'ingredients-only' && inputMode === 'full-recipe') {
+      // Pre-fill the ingredients box with the names we already parsed (if any)
+      if (parsedIngredients.length > 0 && !ingredientsText.trim()) {
+        setIngredientsText(parsedIngredients.map(epicureDisplay).join('\n'))
+      }
+    }
+    setInputMode(next)
   }
 
   const activeIngredients =
@@ -292,7 +305,7 @@ export function SubstitutesScreen({
                 ).map(({ id, label }) => (
                   <button
                     key={id}
-                    onClick={() => setInputMode(id)}
+                    onClick={() => handleSetInputMode(id)}
                     className={cn(
                       'flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors',
                       inputMode === id
@@ -307,11 +320,11 @@ export function SubstitutesScreen({
 
               {/* Textarea */}
               <textarea
-                value={recipeText}
-                onChange={(e) => setRecipeText(e.target.value)}
+                value={currentText}
+                onChange={(e) => setCurrentText(e.target.value)}
                 placeholder={
                   inputMode === 'full-recipe'
-                    ? 'Paste a full recipe here — title, ingredients, method and all. We\'ll extract just the ingredients.'
+                    ? "Paste a full recipe here — title, ingredients, method and all. We'll extract just the ingredients."
                     : 'One ingredient per line, e.g:\n1 pound ground beef\n2 cups salsa\n3 cloves garlic'
                 }
                 className="w-full h-36 text-sm bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -321,23 +334,23 @@ export function SubstitutesScreen({
               <div className="flex gap-2">
                 <Button
                   onClick={handleParseRecipe}
-                  disabled={!recipeText.trim() || isParsing}
+                  disabled={!currentText.trim() || isParsing}
                   className="flex-1 rounded-full gap-2"
                   variant="outline"
                 >
                   {isParsing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      {inputMode === 'full-recipe' ? 'Extracting…' : 'Parsing…'}
+                      {inputMode === 'full-recipe' ? 'Parsing recipe…' : 'Parsing ingredients…'}
                     </>
                   ) : (
                     <>
                       <RefreshCw className="w-4 h-4" />
-                      Parse Ingredients
+                      {inputMode === 'full-recipe' ? 'Parse Recipe' : 'Parse Ingredients'}
                     </>
                   )}
                 </Button>
-                {(recipeText.trim() || parsedIngredients.length > 0) && (
+                {(currentText.trim() || parsedIngredients.length > 0) && (
                   <Button
                     onClick={handleClear}
                     variant="ghost"
