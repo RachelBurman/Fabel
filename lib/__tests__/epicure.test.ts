@@ -3,6 +3,7 @@ import {
   cosineSimilarityBetween,
   toEpicureKey,
   rankSimilar,
+  normaliseCandidates,
 } from '../epicure'
 
 describe('findSimilarIngredients', () => {
@@ -59,6 +60,50 @@ describe('cosineSimilarityBetween', () => {
   it('returns 0 when either ingredient is unknown', () => {
     expect(cosineSimilarityBetween('chicken', 'zzz_not_real')).toBe(0)
     expect(cosineSimilarityBetween('zzz_not_real', 'chicken')).toBe(0)
+  })
+})
+
+describe('normaliseCandidates', () => {
+  it('strips parenthetical descriptions and uses the clean base name', () => {
+    const candidates = normaliseCandidates('Pasta (Penne Or Rigatoni)')
+    expect(candidates).toContain('pasta')
+  })
+
+  it('includes parenthetical words as fallback candidates', () => {
+    const candidates = normaliseCandidates('Pasta (Penne Or Rigatoni)')
+    expect(candidates.some((c) => c === 'pasta' || c === 'penne')).toBe(true)
+  })
+
+  it('strips comma-separated descriptors before resolving', () => {
+    const candidates = normaliseCandidates('garlic cloves, thinly sliced')
+    expect(candidates).toContain('garlic')
+  })
+
+  it('handles parenthetical alternatives for dairy', () => {
+    const candidates = normaliseCandidates('Milk (or cream)')
+    expect(candidates).toContain('milk')
+    expect(candidates.some((c) => c === 'milk' || c === 'cream')).toBe(true)
+  })
+
+  it('strips parenthetical descriptions for simple ingredients', () => {
+    const candidates = normaliseCandidates('Butter (unsalted)')
+    expect(candidates).toContain('butter')
+  })
+
+  it('handles comma descriptors on onion', () => {
+    const candidates = normaliseCandidates('onion, finely diced')
+    expect(candidates).toContain('onion')
+  })
+
+  it('handles comma descriptors on cherry tomatoes', () => {
+    const candidates = normaliseCandidates('cherry tomatoes, halved')
+    expect(candidates).toContain('tomato')
+  })
+
+  it('does not split on commas inside parentheses', () => {
+    const candidates = normaliseCandidates('Butter (salted, softened)')
+    expect(candidates).toContain('butter')
+    expect(candidates).not.toContain('softened')
   })
 })
 

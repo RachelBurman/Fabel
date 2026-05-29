@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useFable } from '@/lib/fable-context'
 import { getEffectiveUseByDate } from '@/lib/shelf-life'
+import { normaliseCandidates } from '@/lib/epicure'
 import { cn } from '@/lib/utils'
 import allergenMapData from '@/data/allergen-map.json'
 
@@ -103,73 +104,6 @@ function extractQuantityDisplay(line: string): string | undefined {
   )
   const qty = m?.[1]?.trim()
   return qty && qty.length > 0 ? qty : undefined
-}
-
-const MODIFIER_PREFIXES = new Set([
-  'tinned', 'canned', 'jarred', 'grated', 'fresh', 'dried', 'frozen',
-  'smoked', 'brown', 'plain', 'ground', 'whole', 'chopped', 'sliced',
-  'diced', 'minced', 'crushed', 'large', 'small', 'medium', 'baby',
-  'ripe', 'raw', 'cooked', 'roasted', 'toasted',
-])
-
-const INGREDIENT_SYNONYMS: Record<string, string> = {
-  // Pasta shapes
-  fusilli: 'pasta', spaghetti: 'pasta', penne: 'pasta', rigatoni: 'pasta',
-  tagliatelle: 'pasta', linguine: 'pasta', fettuccine: 'pasta',
-  farfalle: 'pasta', rotini: 'pasta', macaroni: 'pasta', orzo: 'pasta',
-  // Corn
-  'sweet corn': 'corn', sweetcorn: 'corn',
-  // British/regional
-  courgette: 'zucchini', aubergine: 'eggplant', capsicum: 'pepper',
-  prawn: 'shrimp', coriander: 'cilantro', rocket: 'arugula',
-  // Dairy
-  'cheddar cheese': 'cheese', cheddar: 'cheese', parmesan: 'cheese',
-  mozzarella: 'cheese', brie: 'cheese', feta: 'cheese',
-  // Flour variants
-  'self raising flour': 'flour', 'self-raising flour': 'flour',
-  'strong flour': 'flour', 'bread flour': 'flour', 'wholemeal flour': 'flour',
-}
-
-/** Generate normalised candidate strings to try for Epicure resolution, most specific first. */
-function normaliseCandidates(raw: string): string[] {
-  const lower = raw.toLowerCase().trim()
-  const candidates: string[] = []
-
-  // Synonym map — check before and after stripping
-  const addWithSynonym = (s: string) => {
-    candidates.push(s)
-    if (INGREDIENT_SYNONYMS[s]) candidates.push(INGREDIENT_SYNONYMS[s])
-  }
-
-  addWithSynonym(lower)
-
-  // Strip trailing prep phrases ("finely chopped", "diced", etc.)
-  const stripped = lower
-    .replace(/,?\s*(finely\s+)?(chopped|diced|sliced|crushed|minced|grated|shredded|rinsed|drained|peeled|trimmed)\s*$/i, '')
-    .trim()
-  if (stripped !== lower) addWithSynonym(stripped)
-
-  // Strip leading modifier prefix (first word only)
-  const words = stripped.split(/\s+/)
-  if (words.length > 1 && MODIFIER_PREFIXES.has(words[0])) {
-    const noPrefix = words.slice(1).join(' ')
-    addWithSynonym(noPrefix)
-
-    // Strip second prefix if still present (e.g. "tinned chopped tomatoes")
-    const words2 = noPrefix.split(/\s+/)
-    if (words2.length > 1 && MODIFIER_PREFIXES.has(words2[0])) {
-      addWithSynonym(words2.slice(1).join(' '))
-    }
-  }
-
-  // Individual words as last-resort fallbacks (longest first)
-  const core = (candidates[candidates.length - 1] ?? lower).split(/\s+/).filter((w) => w.length > 2)
-  for (const w of core.sort((a, b) => b.length - a.length)) {
-    addWithSynonym(w)
-  }
-
-  // Deduplicate while preserving order
-  return [...new Set(candidates)]
 }
 
 // ─── Async helpers ────────────────────────────────────────────────────────────
