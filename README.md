@@ -192,6 +192,7 @@ Nothing currently in progress.
 - [ ] FALCPA and Monash University FODMAP data integration
 - [ ] Multilingual UI — Epicure supports 7 languages
 - [ ] AI-generated recipe photography
+- [ ] Nutritional database integration — replace Claude's estimated macros with verified data from an established nutritional API such as USDA FoodData Central (free, government-maintained), Nutritionix, or Edamam. This would provide clinically accurate calorie and macro information per ingredient rather than AI estimates. Update the macros display disclaimer accordingly once integrated.
 
 ---
 
