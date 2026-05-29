@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { type GeneratedRecipe, type GeneratedRecipeIngredient } from '@/lib/types'
 import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +24,7 @@ interface GeneratedRecipeScreenProps {
   attempted: boolean
   onGoToIngredients?: () => void
   allergens?: string[]
+  onFeedback?: (liked: boolean, reasons: string[], notes: string) => void
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -31,9 +32,33 @@ const STEPS: { key: LoadingStep; label: string }[] = [
   { key: 'recipe', label: 'Crafting your recipe' },
 ]
 
+const FEEDBACK_REASONS = [
+  "Too many ingredients",
+  "Didn't like the ingredients",
+  "Wrong cuisine style",
+  "Too complex",
+  "Wrong meal size",
+]
+
+// Countable items that must always be displayed as whole numbers
+const WHOLE_UNITS = new Set([
+  'piece', 'pieces', 'clove', 'cloves', 'fillet', 'fillets',
+  'leaf', 'leaves', 'sprig', 'sprigs', 'stalk', 'stalks',
+  'floret', 'florets', 'strip', 'strips', 'slice', 'slices',
+  'wedge', 'wedges', 'ring', 'rings', 'chunk', 'chunks',
+  'rasher', 'rashers', 'sheet', 'sheets',
+])
+
+function formatAmount(amount: GeneratedRecipeIngredient['amount'], unit: string): string {
+  const n = typeof amount === 'number' ? amount : parseFloat(String(amount))
+  if (isNaN(n)) return String(amount)
+  if (WHOLE_UNITS.has(unit.toLowerCase().trim())) return String(Math.round(n))
+  return String(Math.round(n * 10) / 10)
+}
+
 function parseAmount(amount: GeneratedRecipeIngredient['amount']): number {
   if (typeof amount === 'number') return amount
-  const n = parseFloat(amount)
+  const n = parseFloat(String(amount))
   return isNaN(n) ? 0 : n
 }
 
@@ -50,6 +75,7 @@ export function GeneratedRecipeScreen({
   attempted,
   onGoToIngredients,
   allergens = [],
+  onFeedback,
 }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
@@ -57,7 +83,17 @@ export function GeneratedRecipeScreen({
   const [drinkPairings, setDrinkPairings] = useState<DrinkPairing[]>([])
   const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
 
+  const [feedbackGiven, setFeedbackGiven] = useState<'liked' | 'disliked' | null>(null)
+  const [showFeedbackPanel, setShowFeedbackPanel] = useState(false)
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
+  const [feedbackNotes, setFeedbackNotes] = useState('')
+
   useEffect(() => {
+    setFeedbackGiven(null)
+    setShowFeedbackPanel(false)
+    setSelectedReasons([])
+    setFeedbackNotes('')
+
     if (!recipe) {
       setDrinkPairings([])
       return
@@ -85,6 +121,27 @@ export function GeneratedRecipeScreen({
 
     return () => controller.abort()
   }, [recipe]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLike = () => {
+    setFeedbackGiven('liked')
+    onFeedback?.(true, [], '')
+  }
+
+  const handleDislike = () => {
+    setFeedbackGiven('disliked')
+    setShowFeedbackPanel(true)
+  }
+
+  const toggleReason = (reason: string) => {
+    setSelectedReasons(prev =>
+      prev.includes(reason) ? prev.filter(r => r !== reason) : [...prev, reason]
+    )
+  }
+
+  const handleSubmitFeedback = () => {
+    setShowFeedbackPanel(false)
+    onFeedback?.(false, selectedReasons, feedbackNotes)
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -208,6 +265,84 @@ export function GeneratedRecipeScreen({
                 )}
               </div>
 
+              {/* Feedback row */}
+              <div className="flex items-center justify-between -mt-4">
+                {feedbackGiven === null && (
+                  <>
+                    <span className="text-sm text-muted-foreground">Rate this recipe</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleLike}
+                        className="w-9 h-9 rounded-full flex items-center justify-center bg-secondary hover:bg-primary/10 transition-colors text-base"
+                        aria-label="Like"
+                      >
+                        👍
+                      </button>
+                      <button
+                        onClick={handleDislike}
+                        className="w-9 h-9 rounded-full flex items-center justify-center bg-secondary hover:bg-destructive/10 transition-colors text-base"
+                        aria-label="Dislike"
+                      >
+                        👎
+                      </button>
+                    </div>
+                  </>
+                )}
+                {feedbackGiven === 'liked' && (
+                  <span className="text-sm text-primary font-medium">👍 Thanks for the feedback!</span>
+                )}
+                {feedbackGiven === 'disliked' && (
+                  <span className="text-sm text-muted-foreground font-medium">👎 Thanks, we&apos;ll do better next time.</span>
+                )}
+              </div>
+
+              {/* Dislike feedback panel */}
+              <AnimatePresence>
+                {showFeedbackPanel && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden -mt-4"
+                  >
+                    <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
+                      <p className="text-sm font-medium text-foreground">What didn&apos;t you like?</p>
+                      <div className="space-y-2.5">
+                        {FEEDBACK_REASONS.map(reason => (
+                          <label key={reason} className="flex items-center gap-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedReasons.includes(reason)}
+                              onChange={() => toggleReason(reason)}
+                              className="w-4 h-4 rounded accent-primary shrink-0"
+                            />
+                            <span className="text-sm text-foreground">{reason}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground">Anything else?</label>
+                        <textarea
+                          value={feedbackNotes}
+                          onChange={e => setFeedbackNotes(e.target.value)}
+                          placeholder="Optional…"
+                          className="w-full text-sm rounded-xl border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          rows={2}
+                        />
+                      </div>
+                      <Button
+                        onClick={handleSubmitFeedback}
+                        className="rounded-full w-full"
+                        size="sm"
+                      >
+                        Submit Feedback
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Ingredients */}
               <section>
                 <h2 className="text-lg font-semibold text-foreground mb-4">Ingredients</h2>
@@ -216,7 +351,7 @@ export function GeneratedRecipeScreen({
                     <li key={i} className="flex items-start gap-3 text-sm">
                       <span className="mt-2 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                       <span className="text-foreground">
-                        <span className="font-medium">{ing.amount} {ing.unit}</span>
+                        <span className="font-medium">{formatAmount(ing.amount, ing.unit)} {ing.unit}</span>
                         {' '}{ing.name}
                       </span>
                     </li>
