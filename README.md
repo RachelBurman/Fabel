@@ -141,6 +141,16 @@ Allergen-safe ingredient substitution using Epicure embeddings, with full recipe
 - Swap icon (↔) on every ingredient row in the generated recipe screen opens Substitutes pre-loaded with that ingredient and the rest of the recipe as context
 - Find Substitutes button on the ingredients screen; dedicated Substitutes tab in the bottom navigation
 
+### Diet & Lifestyle Presets
+One-tap diet restriction setup above the EU Big 14 allergen grid.
+
+- **Four presets**: 🌱 Vegan, 🥗 Vegetarian, 🥑 Keto, 🟢 Low-FODMAP — each maps to a curated list of Epicure ingredient keys excluded from recipe generation and pairings
+- **Lactose Intolerance** toggle — shows an amber "⚠️ May contain lactose — consider Lactaid" banner on any generated recipe whose ingredients match dairy keywords
+- Presets stack with EU Big 14 allergens and custom allergen selections; exclusions are computed at call time (`effectiveCustomAllergens`) without mutating stored preferences
+- Collapsible section with chevron and active-preset summary ("Vegan, Keto active") so the page stays clean when nothing is selected
+- All presets and lactose flag persisted in DynamoDB on the user profile
+- Header subtitle reflects the full restriction picture: "Vegan + 3 allergens active"
+
 ### Navigation & History
 - Five-tab navigation — Kitchen, Recipe, Substitutes, History, Saved
 - Recipe tab persists the most recent recipe across navigation
@@ -195,8 +205,6 @@ Nothing currently in progress.
 ## Roadmap
 
 ### Near Term
-- [ ] Diet restriction presets — vegan, vegetarian, keto, low-FODMAP one-tap setup
-- [ ] Medication flags — e.g. "take Lactaid before eating this" for lactose intolerance
 - [ ] High histamine preset — for MCAS users who react to histamine-rich foods
 - [ ] Onboarding tutorial slideshow — 4-5 slides shown on first launch highlighting key features (allergen setup, Safe Foods Mode, kitchen areas, macros toggle, drink pairings). Skippable, never shown again after completion. Accessible anytime via a "?" help button in the header.
 - [ ] Nutritional database integration — replace Claude's estimated macros with verified data from USDA FoodData Central (free, government-maintained, 300,000+ foods) or Edamam's recipe nutrition API. Provides clinically accurate calorie and macro information per ingredient rather than AI estimates.
@@ -214,6 +222,8 @@ Nothing currently in progress.
 - [ ] Multilingual UI — Epicure supports 7 languages
 - [ ] AI-generated recipe photography
 - [ ] On-device AI — explore Liquid AI's LFM2.5 (1.2B parameter, open weights on HuggingFace) for running allergen filtering and ingredient matching entirely on-device. Particularly compelling for MCAS users whose sensitive medical dietary data would never leave their phone.
+- [ ] Barcode/QR scanning — scan food product barcodes via camera, match to nearest Epicure ingredient using Open Food Facts API (free, 3M+ products), auto-detect allergens from product ingredient list, add to kitchen with use-by date from packaging.
+- [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware recipe suggestions (post-workout high protein, low-energy quick meals), automatic allergy import from health records, and glucose-aware suggestions for diabetic users with CGM data.
 
 ---
 
