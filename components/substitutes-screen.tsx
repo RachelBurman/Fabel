@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ArrowLeftRight, Loader2, RefreshCw, ChefHat, Utensils, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useFable } from '@/lib/fable-context'
+import { getEffectiveUseByDate } from '@/lib/shelf-life'
 import { cn } from '@/lib/utils'
 
 export interface SubstituteResult {
@@ -14,6 +15,24 @@ export interface SubstituteResult {
   contextFit: number
   combinedScore: number
   explanation: string | null
+}
+
+interface EnrichedResult extends SubstituteResult {
+  boostedScore: number
+  daysUntilExpiry: number | null
+  expiryDateDisplay: string | undefined
+}
+
+function daysUntil(dateStr: string): number {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expiry = new Date(dateStr)
+  expiry.setHours(0, 0, 0, 0)
+  return Math.floor((expiry.getTime() - today.getTime()) / 86_400_000)
+}
+
+function formatShortDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
 
 export interface SubstitutesScreenProps {
@@ -94,7 +113,7 @@ export function SubstitutesScreen({
   const [selectedIngredient, setSelectedIngredient] = useState<string | null>(
     initialIngredient ?? null
   )
-  const [results, setResults] = useState<SubstituteResult[]>([])
+  const [results, setResults] = useState<EnrichedResult[]>([])
   const [isLoadingResults, setIsLoadingResults] = useState(false)
 
   const kitchenIngredients = preferences.ingredients.map((i) => i.name)
@@ -129,7 +148,29 @@ export function SubstitutesScreen({
         })
         if (!res.ok) throw new Error('API error')
         const data: { substitutes: SubstituteResult[] } = await res.json()
-        setResults(data.substitutes)
+
+        // Enrich with kitchen expiry data (from-kitchen mode only)
+        const enriched: EnrichedResult[] = data.substitutes.map((sub) => {
+          const kitchenItem = mode === 'from-kitchen'
+            ? preferences.ingredients.find((i) => i.name === sub.name)
+            : undefined
+
+          const effectiveDate = kitchenItem ? getEffectiveUseByDate(kitchenItem) : undefined
+          const days = effectiveDate !== undefined ? daysUntil(effectiveDate) : null
+
+          // Score boost: +20pts if expiring within 1 day, +10pts within 2 days
+          const boost = days !== null && days <= 1 ? 20 : days !== null && days <= 2 ? 10 : 0
+
+          return {
+            ...sub,
+            boostedScore: sub.combinedScore + boost,
+            daysUntilExpiry: days,
+            expiryDateDisplay: effectiveDate ? formatShortDate(effectiveDate) : undefined,
+          }
+        })
+
+        enriched.sort((a, b) => b.boostedScore - a.boostedScore)
+        setResults(enriched)
       } catch {
         setResults([])
       } finally {
@@ -400,7 +441,10 @@ export function SubstitutesScreen({
                 </p>
               </div>
 
-              {results.map((sub, i) => (
+              {results.map((sub, i) => {
+                const isUrgent = sub.daysUntilExpiry !== null && sub.daysUntilExpiry <= 1
+                const isSoon   = sub.daysUntilExpiry !== null && sub.daysUntilExpiry === 2
+                return (
                 <motion.div
                   key={sub.name}
                   initial={{ opacity: 0, y: 12 }}
@@ -409,9 +453,21 @@ export function SubstitutesScreen({
                   className="bg-card border border-border rounded-2xl p-4"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <h3 className="font-semibold text-foreground">
-                      {sub.displayName}
-                    </h3>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-foreground">
+                        {sub.displayName}
+                      </h3>
+                      {isUrgent && (
+                        <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                          🔴 Use today! — expires {sub.expiryDateDisplay}
+                        </p>
+                      )}
+                      {isSoon && (
+                        <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                          ⚠️ Use soon — expires {sub.expiryDateDisplay}
+                        </p>
+                      )}
+                    </div>
                     <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
                       {sub.combinedScore}% match
                     </span>
@@ -438,7 +494,8 @@ export function SubstitutesScreen({
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                )
+              })}
             </motion.div>
           )}
 
