@@ -51,6 +51,7 @@ type IngredientStatus = 'in-kitchen' | 'allergen' | 'missing'
 interface IngredientAnalysis {
   key: string
   displayName: string
+  quantityDisplay: string | undefined
   status: IngredientStatus
   allergenLabel: string | null
   substitute: {
@@ -63,18 +64,15 @@ interface IngredientAnalysis {
 
 export interface SubstitutesScreenProps {
   onBack: () => void
-  /** Pre-selected ingredient (Epicure key) — when opened from the recipe screen. */
   initialIngredient?: string
-  /** Other recipe ingredient keys to use as context. */
   initialContext?: string[]
-  /** Called when the user wants to generate a recipe from the adapted ingredient list. */
   onAdaptAndCook?: (adaptedIngredients: string[], recipeContext?: string) => void
 }
 
 type Mode = 'from-kitchen' | 'from-recipe'
 type InputMode = 'full-recipe' | 'ingredients-only'
 
-// ─── Pure helpers ─────────────────────────────────────────────────────────────
+// ─── Normalisation ────────────────────────────────────────────────────────────
 
 function epicureDisplay(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -92,10 +90,92 @@ function formatShortDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
 
+/** Returns true if the resolved Epicure key matches any kitchen ingredient (exact or substring). */
+function matchesKitchen(key: string, kitchenKeys: string[]): boolean {
+  if (kitchenKeys.includes(key)) return true
+  return kitchenKeys.some((k) => k.includes(key) || key.includes(k))
+}
+
+/** Extract a leading quantity/unit string from a raw ingredient line. */
+function extractQuantityDisplay(line: string): string | undefined {
+  const m = line.trim().match(
+    /^([\d./]+\s*(?:tins?|cans?|jars?|cups?|tbsp|tsp|tablespoons?|teaspoons?|g|kg|ml|l|oz|lbs?|pieces?|handfuls?|pinch|bunch|bunches|large|small|medium)?)\b/i
+  )
+  const qty = m?.[1]?.trim()
+  return qty && qty.length > 0 ? qty : undefined
+}
+
+const MODIFIER_PREFIXES = new Set([
+  'tinned', 'canned', 'jarred', 'grated', 'fresh', 'dried', 'frozen',
+  'smoked', 'brown', 'plain', 'ground', 'whole', 'chopped', 'sliced',
+  'diced', 'minced', 'crushed', 'large', 'small', 'medium', 'baby',
+  'ripe', 'raw', 'cooked', 'roasted', 'toasted',
+])
+
+const INGREDIENT_SYNONYMS: Record<string, string> = {
+  // Pasta shapes
+  fusilli: 'pasta', spaghetti: 'pasta', penne: 'pasta', rigatoni: 'pasta',
+  tagliatelle: 'pasta', linguine: 'pasta', fettuccine: 'pasta',
+  farfalle: 'pasta', rotini: 'pasta', macaroni: 'pasta', orzo: 'pasta',
+  // Corn
+  'sweet corn': 'corn', sweetcorn: 'corn',
+  // British/regional
+  courgette: 'zucchini', aubergine: 'eggplant', capsicum: 'pepper',
+  prawn: 'shrimp', coriander: 'cilantro', rocket: 'arugula',
+  // Dairy
+  'cheddar cheese': 'cheese', cheddar: 'cheese', parmesan: 'cheese',
+  mozzarella: 'cheese', brie: 'cheese', feta: 'cheese',
+  // Flour variants
+  'self raising flour': 'flour', 'self-raising flour': 'flour',
+  'strong flour': 'flour', 'bread flour': 'flour', 'wholemeal flour': 'flour',
+}
+
+/** Generate normalised candidate strings to try for Epicure resolution, most specific first. */
+function normaliseCandidates(raw: string): string[] {
+  const lower = raw.toLowerCase().trim()
+  const candidates: string[] = []
+
+  // Synonym map — check before and after stripping
+  const addWithSynonym = (s: string) => {
+    candidates.push(s)
+    if (INGREDIENT_SYNONYMS[s]) candidates.push(INGREDIENT_SYNONYMS[s])
+  }
+
+  addWithSynonym(lower)
+
+  // Strip trailing prep phrases ("finely chopped", "diced", etc.)
+  const stripped = lower
+    .replace(/,?\s*(finely\s+)?(chopped|diced|sliced|crushed|minced|grated|shredded|rinsed|drained|peeled|trimmed)\s*$/i, '')
+    .trim()
+  if (stripped !== lower) addWithSynonym(stripped)
+
+  // Strip leading modifier prefix (first word only)
+  const words = stripped.split(/\s+/)
+  if (words.length > 1 && MODIFIER_PREFIXES.has(words[0])) {
+    const noPrefix = words.slice(1).join(' ')
+    addWithSynonym(noPrefix)
+
+    // Strip second prefix if still present (e.g. "tinned chopped tomatoes")
+    const words2 = noPrefix.split(/\s+/)
+    if (words2.length > 1 && MODIFIER_PREFIXES.has(words2[0])) {
+      addWithSynonym(words2.slice(1).join(' '))
+    }
+  }
+
+  // Individual words as last-resort fallbacks (longest first)
+  const core = (candidates[candidates.length - 1] ?? lower).split(/\s+/).filter((w) => w.length > 2)
+  for (const w of core.sort((a, b) => b.length - a.length)) {
+    addWithSynonym(w)
+  }
+
+  // Deduplicate while preserving order
+  return [...new Set(candidates)]
+}
+
 // ─── Async helpers ────────────────────────────────────────────────────────────
 
-async function resolveIngredientKey(name: string): Promise<string | null> {
-  const q = name.trim().toLowerCase().replace(/\s+/g, ' ')
+async function resolveToEpicureKey(candidate: string): Promise<string | null> {
+  const q = candidate.trim().toLowerCase().replace(/\s+/g, ' ')
   if (!q || q.length < 2) return null
   try {
     const res = await fetch(`/api/ingredients?q=${encodeURIComponent(q)}`)
@@ -105,6 +185,15 @@ async function resolveIngredientKey(name: string): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+/** Try multiple normalised candidates until one resolves to an Epicure key. */
+async function resolveIngredientKeyRobust(rawName: string): Promise<string | null> {
+  for (const candidate of normaliseCandidates(rawName)) {
+    const key = await resolveToEpicureKey(candidate)
+    if (key) return key
+  }
+  return null
 }
 
 async function extractViaClause(text: string): Promise<string[]> {
@@ -118,21 +207,32 @@ async function extractViaClause(text: string): Promise<string[]> {
   return data.ingredients
 }
 
-function stripMeasurements(line: string): string {
-  return line
-    .replace(/^\d[\d./\s]*/, '')
-    .replace(
-      /\b(cups?|tbsp|tsp|tablespoons?|teaspoons?|g|kg|ml|l|oz|lb|lbs|pieces?|handfuls?|pinch|bunch|bunches|cloves?|slices?|stalks?)\b/gi,
-      ''
-    )
-    .replace(/\(.*?\)/g, '')
-    .trim()
-}
-
-async function parseIngredientLines(lines: string[]): Promise<string[]> {
-  const names = lines.map(stripMeasurements).filter((l) => l.length > 1)
-  const resolved = await Promise.all(names.map(resolveIngredientKey))
-  return [...new Set(resolved.filter((r): r is string => r !== null))]
+/** Parse lines to Epicure keys while preserving the original text for quantity display. */
+async function parseIngredientLines(
+  lines: string[]
+): Promise<{ key: string; original: string }[]> {
+  const results = await Promise.all(
+    lines.map(async (original) => {
+      // Strip leading quantity/measurement before resolving
+      const nameOnly = original
+        .replace(/^\d[\d./\s]*/, '')
+        .replace(
+          /\b(cups?|tbsp|tsp|tablespoons?|teaspoons?|g|kg|ml|l|oz|lbs?|tins?|cans?|jars?|pieces?|handfuls?|pinch|bunch|bunches|cloves?|slices?|stalks?)\b/gi,
+          ''
+        )
+        .replace(/\(.*?\)/g, '')
+        .trim()
+      if (nameOnly.length < 2) return null
+      const key = await resolveIngredientKeyRobust(nameOnly)
+      return key ? { key, original: original.trim() } : null
+    })
+  )
+  const seen = new Set<string>()
+  return results.filter((r): r is { key: string; original: string } => {
+    if (!r || seen.has(r.key)) return false
+    seen.add(r.key)
+    return true
+  })
 }
 
 async function fetchTopSubstitute(
@@ -175,17 +275,14 @@ export function SubstitutesScreen({
   const [fullRecipeText, setFullRecipeText] = useState('')
   const [ingredientsText, setIngredientsText] = useState('')
   const [parsedIngredients, setParsedIngredients] = useState<string[]>(() =>
-    initialIngredient
-      ? [initialIngredient, ...(initialContext ?? [])].filter(Boolean)
-      : []
+    initialIngredient ? [initialIngredient, ...(initialContext ?? [])].filter(Boolean) : []
   )
+  const [parsedOriginalMap, setParsedOriginalMap] = useState<Record<string, string>>({})
   const [isParsing, setIsParsing] = useState(false)
 
-  // Recipe analysis (from-recipe mode)
   const [analysis, setAnalysis] = useState<IngredientAnalysis[] | null>(null)
   const [isAnalysing, setIsAnalysing] = useState(false)
 
-  // Kitchen substitute flow (from-kitchen mode + recipe-screen swap icon)
   const [selectedIngredient, setSelectedIngredient] = useState<string | null>(
     initialIngredient ?? null
   )
@@ -197,7 +294,7 @@ export function SubstitutesScreen({
   // ── Recipe analysis ─────────────────────────────────────────────────────────
 
   const runAnalysis = useCallback(
-    async (ingredients: string[]) => {
+    async (ingredients: string[], originalMap: Record<string, string>) => {
       if (ingredients.length === 0) return
       setIsAnalysing(true)
       setAnalysis(null)
@@ -205,16 +302,16 @@ export function SubstitutesScreen({
       const rows: IngredientAnalysis[] = await Promise.all(
         ingredients.map(async (key) => {
           const allergenLabel = getContainedAllergenLabel(key, preferences.allergens)
-          const isInKitchen = kitchenIngredients.includes(key)
+          const isInKitchen = matchesKitchen(key, kitchenIngredients)
+          const quantityDisplay = extractQuantityDisplay(originalMap[key] ?? '')
 
-          // Allergen takes priority over in-kitchen
           if (allergenLabel) {
             const context = ingredients.filter((i) => i !== key)
-            // Restrict substitute search to kitchen items so the suggestion is immediately usable
             const sub = await fetchTopSubstitute(key, context, preferences.allergens, kitchenIngredients)
             return {
               key,
               displayName: epicureDisplay(key),
+              quantityDisplay,
               status: 'allergen' as const,
               allergenLabel,
               substitute: sub
@@ -222,17 +319,17 @@ export function SubstitutesScreen({
                     name: sub.name,
                     displayName: sub.displayName,
                     combinedScore: sub.combinedScore,
-                    inKitchen: kitchenIngredients.includes(sub.name),
+                    inKitchen: matchesKitchen(sub.name, kitchenIngredients),
                   }
                 : null,
             }
           }
 
           if (isInKitchen) {
-            return { key, displayName: epicureDisplay(key), status: 'in-kitchen' as const, allergenLabel: null, substitute: null }
+            return { key, displayName: epicureDisplay(key), quantityDisplay, status: 'in-kitchen' as const, allergenLabel: null, substitute: null }
           }
 
-          return { key, displayName: epicureDisplay(key), status: 'missing' as const, allergenLabel: null, substitute: null }
+          return { key, displayName: epicureDisplay(key), quantityDisplay, status: 'missing' as const, allergenLabel: null, substitute: null }
         })
       )
 
@@ -301,7 +398,6 @@ export function SubstitutesScreen({
     [preferences, initialContext, mode, kitchenIngredients]
   )
 
-  // Auto-fetch when opened from the recipe screen
   useEffect(() => {
     if (initialIngredient) fetchSubstitutes(initialIngredient, parsedIngredients)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -324,9 +420,13 @@ export function SubstitutesScreen({
       } else {
         ingredientNames = ingredientsText.split('\n').filter((l) => l.trim().length > 0)
       }
-      const resolved = await parseIngredientLines(ingredientNames)
-      setParsedIngredients(resolved)
-      await runAnalysis(resolved)
+      const pairs = await parseIngredientLines(ingredientNames)
+      const keys = pairs.map((p) => p.key)
+      const origMap: Record<string, string> = {}
+      for (const p of pairs) origMap[p.key] = p.original
+      setParsedIngredients(keys)
+      setParsedOriginalMap(origMap)
+      await runAnalysis(keys, origMap)
     } finally {
       setIsParsing(false)
     }
@@ -336,6 +436,7 @@ export function SubstitutesScreen({
     setFullRecipeText('')
     setIngredientsText('')
     setParsedIngredients([])
+    setParsedOriginalMap({})
     setAnalysis(null)
     setSelectedIngredient(null)
     setResults([])
@@ -355,22 +456,15 @@ export function SubstitutesScreen({
   const handleCookWithSubstitutions = () => {
     if (!onAdaptAndCook) return
 
-    // Build the complete adapted list from every parsed ingredient
     const adapted = (analysis
       ? analysis
           .map((item): string | null => {
-            if (item.status === 'allergen') {
-              // Replace with substitute; skip if none found (don't include the allergen itself)
-              return item.substitute ? item.substitute.name : null
-            }
-            // Green and amber both included as-is
+            if (item.status === 'allergen') return item.substitute ? item.substitute.name : null
             return item.key
           })
           .filter((k): k is string => k !== null)
-      // Analysis hasn't run — include all parsed ingredients as-is
       : parsedIngredients)
 
-    // Best-effort recipe name: first non-empty, non-ingredient-looking line
     const recipeContext = (() => {
       const source = fullRecipeText || ingredientsText
       const firstLine = source.split('\n').find((l) => {
@@ -386,11 +480,10 @@ export function SubstitutesScreen({
   // ── Derived ──────────────────────────────────────────────────────────────────
 
   const isOpenedFromRecipe = Boolean(initialIngredient)
-
-  const inKitchenCount  = analysis?.filter((r) => r.status === 'in-kitchen').length ?? 0
-  const allergenCount   = analysis?.filter((r) => r.status === 'allergen').length ?? 0
-  const missingCount    = analysis?.filter((r) => r.status === 'missing').length ?? 0
-  const hasUnresolved   = allergenCount > 0 && analysis?.some((r) => r.status === 'allergen' && !r.substitute)
+  const inKitchenCount = analysis?.filter((r) => r.status === 'in-kitchen').length ?? 0
+  const allergenCount  = analysis?.filter((r) => r.status === 'allergen').length ?? 0
+  const missingCount   = analysis?.filter((r) => r.status === 'missing').length ?? 0
+  const hasUnresolved  = analysis?.some((r) => r.status === 'allergen' && !r.substitute) ?? false
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -434,7 +527,7 @@ export function SubstitutesScreen({
             </div>
           )}
 
-          {/* ── From a recipe — input + analysis ── */}
+          {/* ── From a recipe ── */}
           {mode === 'from-recipe' && !isOpenedFromRecipe && (
             <>
               {/* Input panel */}
@@ -442,8 +535,8 @@ export function SubstitutesScreen({
                 <div className="flex gap-1 p-1 bg-secondary rounded-lg">
                   {(
                     [
-                      { id: 'full-recipe'      as const, label: 'Paste full recipe'  },
-                      { id: 'ingredients-only' as const, label: 'Ingredients only'   },
+                      { id: 'full-recipe'      as const, label: 'Paste full recipe' },
+                      { id: 'ingredients-only' as const, label: 'Ingredients only'  },
                     ] as const
                   ).map(({ id, label }) => (
                     <button
@@ -503,114 +596,110 @@ export function SubstitutesScreen({
                 </div>
               </div>
 
-              {/* Analysing spinner */}
+              {/* Analysing */}
               {isAnalysing && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="flex flex-col items-center py-10 gap-3"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-3">
                   <Loader2 className="w-7 h-7 text-primary animate-spin" />
                   <p className="text-sm text-muted-foreground">Analysing recipe…</p>
                 </motion.div>
               )}
 
-              {/* Analysis checklist */}
+              {/* Substitution plan */}
               {!isAnalysing && analysis && (
-                <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="space-y-4"
-                >
-                  {/* Summary */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mb-2">
+                <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+
+                  {/* Summary pills */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {inKitchenCount > 0 && (
-                      <span className="text-green-600 dark:text-green-400 font-medium">
+                      <span className="font-medium text-green-600 dark:text-green-400">
                         ✅ {inKitchenCount} in your kitchen
                       </span>
                     )}
                     {allergenCount > 0 && (
-                      <span className="text-red-600 dark:text-red-400 font-medium">
-                        ❌ {allergenCount} allergen{allergenCount > 1 ? 's' : ''} to swap
+                      <span className="font-medium text-red-600 dark:text-red-400">
+                        🔄 {allergenCount} allergen{allergenCount > 1 ? 's' : ''} to swap
                       </span>
                     )}
                     {missingCount > 0 && (
-                      <span className="text-amber-600 dark:text-amber-400 font-medium">
-                        🔄 {missingCount} not in kitchen
+                      <span className="font-medium text-amber-600 dark:text-amber-400">
+                        ⚠️ {missingCount} not in kitchen
                       </span>
                     )}
                   </div>
 
-                  {/* Ingredient rows */}
-                  <div className="space-y-2">
-                    {analysis.map((item) => (
-                      <div
-                        key={item.key}
-                        className={cn(
-                          'rounded-xl border px-4 py-3',
-                          item.status === 'in-kitchen' && 'bg-green-500/5 border-green-500/20',
-                          item.status === 'allergen'   && 'bg-red-500/5 border-red-500/20',
-                          item.status === 'missing'    && 'bg-amber-500/5 border-amber-500/20',
-                        )}
-                      >
-                        {item.status === 'in-kitchen' && (
-                          <p className="text-sm text-foreground">
-                            <span className="mr-2">✅</span>
-                            <span className="font-medium">{item.displayName}</span>
-                            <span className="text-muted-foreground text-xs ml-2">in your kitchen</span>
-                          </p>
-                        )}
+                  {/* Per-ingredient plan */}
+                  <div className="divide-y divide-border rounded-2xl border border-border overflow-hidden">
+                    {analysis.map((item) => {
+                      const qty = item.quantityDisplay ? ` (${item.quantityDisplay})` : ''
 
-                        {item.status === 'missing' && (
-                          <p className="text-sm text-foreground">
-                            <span className="mr-2">🔄</span>
-                            <span className="font-medium">{item.displayName}</span>
-                            <span className="text-muted-foreground text-xs ml-2">not in your kitchen</span>
-                          </p>
-                        )}
-
-                        {item.status === 'allergen' && (
-                          <div className="space-y-1.5">
-                            <p className="text-sm text-foreground">
-                              <span className="mr-2">❌</span>
-                              <span className="font-medium">{item.displayName}</span>
-                              <span className="text-xs text-red-600 dark:text-red-400 ml-2">
-                                contains {item.allergenLabel}
-                              </span>
+                      if (item.status === 'in-kitchen') {
+                        return (
+                          <div key={item.key} className="flex items-start gap-3 px-4 py-3 bg-card">
+                            <span className="text-base leading-none mt-0.5 shrink-0">✅</span>
+                            <p className="text-sm">
+                              <span className="font-medium text-foreground">{item.displayName}</span>
+                              {qty && <span className="text-muted-foreground">{qty}</span>}
+                              <span className="text-muted-foreground"> — in your kitchen</span>
                             </p>
-                            {item.substitute ? (
-                              <p className="text-xs text-muted-foreground pl-6">
-                                <span className="text-foreground font-medium">→ {item.substitute.displayName}</span>
-                                {item.substitute.inKitchen && (
-                                  <span className="text-green-600 dark:text-green-400"> from your kitchen</span>
-                                )}
-                                <span className="ml-1 opacity-70">({item.substitute.combinedScore}% match)</span>
-                              </p>
-                            ) : (
-                              <p className="text-xs text-muted-foreground pl-6">
-                                No safe substitute found in your kitchen
-                              </p>
-                            )}
                           </div>
-                        )}
-                      </div>
-                    ))}
+                        )
+                      }
+
+                      if (item.status === 'allergen') {
+                        return (
+                          <div key={item.key} className="flex items-start gap-3 px-4 py-3 bg-card">
+                            <span className="text-base leading-none mt-0.5 shrink-0">🔄</span>
+                            <div className="space-y-0.5">
+                              <p className="text-sm">
+                                <span className="font-medium text-foreground line-through opacity-60">{item.displayName}</span>
+                                {qty && <span className="text-muted-foreground opacity-60">{qty}</span>}
+                                <span className="text-xs text-red-600 dark:text-red-400 ml-2 no-underline">contains {item.allergenLabel}</span>
+                              </p>
+                              {item.substitute ? (
+                                <p className="text-sm text-muted-foreground">
+                                  {'→ '}
+                                  <span className="font-medium text-foreground">{item.substitute.displayName}</span>
+                                  <span className="text-xs ml-1">({item.substitute.combinedScore}% match)</span>
+                                  {item.substitute.inKitchen && (
+                                    <span className="text-xs text-green-600 dark:text-green-400 ml-1">from your kitchen</span>
+                                  )}
+                                  <span className="text-xs ml-1">— being swapped</span>
+                                </p>
+                              ) : (
+                                <p className="text-sm text-muted-foreground">
+                                  {'→ '}no safe substitute found
+                                  <span className="text-foreground"> — will be omitted</span>
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // missing
+                      return (
+                        <div key={item.key} className="flex items-start gap-3 px-4 py-3 bg-card">
+                          <span className="text-base leading-none mt-0.5 shrink-0">⚠️</span>
+                          <p className="text-sm">
+                            <span className="font-medium text-foreground">{item.displayName}</span>
+                            {qty && <span className="text-muted-foreground">{qty}</span>}
+                            <span className="text-muted-foreground"> — not in kitchen, including anyway</span>
+                          </p>
+                        </div>
+                      )
+                    })}
                   </div>
 
                   {/* CTA */}
                   {onAdaptAndCook && (
-                    <div className="pt-2 space-y-2">
-                      <Button
-                        onClick={handleCookWithSubstitutions}
-                        className="w-full rounded-full gap-2 py-6"
-                        size="lg"
-                      >
+                    <div className="space-y-2 pt-1">
+                      <Button onClick={handleCookWithSubstitutions} className="w-full rounded-full gap-2 py-6" size="lg">
                         <Sparkles className="w-5 h-5" />
                         Cook with these substitutions
                       </Button>
                       {hasUnresolved && (
                         <p className="text-xs text-center text-muted-foreground">
-                          Some allergen ingredients have no safe substitute — they will be included as-is.
+                          Allergen ingredients with no safe substitute will be omitted from the recipe.
                         </p>
                       )}
                     </div>
@@ -620,7 +709,7 @@ export function SubstitutesScreen({
             </>
           )}
 
-          {/* ── From my kitchen — chips + results ── */}
+          {/* ── From my kitchen ── */}
           {(mode === 'from-kitchen' || isOpenedFromRecipe) && (
             <>
               {kitchenIngredients.length > 0 && !isOpenedFromRecipe && (
@@ -657,13 +746,8 @@ export function SubstitutesScreen({
                 </div>
               )}
 
-              {/* Empty state — no kitchen ingredients */}
               {mode === 'from-kitchen' && kitchenIngredients.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-16"
-                >
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
                   <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
                     <ChefHat className="w-10 h-10 text-muted-foreground" />
                   </div>
@@ -674,7 +758,6 @@ export function SubstitutesScreen({
                 </motion.div>
               )}
 
-              {/* Loading */}
               {isLoadingResults && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-12 gap-4">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -682,7 +765,6 @@ export function SubstitutesScreen({
                 </motion.div>
               )}
 
-              {/* Results */}
               {!isLoadingResults && results.length > 0 && selectedIngredient && (
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                   <div className="flex items-center gap-2 mb-1">
@@ -743,7 +825,6 @@ export function SubstitutesScreen({
                 </motion.div>
               )}
 
-              {/* No results */}
               {!isLoadingResults && selectedIngredient && results.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
                   <p className="text-muted-foreground text-sm">
