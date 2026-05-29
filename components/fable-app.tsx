@@ -354,6 +354,7 @@ function FableAppContent() {
                 isSaved={generatedRecipeSaved}
                 attempted={recipeAttempted}
                 onGoToIngredients={() => navigate('ingredients')}
+                allergens={preferences.allergens}
               />
             </motion.div>
           )}

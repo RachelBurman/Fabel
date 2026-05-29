@@ -1,13 +1,19 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { type GeneratedRecipe } from '@/lib/types'
+import { type GeneratedRecipe, type GeneratedRecipeIngredient } from '@/lib/types'
 import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
 
 export type LoadingStep = 'pairings' | 'recipe'
+
+interface DrinkPairing {
+  drink: string
+  score: number
+}
 
 interface GeneratedRecipeScreenProps {
   recipe: GeneratedRecipe | null
@@ -17,12 +23,23 @@ interface GeneratedRecipeScreenProps {
   isSaved?: boolean
   attempted: boolean
   onGoToIngredients?: () => void
+  allergens?: string[]
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
   { key: 'pairings', label: 'Finding safe pairings' },
   { key: 'recipe', label: 'Crafting your recipe' },
 ]
+
+function parseAmount(amount: GeneratedRecipeIngredient['amount']): number {
+  if (typeof amount === 'number') return amount
+  const n = parseFloat(amount)
+  return isNaN(n) ? 0 : n
+}
+
+function formatDrinkName(key: string): string {
+  return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
 
 export function GeneratedRecipeScreen({
   recipe,
@@ -32,9 +49,42 @@ export function GeneratedRecipeScreen({
   isSaved,
   attempted,
   onGoToIngredients,
+  allergens = [],
 }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
+
+  const [drinkPairings, setDrinkPairings] = useState<DrinkPairing[]>([])
+  const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!recipe) {
+      setDrinkPairings([])
+      return
+    }
+
+    const top3 = [...recipe.ingredients]
+      .sort((a, b) => parseAmount(b.amount) - parseAmount(a.amount))
+      .slice(0, 3)
+      .map(i => i.name)
+
+    const controller = new AbortController()
+    setDrinkPairingsLoading(true)
+    setDrinkPairings([])
+
+    fetch('/api/drink-pairings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ingredients: top3, allergens }),
+      signal: controller.signal,
+    })
+      .then(res => res.json())
+      .then((data: { pairings: DrinkPairing[] }) => setDrinkPairings(data.pairings ?? []))
+      .catch(() => {})
+      .finally(() => setDrinkPairingsLoading(false))
+
+    return () => controller.abort()
+  }, [recipe]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-background">
@@ -175,7 +225,7 @@ export function GeneratedRecipeScreen({
               </section>
 
               {/* Steps */}
-              <section className="pb-8">
+              <section>
                 <h2 className="text-lg font-semibold text-foreground mb-4">Method</h2>
                 <ol className="space-y-5">
                   {recipe.steps.map((step, i) => (
@@ -187,6 +237,32 @@ export function GeneratedRecipeScreen({
                     </li>
                   ))}
                 </ol>
+              </section>
+
+              {/* Drink Pairings */}
+              <section className="pb-8">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Drink Pairings</h2>
+                {drinkPairingsLoading && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Finding drink pairings…</span>
+                  </div>
+                )}
+                {!drinkPairingsLoading && drinkPairings.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {drinkPairings.map(({ drink }) => (
+                      <span
+                        key={drink}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
+                      >
+                        🍷 {formatDrinkName(drink)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {!drinkPairingsLoading && drinkPairings.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No drink suggestions found.</p>
+                )}
               </section>
             </motion.div>
           )}

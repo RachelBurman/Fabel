@@ -83,6 +83,13 @@ pnpm dev
 - Prompt caching on the system prompt (~90% cost reduction on repeated calls)
 - Food-themed gradient hero on every recipe card with title-hash colour variation across five palettes
 
+### Drink Pairings
+- Automatically suggested after every recipe is generated
+- Top 3 recipe ingredients by quantity are run through the Epicure similarity search to find the closest-matching beverages
+- Results are filtered against a curated list of 25 known beverage Epicure keys (wine, beer, tea, coffee, juice, and more)
+- Allergen profile applied — e.g. milk-allergic users will not see milk or oat milk suggestions
+- Displayed as compact chips with a 🍷 icon below the recipe method
+
 ### Safe Foods Mode
 For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 
@@ -113,6 +120,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/ingredients         Epicure ingredient search (fuzzy, 1,790 items)
   ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
   ├── /api/generate-recipe     Anthropic Claude recipe generation + validation
+  ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
        └── saved-recipes       DynamoDB read/write (full recipe objects)
@@ -133,7 +141,6 @@ In-memory (loaded at server startup)
 ## In Progress
 
 - [ ] Collections — organise saved recipes into named collections
-- [ ] Drink pairings — Epicure-powered beverage suggestions matched to the recipe's flavour profile
 - [ ] Macros toggle — opt-in nutritional information (off by default, eating disorder recovery users in mind)
 
 ---
