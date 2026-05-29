@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { FableProvider, useFable } from '@/lib/fable-context'
-import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion } from '@/lib/types'
+import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem } from '@/lib/types'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen, type RecipeFilters } from '@/components/ingredients-screen'
 import { AllergenScreen } from '@/components/allergen-screen'
@@ -243,6 +243,50 @@ function FableAppContent() {
     })
     setGeneratedRecipeSaved(true)
   }, [generatedRecipe, saveRecipe])
+
+  // ── Generate recipe from an adapted ingredient list (substitutes screen) ─────
+  const handleAdaptAndCook = useCallback(async (adaptedIngredientNames: string[]) => {
+    setGeneratedRecipe(null)
+    setGeneratedRecipeSaved(false)
+    setRecipeAttempted(true)
+    setLoadingStep('recipe')
+    navigate('generated')
+
+    const items: IngredientItem[] = adaptedIngredientNames.map((name) => ({
+      id: crypto.randomUUID(),
+      name,
+      area: 'fridge' as const,
+      addedAt: new Date().toISOString().split('T')[0],
+    }))
+
+    try {
+      const res = await fetch('/api/generate-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ingredients: items,
+          suggestions: [],
+          allergens: preferences.allergens,
+          customAllergens: preferences.customAllergens,
+          mealType: 'main',
+          cookTime: 'medium',
+          kitchenOnly: true,
+          showMacros: preferences.showMacros,
+        }),
+      })
+      if (!res.ok) throw new Error(`Generate error: ${res.status}`)
+      const recipe: GeneratedRecipe = await res.json()
+      const recipeId = Date.now().toString()
+      setGeneratedRecipe(recipe)
+      setGeneratedRecipeId(recipeId)
+      addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
+    } catch (error) {
+      console.error('Error generating adapted recipe:', error)
+      setGeneratedRecipe(null)
+    } finally {
+      setLoadingStep(null)
+    }
+  }, [preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Open substitutes (from ingredients screen or recipe screen) ──────────────
   const handleOpenSubstitutes = useCallback(() => {
@@ -507,6 +551,7 @@ function FableAppContent() {
                 onBack={() => navigate(prevScreen)}
                 initialIngredient={substituteIngredient}
                 initialContext={substituteContext}
+                onAdaptAndCook={handleAdaptAndCook}
               />
             </motion.div>
           )}
