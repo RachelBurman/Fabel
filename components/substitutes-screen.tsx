@@ -158,8 +158,11 @@ export function SubstitutesScreen({
           const effectiveDate = kitchenItem ? getEffectiveUseByDate(kitchenItem) : undefined
           const days = effectiveDate !== undefined ? daysUntil(effectiveDate) : null
 
-          // Score boost: +20pts if expiring within 1 day, +10pts within 2 days
-          const boost = days !== null && days <= 1 ? 20 : days !== null && days <= 2 ? 10 : 0
+          // Only boost if the base score is already a reasonable match (≥45%)
+          const boostEligible = sub.combinedScore >= 45
+          const boost = boostEligible
+            ? days !== null && days <= 1 ? 20 : days !== null && days <= 2 ? 10 : 0
+            : 0
 
           return {
             ...sub,
@@ -442,8 +445,9 @@ export function SubstitutesScreen({
               </div>
 
               {results.map((sub, i) => {
-                const isUrgent = sub.daysUntilExpiry !== null && sub.daysUntilExpiry <= 1
-                const isSoon   = sub.daysUntilExpiry !== null && sub.daysUntilExpiry === 2
+                const goodMatch = sub.combinedScore >= 45
+                const isUrgent = goodMatch && sub.daysUntilExpiry !== null && sub.daysUntilExpiry <= 1
+                const isSoon   = goodMatch && sub.daysUntilExpiry !== null && sub.daysUntilExpiry === 2
                 return (
                 <motion.div
                   key={sub.name}
