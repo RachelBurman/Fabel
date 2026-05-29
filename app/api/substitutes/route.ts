@@ -5,7 +5,11 @@ import {
   getAllergensForIngredient,
   cosineSimilarityBetween,
   toEpicureKey,
+  getCategoryForIngredient,
 } from "@/lib/epicure";
+
+// Grain ingredients must never substitute for these categories
+const GRAIN_INCOMPATIBLE = new Set(["fat", "dairy_alternative", "cheese", "liquid"]);
 
 const client = new Anthropic();
 
@@ -54,22 +58,38 @@ export async function POST(req: NextRequest) {
   // a. Top 50 similar — rankSimilar already excludes the target itself
   const ranked = rankSimilar(ingredient).slice(0, 50);
 
-  // b+c. Filter allergens (and safe-foods list when active)
+  const originalCategory = getCategoryForIngredient(ingredient);
+
+  // b+c. Filter allergens, safe-foods list, and hard category rules
   let candidates = ranked.filter(({ name }) => {
     if (safeSet && !safeSet.has(name)) return false;
     const codes = getAllergensForIngredient(name);
-    return !codes.some((c) => allergens.includes(c));
+    if (codes.some((c) => allergens.includes(c))) return false;
+    // Hard rule: grain ingredients must not substitute for fat/dairy/cheese/liquid
+    const candidateCategory = getCategoryForIngredient(name);
+    if (
+      candidateCategory === "grain" &&
+      originalCategory !== null &&
+      GRAIN_INCOMPATIBLE.has(originalCategory)
+    ) return false;
+    return true;
   });
 
-  // d. Context score — average cosine similarity to each context ingredient
+  // d. Context score + category adjustment
   const withScores = candidates.map(({ name, score: similarityToOriginal }) => {
     let contextFit = 0;
     if (context.length > 0) {
       const scores = context.map((ctx) => cosineSimilarityBetween(name, ctx));
       contextFit = scores.reduce((a, b) => a + b, 0) / scores.length;
     }
-    // e. Weighted combination
-    const combinedScore = 0.6 * similarityToOriginal + 0.4 * contextFit;
+    // e. Weighted combination with functional category bonus/penalty
+    const base = 0.6 * similarityToOriginal + 0.4 * contextFit;
+    const candidateCategory = getCategoryForIngredient(name);
+    const categoryAdj =
+      originalCategory && candidateCategory
+        ? originalCategory === candidateCategory ? 0.1 : -0.3
+        : 0;
+    const combinedScore = Math.max(0, base + categoryAdj);
     return { name, similarityToOriginal, contextFit, combinedScore };
   });
 

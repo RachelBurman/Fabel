@@ -130,6 +130,32 @@ export function toEpicureKey(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, '_')
 }
 
+// ─── Functional category system ───────────────────────────────────────────────
+
+export const INGREDIENT_CATEGORIES: Record<string, string[]> = {
+  fat:               ["butter", "olive_oil", "coconut_oil", "lard", "ghee", "margarine", "vegetable_oil"],
+  dairy_alternative: ["oat_milk", "soy_milk", "almond_milk", "coconut_milk", "cashew_milk"],
+  cheese:            ["nutritional_yeast", "tofu", "cashew"],
+  liquid:            ["milk", "water", "broth", "stock", "cream", "oat_milk", "soy_milk", "coconut_milk"],
+  grain:             ["pasta", "rice", "flour", "bread", "oats", "quinoa", "couscous"],
+  protein:           ["chicken", "beef", "tofu", "egg", "fish", "tuna", "salmon", "tempeh"],
+  vegetable:         ["onion", "garlic", "tomato", "carrot", "celery", "pepper"],
+}
+
+// Reverse map for O(1) lookup. An ingredient can belong to at most one category
+// (first-write wins if there were duplicates, which there are none of above).
+const _ingredientToCategory: Record<string, string> = {}
+for (const [cat, items] of Object.entries(INGREDIENT_CATEGORIES)) {
+  for (const item of items) {
+    if (!(_ingredientToCategory[item])) _ingredientToCategory[item] = cat
+  }
+}
+
+/** Returns the functional category for an Epicure key, or null if uncategorised. */
+export function getCategoryForIngredient(key: string): string | null {
+  return _ingredientToCategory[key] ?? null
+}
+
 /** Returns every ingredient scored by cosine similarity to the query ingredient, sorted descending. Returns [] for unknown ingredients. */
 export function rankSimilar(ingredient: string): { name: string; score: number }[] {
   const emb = getEmbeddings();
