@@ -168,7 +168,18 @@ In-memory (loaded at server startup)
 
 ## In Progress
 
-Nothing currently in progress.
+### Substitutes Mode
+Building allergen-safe ingredient substitution using Epicure embeddings to find swaps that fit the context of the whole dish.
+
+**API** (`app/api/substitutes/route.ts`) — accepts an ingredient, the other ingredients in the dish as context, and the user's allergens. Uses `rankSimilar` to find the top 50 candidates, filters allergens, scores each candidate by combining similarity to the original (60%) with average cosine similarity to all context ingredients (40%), and returns the top 3 substitutes with scores.
+
+**Screen** (`components/substitutes-screen.tsx`) — two entry modes:
+- **From my recipe** — user pastes a recipe or ingredient list, Fable parses it into chips, tapping any chip fetches substitutes for that ingredient in context of the rest
+- **From my kitchen** — shows current kitchen ingredients as chips; same substitute results view
+
+**Claude integration** — after embedding-based ranking, a short Claude call generates a one-sentence culinary explanation for each substitute (max 100 tokens): why the swap works given the other ingredients in the dish.
+
+**Navigation** — accessible via a Substitutes button on the ingredients screen alongside Generate Recipe and Show Pairings; also reachable from the generated recipe screen via a swap icon on each ingredient row.
 
 ---
 
