@@ -46,6 +46,19 @@ async function main() {
     ],
     BillingMode: "PAY_PER_REQUEST",
   });
+
+  await createTable({
+    TableName: "fable-feedback",
+    KeySchema: [
+      { AttributeName: "userId", KeyType: "HASH" },
+      { AttributeName: "recipeId", KeyType: "RANGE" },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: "userId", AttributeType: "S" },
+      { AttributeName: "recipeId", AttributeType: "S" },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  });
 }
 
 main();

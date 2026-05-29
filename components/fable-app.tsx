@@ -37,15 +37,34 @@ function FableAppContent() {
   const [recipeFilters, setRecipeFilters] = useState<RecipeFilters>({ mealType: 'main', cookTime: 'medium', kitchenOnly: false })
 
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
+  const [generatedRecipeId, setGeneratedRecipeId] = useState('')
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
   const [generatedRecipeSaved, setGeneratedRecipeSaved] = useState(false)
   const [recipeAttempted, setRecipeAttempted] = useState(false)
+
+  const [dislikedPatterns, setDislikedPatterns] = useState<string[]>([])
+  const [dislikedIngredients, setDislikedIngredients] = useState<string[]>([])
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
       setCurrentScreen('ingredients')
     }
   }, [hasCompletedOnboarding, currentScreen])
+
+  // Load recent disliked patterns to influence future generation
+  useEffect(() => {
+    if (isLoadingProfile) return
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+    if (!uid) return
+    fetch(`/api/feedback?userId=${uid}&liked=false&limit=5`)
+      .then(res => res.ok ? res.json() : null)
+      .then((data: { patterns?: string[]; ingredients?: string[] } | null) => {
+        if (!data) return
+        setDislikedPatterns(data.patterns ?? [])
+        setDislikedIngredients(data.ingredients ?? [])
+      })
+      .catch(() => {})
+  }, [isLoadingProfile])
 
   const navigate = useCallback((screen: Screen) => {
     setPrevScreen(prev => (prev !== screen ? currentScreen : prev))
@@ -138,13 +157,17 @@ function FableAppContent() {
           mealType: filters.mealType,
           cookTime: filters.cookTime,
           kitchenOnly: filters.kitchenOnly,
+          ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
+          ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...sfPayload,
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
       const recipe: GeneratedRecipe = await recipeRes.json()
+      const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
-      addToHistory({ id: Date.now().toString(), recipe, timestamp: Date.now() })
+      setGeneratedRecipeId(recipeId)
+      addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
     } catch (error) {
       console.error('Error generating recipe:', error)
       setGeneratedRecipe(null)
@@ -177,13 +200,17 @@ function FableAppContent() {
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
           kitchenOnly: recipeFilters.kitchenOnly,
+          ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
+          ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...sfPayload,
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
       const recipe: GeneratedRecipe = await recipeRes.json()
+      const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
-      addToHistory({ id: Date.now().toString(), recipe, timestamp: Date.now() })
+      setGeneratedRecipeId(recipeId)
+      addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
     } catch (error) {
       console.error('Error generating recipe from pairings:', error)
       setGeneratedRecipe(null)
@@ -215,6 +242,7 @@ function FableAppContent() {
     setGeneratedRecipe(recipe)
     setGeneratedRecipeSaved(false)
     setLoadingStep(null)
+    setGeneratedRecipeId(Date.now().toString())
     navigate('generated')
   }, [navigate])
 
@@ -224,8 +252,36 @@ function FableAppContent() {
     setGeneratedRecipe(recipe.fullRecipe)
     setGeneratedRecipeSaved(true)
     setLoadingStep(null)
+    setGeneratedRecipeId(Date.now().toString())
     navigate('generated')
   }, [navigate])
+
+  // ── Recipe feedback ───────────────────────────────────────────────────────────
+  const handleFeedback = useCallback((liked: boolean, reasons: string[], notes: string) => {
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+    if (!uid || !generatedRecipeId || !generatedRecipe) return
+
+    fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: uid,
+        recipeId: generatedRecipeId,
+        liked,
+        reasons,
+        notes,
+        recipeTitle: generatedRecipe.title,
+        recipeIngredients: generatedRecipe.ingredients.map(i => i.name),
+      }),
+    }).catch(err => console.error('Failed to submit feedback:', err))
+
+    if (!liked) {
+      setDislikedPatterns(prev => [...new Set([...prev, ...reasons])].slice(0, 10))
+      setDislikedIngredients(prev =>
+        [...new Set([...prev, ...generatedRecipe.ingredients.map(i => i.name)])].slice(0, 20)
+      )
+    }
+  }, [generatedRecipeId, generatedRecipe]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { recipeHistory } = useFable()
 
@@ -355,6 +411,7 @@ function FableAppContent() {
                 attempted={recipeAttempted}
                 onGoToIngredients={() => navigate('ingredients')}
                 allergens={preferences.allergens}
+                onFeedback={handleFeedback}
               />
             </motion.div>
           )}

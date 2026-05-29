@@ -83,6 +83,12 @@ pnpm dev
 - Prompt caching on the system prompt (~90% cost reduction on repeated calls)
 - Food-themed gradient hero on every recipe card with title-hash colour variation across five palettes
 
+### Recipe Feedback
+- 👍 / 👎 buttons on every generated recipe
+- Dislike opens a compact feedback panel: five reason checkboxes ("Too many ingredients", "Didn't like the ingredients", "Wrong cuisine style", "Too complex", "Wrong meal size") plus a free-text field
+- Feedback stored in DynamoDB (`fable-feedback` table): `userId`, `recipeId`, `liked`, `reasons`, `notes`, `recipeTitle`, `recipeIngredients`, `timestamp`
+- Recent disliked patterns and ingredients are loaded at session start and injected into the Claude prompt so future recipes actively avoid them
+
 ### Drink Pairings
 - Automatically suggested after every recipe is generated
 - Top 3 recipe ingredients by quantity are run through the Epicure similarity search to find the closest-matching beverages
@@ -121,6 +127,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
   ├── /api/generate-recipe     Anthropic Claude recipe generation + validation
   ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
+  ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
        └── saved-recipes       DynamoDB read/write (full recipe objects)
@@ -129,7 +136,9 @@ DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
   │                            ingredients[]{name, displayName, subtype, quantity, unit,
   │                            area, dateType, useByDate, boughtDate, addedAt})
-  └── fable-saved-recipes      Saved recipes with full recipe JSON
+  ├── fable-saved-recipes      Saved recipes with full recipe JSON
+  └── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
+                               recipeTitle, recipeIngredients, timestamp)
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search

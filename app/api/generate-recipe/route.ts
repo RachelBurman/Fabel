@@ -186,6 +186,8 @@ export async function POST(req: NextRequest) {
     safeFoodsMode?: unknown;
     safeIngredients?: unknown;
     kitchenOnly?: unknown;
+    dislikedPatterns?: unknown;
+    dislikedIngredients?: unknown;
   };
   try {
     body = await req.json();
@@ -276,6 +278,13 @@ export async function POST(req: NextRequest) {
       )
     : [];
 
+  const dislikedPatterns = Array.isArray(body.dislikedPatterns)
+    ? (body.dislikedPatterns as unknown[]).filter((p): p is string => typeof p === "string")
+    : [];
+  const dislikedIngredients = Array.isArray(body.dislikedIngredients)
+    ? (body.dislikedIngredients as unknown[]).filter((i): i is string => typeof i === "string")
+    : [];
+
   const mealType =
     typeof body.mealType === "string" ? body.mealType : "main course";
 
@@ -325,9 +334,21 @@ export async function POST(req: NextRequest) {
     ? `KITCHEN CONSTRAINT: Only use the exact ingredients listed. Do not suggest, add, or imply any other ingredients. Work creatively within only what the user has available.\n\n`
     : "";
 
+  const dislikedPrefix =
+    dislikedPatterns.length > 0 || dislikedIngredients.length > 0
+      ? `User feedback from past recipes: ` +
+        (dislikedPatterns.length > 0
+          ? `They disliked recipes that were ${dislikedPatterns.join(", ")}. `
+          : "") +
+        (dislikedIngredients.length > 0
+          ? `Avoid reusing these ingredients from recipes they didn't enjoy: ${dislikedIngredients.slice(0, 10).join(", ")}. `
+          : "") +
+        `Make this recipe noticeably different.\n\n`
+      : "";
+
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -341,7 +362,7 @@ export async function POST(req: NextRequest) {
         `Focus on technique, texture, and preparation to make the most of simple ingredients.\n\n` +
         `REMINDER: Every ingredient name in your JSON response MUST appear in this approved list (or be "liquid of choice" / "seasoning of choice" per the rules above): ${humanSafe}. ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`
-      : `${kitchenConstraint}` +
+      : dislikedPrefix + `${kitchenConstraint}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
