@@ -1,9 +1,10 @@
 'use client'
 
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft, ShieldCheck, BarChart2 } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
@@ -17,7 +18,23 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
   const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant } = useFable()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
-  const totalCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
+  const activePresetLabels = preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id)
+  const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant
+
+  // Auto-expand the diet section if any lifestyle option is already active
+  const [isDietExpanded, setIsDietExpanded] = useState(() => anyDietActive)
+
+  // ── Header subtitle ────────────────────────────────────────────────────────
+  const allergenCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
+
+  const headerSubtitle = (() => {
+    const parts: string[] = []
+    if (activePresetLabels.length > 0) parts.push(activePresetLabels.join(', '))
+    if (preferences.lactoseIntolerant) parts.push('Lactose intolerance')
+    if (allergenCount > 0) parts.push(`${allergenCount} allergen${allergenCount > 1 ? 's' : ''}`)
+    if (parts.length === 0) return 'No restrictions selected'
+    return `${parts.join(' + ')} active`
+  })()
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -26,92 +43,114 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
 
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onDone}
-              className="shrink-0 rounded-full"
-            >
+            <Button variant="ghost" size="icon" onClick={onDone} className="shrink-0 rounded-full">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
               <h1 className="text-2xl font-semibold text-foreground">Allergen Settings</h1>
-              <p className="text-sm text-muted-foreground">
-                {totalCount === 0 ? 'No restrictions selected' : `${totalCount} restriction${totalCount > 1 ? 's' : ''} active`}
-              </p>
+              <p className="text-sm text-muted-foreground">{headerSubtitle}</p>
             </div>
           </div>
 
-          {/* Diet & Lifestyle presets */}
-          <h2 className="text-sm font-medium text-muted-foreground mb-3">Diet &amp; Lifestyle</h2>
-          <div className="space-y-2 mb-6">
-            {Object.values(DIET_PRESETS).map(preset => {
-              const isActive = preferences.activePresets.includes(preset.id)
-              return (
-                <div
-                  key={preset.id}
-                  className={cn(
-                    'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
-                    isActive ? 'bg-primary/5 border-primary/30' : 'bg-card border-border'
-                  )}
+          {/* ── Diet & Lifestyle — collapsible ── */}
+          <div className="mb-6">
+            <button
+              onClick={() => setIsDietExpanded(v => !v)}
+              className="flex items-center justify-between w-full text-left group mb-3"
+            >
+              <h2 className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                Diet &amp; Lifestyle
+              </h2>
+              <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                {anyDietActive
+                  ? [...activePresetLabels, ...(preferences.lactoseIntolerant ? ['Lactose'] : [])].join(', ') + ' active'
+                  : 'None active'}
+                <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
+              </span>
+            </button>
+
+            <AnimatePresence initial={false}>
+              {isDietExpanded && (
+                <motion.div
+                  key="diet-section"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  className="overflow-hidden"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{preset.emoji}</span>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{preset.label}</p>
-                      <p className="text-xs text-muted-foreground">{preset.description}</p>
+                  <div className="space-y-2">
+                    {Object.values(DIET_PRESETS).map(preset => {
+                      const isActive = preferences.activePresets.includes(preset.id)
+                      return (
+                        <div
+                          key={preset.id}
+                          className={cn(
+                            'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
+                            isActive ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{preset.emoji}</span>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">{preset.label}</p>
+                              <p className="text-xs text-muted-foreground">{preset.description}</p>
+                            </div>
+                          </div>
+                          <button
+                            role="switch"
+                            aria-checked={isActive}
+                            onClick={() => togglePreset(preset.id)}
+                            className={cn(
+                              'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                              isActive ? 'bg-amber-500' : 'bg-secondary'
+                            )}
+                          >
+                            <span className={cn(
+                              'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                              isActive ? 'translate-x-5' : 'translate-x-0'
+                            )} />
+                          </button>
+                        </div>
+                      )
+                    })}
+
+                    {/* Lactose Intolerance */}
+                    <div
+                      className={cn(
+                        'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
+                        preferences.lactoseIntolerant ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">🥛</span>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
+                          <p className="text-xs text-muted-foreground">Shows a Lactaid reminder on dairy-containing recipes</p>
+                        </div>
+                      </div>
+                      <button
+                        role="switch"
+                        aria-checked={preferences.lactoseIntolerant}
+                        onClick={() => setLactoseIntolerant(!preferences.lactoseIntolerant)}
+                        className={cn(
+                          'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                          preferences.lactoseIntolerant ? 'bg-amber-500' : 'bg-secondary'
+                        )}
+                      >
+                        <span className={cn(
+                          'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                          preferences.lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
+                        )} />
+                      </button>
                     </div>
                   </div>
-                  <button
-                    role="switch"
-                    aria-checked={isActive}
-                    onClick={() => togglePreset(preset.id)}
-                    className={cn(
-                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                      isActive ? 'bg-primary' : 'bg-secondary'
-                    )}
-                  >
-                    <span className={cn(
-                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
-                      isActive ? 'translate-x-5' : 'translate-x-0'
-                    )} />
-                  </button>
-                </div>
-              )
-            })}
-
-            {/* Lactose Intolerance — separate from diet presets */}
-            <div
-              className={cn(
-                'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
-                preferences.lactoseIntolerant ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                </motion.div>
               )}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xl">🥛</span>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
-                  <p className="text-xs text-muted-foreground">Shows a Lactaid reminder on dairy-containing recipes</p>
-                </div>
-              </div>
-              <button
-                role="switch"
-                aria-checked={preferences.lactoseIntolerant}
-                onClick={() => setLactoseIntolerant(!preferences.lactoseIntolerant)}
-                className={cn(
-                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                  preferences.lactoseIntolerant ? 'bg-amber-500' : 'bg-secondary'
-                )}
-              >
-                <span className={cn(
-                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
-                  preferences.lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
-                )} />
-              </button>
-            </div>
+            </AnimatePresence>
           </div>
 
-          {/* EU Big 14 grid — fills available height */}
+          {/* EU Big 14 grid */}
           <h2 className="text-sm font-medium text-muted-foreground mb-2">EU Big 14 Allergens</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-3">
             {ALLERGENS.map((allergen, index) => {
@@ -152,7 +191,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
             <CustomAllergenSearch />
           </div>
 
-          {/* Safe Foods Mode section */}
+          {/* Safe Foods Mode */}
           <div className="py-4 border-t border-border">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -166,7 +205,6 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
                   </p>
                 </div>
               </div>
-              {/* Toggle */}
               <button
                 onClick={() => setSafeFoodsMode(!preferences.safeFoodsMode)}
                 disabled={preferences.safeIngredients.length === 0}
@@ -190,12 +228,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               </p>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onManageSafeFoods}
-              className="w-full rounded-full gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={onManageSafeFoods} className="w-full rounded-full gap-2">
               <ShieldCheck className="w-4 h-4" />
               {preferences.safeIngredients.length === 0 ? 'Set up safe foods list' : 'Manage safe foods list'}
             </Button>
@@ -230,7 +263,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
             </p>
           </div>
 
-          {/* Done button */}
+          {/* Done */}
           <div className="pt-4 border-t border-border mt-auto">
             <Button size="lg" onClick={onDone} className="w-full rounded-full py-6">
               Done
