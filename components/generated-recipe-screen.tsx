@@ -278,20 +278,24 @@ export function GeneratedRecipeScreen({
                 )}
               </div>
 
-              {/* Macros row */}
+              {/* Macros */}
               {showMacros && recipe.macros && (
-                <div className="grid grid-cols-4 gap-3 py-4 border border-border rounded-2xl px-4 text-center">
-                  {[
-                    { label: 'Calories', value: String(recipe.macros.calories), unit: 'kcal' },
-                    { label: 'Protein',  value: String(recipe.macros.protein),  unit: 'g' },
-                    { label: 'Carbs',    value: String(recipe.macros.carbs),    unit: 'g' },
-                    { label: 'Fat',      value: String(recipe.macros.fat),      unit: 'g' },
-                  ].map(({ label, value, unit }) => (
-                    <div key={label}>
-                      <p className="text-base font-semibold text-foreground">{value}<span className="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span></p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">Estimated nutritional information</p>
+                  <div className="grid grid-cols-4 gap-3 py-4 border border-border rounded-2xl px-4 text-center">
+                    {[
+                      { label: 'Calories', value: String(recipe.macros.calories), unit: 'kcal' },
+                      { label: 'Protein',  value: String(recipe.macros.protein),  unit: 'g' },
+                      { label: 'Carbs',    value: String(recipe.macros.carbs),    unit: 'g' },
+                      { label: 'Fat',      value: String(recipe.macros.fat),      unit: 'g' },
+                    ].map(({ label, value, unit }) => (
+                      <div key={label}>
+                        <p className="text-base font-semibold text-foreground">{value}<span className="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span></p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Estimates based on ingredients and quantities — consult a nutritionist for precise values.</p>
                 </div>
               )}
 

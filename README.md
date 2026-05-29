@@ -179,6 +179,8 @@ Nothing currently in progress.
 - [ ] Diet restriction presets — vegan, vegetarian, keto, low-FODMAP one-tap setup
 - [ ] Medication flags — e.g. "take Lactaid before eating this" for lactose intolerance
 - [ ] High histamine preset — for MCAS users who react to histamine-rich foods
+- [ ] Onboarding tutorial slideshow — 4-5 slides shown on first launch highlighting key features (allergen setup, Safe Foods Mode, kitchen areas, macros toggle, drink pairings). Skippable, never shown again after completion. Accessible anytime via a "?" help button in the header.
+- [ ] Nutritional database integration — replace Claude's estimated macros with verified data from USDA FoodData Central (free, government-maintained, 300,000+ foods) or Edamam's recipe nutrition API. Provides clinically accurate calorie and macro information per ingredient rather than AI estimates.
 
 ### Medium Term
 - [ ] Recipe cost calculator — grocery API integration (Tesco, Sainsbury's, Kroger)
@@ -192,7 +194,7 @@ Nothing currently in progress.
 - [ ] FALCPA and Monash University FODMAP data integration
 - [ ] Multilingual UI — Epicure supports 7 languages
 - [ ] AI-generated recipe photography
-- [ ] Nutritional database integration — replace Claude's estimated macros with verified data from an established nutritional API such as USDA FoodData Central (free, government-maintained), Nutritionix, or Edamam. This would provide clinically accurate calorie and macro information per ingredient rather than AI estimates. Update the macros display disclaimer accordingly once integrated.
+- [ ] On-device AI — explore Liquid AI's LFM2.5 (1.2B parameter, open weights on HuggingFace) for running allergen filtering and ingredient matching entirely on-device. Particularly compelling for MCAS users whose sensitive medical dietary data would never leave their phone.
 
 ---
 
