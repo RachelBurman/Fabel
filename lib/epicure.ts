@@ -135,8 +135,8 @@ export function toEpicureKey(name: string): string {
 export const INGREDIENT_CATEGORIES: Record<string, string[]> = {
   fat:               ["butter", "olive_oil", "coconut_oil", "lard", "ghee", "margarine", "vegetable_oil"],
   dairy_alternative: ["oat_milk", "soy_milk", "almond_milk", "coconut_milk", "cashew_milk"],
-  cheese:            ["nutritional_yeast", "tofu", "cashew"],
-  liquid:            ["milk", "water", "broth", "stock", "cream", "oat_milk", "soy_milk", "coconut_milk"],
+  cheese:            ["nutritional_yeast", "cashew"],
+  liquid:            ["milk", "water", "broth", "stock", "cream"],
   grain:             ["pasta", "rice", "flour", "bread", "oats", "quinoa", "couscous"],
   protein:           ["chicken", "beef", "tofu", "egg", "fish", "tuna", "salmon", "tempeh"],
   vegetable:         ["onion", "garlic", "tomato", "carrot", "celery", "pepper"],
