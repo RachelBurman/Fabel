@@ -13,6 +13,7 @@ import { GeneratedRecipeScreen, type LoadingStep } from '@/components/generated-
 import { HistoryScreen } from '@/components/history-screen'
 import { SavedRecipesScreen } from '@/components/saved-recipes-screen'
 import { SafeFoodsScreen } from '@/components/safe-foods-screen'
+import { SubstitutesScreen } from '@/components/substitutes-screen'
 import { BottomNavigation, Header } from '@/components/navigation'
 
 type Screen =
@@ -24,6 +25,7 @@ type Screen =
   | 'generated'
   | 'history'
   | 'saved'
+  | 'substitutes'
 
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe } = useFable()
@@ -44,6 +46,9 @@ function FableAppContent() {
 
   const [dislikedPatterns, setDislikedPatterns] = useState<string[]>([])
   const [dislikedIngredients, setDislikedIngredients] = useState<string[]>([])
+
+  const [substituteIngredient, setSubstituteIngredient] = useState<string | undefined>(undefined)
+  const [substituteContext, setSubstituteContext] = useState<string[] | undefined>(undefined)
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -239,6 +244,19 @@ function FableAppContent() {
     setGeneratedRecipeSaved(true)
   }, [generatedRecipe, saveRecipe])
 
+  // ── Open substitutes (from ingredients screen or recipe screen) ──────────────
+  const handleOpenSubstitutes = useCallback(() => {
+    setSubstituteIngredient(undefined)
+    setSubstituteContext(undefined)
+    navigate('substitutes')
+  }, [navigate])
+
+  const handleFindSubstitute = useCallback((ingredient: string, context: string[]) => {
+    setSubstituteIngredient(ingredient)
+    setSubstituteContext(context)
+    navigate('substitutes')
+  }, [navigate])
+
   // ── Fetch macros on demand when toggle is turned on after generation ─────────
   useEffect(() => {
     if (!preferences.showMacros || !generatedRecipe || generatedRecipe.macros) return
@@ -311,7 +329,7 @@ function FableAppContent() {
 
   const showNavigation = currentScreen !== 'onboarding' && currentScreen !== 'allergens' && currentScreen !== 'safe-foods'
 
-  const navScreenMap: Record<Screen, 'ingredients' | 'recipe' | 'saved' | 'history'> = {
+  const navScreenMap: Record<Screen, 'ingredients' | 'recipe' | 'substitutes' | 'saved' | 'history'> = {
     onboarding:    'ingredients',
     allergens:     'ingredients',
     'safe-foods':  'ingredients',
@@ -320,11 +338,14 @@ function FableAppContent() {
     generated:     'recipe',
     history:       'history',
     saved:         'saved',
+    substitutes:   'substitutes',
   }
 
-  const handleNavigate = (screen: 'ingredients' | 'recipe' | 'saved' | 'history') => {
+  const handleNavigate = (screen: 'ingredients' | 'recipe' | 'substitutes' | 'saved' | 'history') => {
     if (screen === 'recipe') {
       navigate('generated')
+    } else if (screen === 'substitutes') {
+      handleOpenSubstitutes()
     } else {
       navigate(screen)
     }
@@ -396,6 +417,7 @@ function FableAppContent() {
               <IngredientsScreen
                 onShowPairings={handleShowPairings}
                 onGenerateRecipe={handleGenerateRecipe}
+                onFindSubstitutes={handleOpenSubstitutes}
               />
             </motion.div>
           )}
@@ -437,6 +459,7 @@ function FableAppContent() {
                 allergens={preferences.allergens}
                 onFeedback={handleFeedback}
                 showMacros={preferences.showMacros}
+                onFindSubstitute={handleFindSubstitute}
               />
             </motion.div>
           )}
@@ -468,6 +491,22 @@ function FableAppContent() {
               <SavedRecipesScreen
                 onBack={() => navigate('ingredients')}
                 onViewRecipe={handleViewSavedRecipe}
+              />
+            </motion.div>
+          )}
+
+          {currentScreen === 'substitutes' && (
+            <motion.div
+              key="substitutes"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <SubstitutesScreen
+                onBack={() => navigate(prevScreen)}
+                initialIngredient={substituteIngredient}
+                initialContext={substituteContext}
               />
             </motion.div>
           )}

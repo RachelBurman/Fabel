@@ -1,11 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck } from 'lucide-react'
+import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useFable } from '@/lib/fable-context'
 
-type NavScreen = 'ingredients' | 'recipe' | 'saved' | 'history'
+type NavScreen = 'ingredients' | 'recipe' | 'substitutes' | 'saved' | 'history'
 
 interface BottomNavigationProps {
   currentScreen: NavScreen
@@ -14,10 +14,11 @@ interface BottomNavigationProps {
 
 export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigationProps) {
   const navItems = [
-    { id: 'ingredients' as const, label: 'Ingredients', icon: ChefHat   },
-    { id: 'recipe'      as const, label: 'Recipe',      icon: BookOpen  },
-    { id: 'history'     as const, label: 'History',     icon: Clock     },
-    { id: 'saved'       as const, label: 'Saved',       icon: Heart     },
+    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat        },
+    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen       },
+    { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight },
+    { id: 'history'      as const, label: 'History',     icon: Clock          },
+    { id: 'saved'        as const, label: 'Saved',       icon: Heart          },
   ]
 
   return (

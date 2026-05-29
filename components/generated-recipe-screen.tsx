@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type GeneratedRecipe, type GeneratedRecipeIngredient } from '@/lib/types'
-import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen } from 'lucide-react'
+import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
@@ -26,6 +26,7 @@ interface GeneratedRecipeScreenProps {
   allergens?: string[]
   onFeedback?: (liked: boolean, reasons: string[], notes: string) => void
   showMacros?: boolean
+  onFindSubstitute?: (ingredient: string, context: string[]) => void
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -89,6 +90,7 @@ export function GeneratedRecipeScreen({
   allergens = [],
   onFeedback,
   showMacros = false,
+  onFindSubstitute,
 }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
@@ -382,12 +384,27 @@ export function GeneratedRecipeScreen({
                 <h2 className="text-lg font-semibold text-foreground mb-4">Ingredients</h2>
                 <ul className="space-y-2.5">
                   {recipe.ingredients.map((ing, i) => (
-                    <li key={i} className="flex items-start gap-3 text-sm">
-                      <span className="mt-2 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                      <span className="text-foreground">
+                    <li key={i} className="flex items-center gap-3 text-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                      <span className="flex-1 text-foreground">
                         <span className="font-medium">{formatAmount(ing.amount, ing.unit)} {ing.unit}</span>
                         {' '}{ing.name}
                       </span>
+                      {onFindSubstitute && (
+                        <button
+                          onClick={() => {
+                            const key = ing.name.toLowerCase().replace(/\s+/g, '_')
+                            const context = recipe.ingredients
+                              .filter((_, j) => j !== i)
+                              .map((r) => r.name.toLowerCase().replace(/\s+/g, '_'))
+                            onFindSubstitute(key, context)
+                          }}
+                          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                          aria-label={`Find substitutes for ${ing.name}`}
+                        >
+                          <ArrowLeftRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </li>
                   ))}
                 </ul>

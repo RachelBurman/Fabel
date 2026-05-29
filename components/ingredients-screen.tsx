@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, INGREDIENT_UNITS } from '@/lib/types'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
-import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar } from 'lucide-react'
+import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -121,9 +121,10 @@ function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
 interface IngredientsScreenProps {
   onShowPairings: (filters: RecipeFilters) => void
   onGenerateRecipe: (filters: RecipeFilters) => void
+  onFindSubstitutes: () => void
 }
 
-export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: IngredientsScreenProps) {
+export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
   const { preferences, addIngredient, removeIngredient } = useFable()
   const [inputValue, setInputValue] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -589,6 +590,16 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
             >
               <Layers className="w-5 h-5" />
               Show Pairings
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={onFindSubstitutes}
+              disabled={preferences.ingredients.length === 0}
+              className="w-full rounded-full gap-2"
+            >
+              <ArrowLeftRight className="w-5 h-5" />
+              Find Substitutes
             </Button>
             <p className="text-xs text-center text-muted-foreground">
               {preferences.safeFoodsMode && preferences.safeIngredients.length > 0

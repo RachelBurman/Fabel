@@ -116,6 +116,20 @@ export function findSimilarIngredients(ingredient: string, k: number): string[] 
     .map(({ name }) => name);
 }
 
+/** Cosine similarity between two named Epicure ingredients. Returns 0 for unknown keys. */
+export function cosineSimilarityBetween(a: string, b: string): number {
+  const emb = getEmbeddings()
+  const vecA = emb[a]
+  const vecB = emb[b]
+  if (!vecA || !vecB) return 0
+  return cosineSimilarity(vecA, vecB)
+}
+
+/** Normalise a human-readable ingredient name to an Epicure key. */
+export function toEpicureKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '_')
+}
+
 /** Returns every ingredient scored by cosine similarity to the query ingredient, sorted descending. Returns [] for unknown ingredients. */
 export function rankSimilar(ingredient: string): { name: string; score: number }[] {
   const emb = getEmbeddings();
