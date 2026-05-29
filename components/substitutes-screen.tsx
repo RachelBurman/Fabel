@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, ArrowLeftRight, Loader2, RefreshCw, ChefHat, Utensils } from 'lucide-react'
+import { ArrowLeft, ArrowLeftRight, Loader2, RefreshCw, ChefHat, Utensils, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useFable } from '@/lib/fable-context'
 import { cn } from '@/lib/utils'
@@ -25,30 +25,17 @@ export interface SubstitutesScreenProps {
 }
 
 type Mode = 'from-kitchen' | 'from-recipe'
+type InputMode = 'full-recipe' | 'ingredients-only'
 
 function epicureDisplay(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
-/** Strip quantity + unit tokens from a raw ingredient line, then normalise to an Epicure key. */
-function normaliseLine(line: string): string {
-  return line
-    .replace(/^\d[\d./\s]*/, '')
-    .replace(
-      /\b(cups?|tbsp|tsp|g|kg|ml|l|oz|lb|pieces?|handfuls?|pinch|bunch|bunches|cloves?|slices?|stalks?)\b/gi,
-      ''
-    )
-    .replace(/\(.*?\)/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '_')
-}
-
-async function resolveIngredientKey(line: string): Promise<string | null> {
-  const key = normaliseLine(line)
-  if (!key || key.length < 2) return null
+async function resolveIngredientKey(name: string): Promise<string | null> {
+  const q = name.trim().toLowerCase().replace(/\s+/g, ' ')
+  if (!q || q.length < 2) return null
   try {
-    const res = await fetch(`/api/ingredients?q=${encodeURIComponent(key.replace(/_/g, ' '))}`)
+    const res = await fetch(`/api/ingredients?q=${encodeURIComponent(q)}`)
     if (!res.ok) return null
     const data: { results: string[] } = await res.json()
     return data.results[0] ?? null
@@ -57,12 +44,33 @@ async function resolveIngredientKey(line: string): Promise<string | null> {
   }
 }
 
-async function parseRecipeText(text: string): Promise<string[]> {
-  const lines = text
-    .split(/[\n,;]+/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 1)
-  const resolved = await Promise.all(lines.map(resolveIngredientKey))
+/** Use Claude to extract ingredient names from arbitrary recipe text. */
+async function extractViaClause(text: string): Promise<string[]> {
+  const res = await fetch('/api/extract-ingredients', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })
+  if (!res.ok) return []
+  const data: { ingredients: string[] } = await res.json()
+  return data.ingredients
+}
+
+/** Strip quantity/unit tokens from a plain ingredient line. */
+function stripMeasurements(line: string): string {
+  return line
+    .replace(/^\d[\d./\s]*/, '')
+    .replace(
+      /\b(cups?|tbsp|tsp|tablespoons?|teaspoons?|g|kg|ml|l|oz|lb|lbs|pieces?|handfuls?|pinch|bunch|bunches|cloves?|slices?|stalks?)\b/gi,
+      ''
+    )
+    .replace(/\(.*?\)/g, '')
+    .trim()
+}
+
+async function parseIngredientLines(lines: string[]): Promise<string[]> {
+  const names = lines.map(stripMeasurements).filter((l) => l.length > 1)
+  const resolved = await Promise.all(names.map(resolveIngredientKey))
   return [...new Set(resolved.filter((r): r is string => r !== null))]
 }
 
@@ -73,9 +81,8 @@ export function SubstitutesScreen({
 }: SubstitutesScreenProps) {
   const { preferences } = useFable()
 
-  const [mode, setMode] = useState<Mode>(
-    initialIngredient ? 'from-kitchen' : 'from-kitchen'
-  )
+  const [mode, setMode] = useState<Mode>('from-kitchen')
+  const [inputMode, setInputMode] = useState<InputMode>('full-recipe')
   const [recipeText, setRecipeText] = useState('')
   const [parsedIngredients, setParsedIngredients] = useState<string[]>(() =>
     initialIngredient
@@ -92,24 +99,19 @@ export function SubstitutesScreen({
 
   const kitchenIngredients = preferences.ingredients.map((i) => i.name)
 
-  const getContext = useCallback(
-    (selected: string): string[] => {
-      const scope =
-        mode === 'from-kitchen'
-          ? kitchenIngredients
-          : parsedIngredients
-      return scope.filter((i) => i !== selected)
-    },
-    [mode, kitchenIngredients, parsedIngredients]
-  )
-
   const fetchSubstitutes = useCallback(
-    async (ingredient: string) => {
+    async (ingredient: string, currentParsed: string[]) => {
       setSelectedIngredient(ingredient)
       setIsLoadingResults(true)
       setResults([])
 
-      const context = initialContext ?? getContext(ingredient)
+      // Context priority: explicit initial context (recipe screen) >
+      // recipe-mode parsed ingredients > kitchen ingredients
+      const context =
+        initialContext ??
+        (mode === 'from-recipe'
+          ? currentParsed.filter((i) => i !== ingredient)
+          : kitchenIngredients.filter((i) => i !== ingredient))
 
       try {
         const res = await fetch('/api/substitutes', {
@@ -134,25 +136,42 @@ export function SubstitutesScreen({
         setIsLoadingResults(false)
       }
     },
-    [preferences, initialContext, getContext]
+    [preferences, initialContext, mode, kitchenIngredients]
   )
 
-  // Auto-fetch when opened with a pre-selected ingredient
+  // Auto-fetch when opened with a pre-selected ingredient from the recipe screen
   useEffect(() => {
-    if (initialIngredient) fetchSubstitutes(initialIngredient)
+    if (initialIngredient) {
+      fetchSubstitutes(initialIngredient, parsedIngredients)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleParseRecipe = async () => {
     if (!recipeText.trim()) return
     setIsParsing(true)
+    setSelectedIngredient(null)
+    setResults([])
     try {
-      const ingredients = await parseRecipeText(recipeText)
-      setParsedIngredients(ingredients)
-      setSelectedIngredient(null)
-      setResults([])
+      let ingredientNames: string[]
+      if (inputMode === 'full-recipe') {
+        // Claude extracts ingredient names from mixed recipe text first
+        ingredientNames = await extractViaClause(recipeText)
+      } else {
+        // User already entered just ingredients — split by newline
+        ingredientNames = recipeText.split('\n').filter((l) => l.trim().length > 0)
+      }
+      const resolved = await parseIngredientLines(ingredientNames)
+      setParsedIngredients(resolved)
     } finally {
       setIsParsing(false)
     }
+  }
+
+  const handleClear = () => {
+    setRecipeText('')
+    setParsedIngredients([])
+    setSelectedIngredient(null)
+    setResults([])
   }
 
   const activeIngredients =
@@ -185,21 +204,13 @@ export function SubstitutesScreen({
             </div>
           </div>
 
-          {/* Mode tabs — hidden when opened from the recipe screen */}
+          {/* Kitchen / Recipe mode tabs */}
           {!isOpenedFromRecipe && (
             <div className="flex gap-1 mb-6 p-1 bg-secondary rounded-xl">
               {(
                 [
-                  {
-                    id: 'from-kitchen' as const,
-                    label: 'From my kitchen',
-                    icon: ChefHat,
-                  },
-                  {
-                    id: 'from-recipe' as const,
-                    label: 'From a recipe',
-                    icon: Utensils,
-                  },
+                  { id: 'from-kitchen' as const, label: 'From my kitchen', icon: ChefHat },
+                  { id: 'from-recipe'  as const, label: 'From a recipe',   icon: Utensils },
                 ] as const
               ).map(({ id, label, icon: Icon }) => (
                 <button
@@ -223,35 +234,77 @@ export function SubstitutesScreen({
             </div>
           )}
 
-          {/* Mode B — paste a recipe */}
+          {/* From a recipe — input panel */}
           {mode === 'from-recipe' && !isOpenedFromRecipe && (
             <div className="mb-6 space-y-3">
+
+              {/* Input mode toggle */}
+              <div className="flex gap-1 p-1 bg-secondary rounded-lg">
+                {(
+                  [
+                    { id: 'full-recipe'       as const, label: 'Paste full recipe'     },
+                    { id: 'ingredients-only'  as const, label: 'Ingredients only'      },
+                  ] as const
+                ).map(({ id, label }) => (
+                  <button
+                    key={id}
+                    onClick={() => setInputMode(id)}
+                    className={cn(
+                      'flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors',
+                      inputMode === id
+                        ? 'bg-card text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Textarea */}
               <textarea
                 value={recipeText}
                 onChange={(e) => setRecipeText(e.target.value)}
                 placeholder={
-                  'Paste a recipe or list ingredients, one per line:\n\n2 cups flour\n1 tbsp butter\n3 eggs\nlemon juice'
+                  inputMode === 'full-recipe'
+                    ? 'Paste a full recipe here — title, ingredients, method and all. We\'ll extract just the ingredients.'
+                    : 'One ingredient per line, e.g:\n1 pound ground beef\n2 cups salsa\n3 cloves garlic'
                 }
-                className="w-full h-36 text-sm bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className="w-full h-36 text-sm bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
-              <Button
-                onClick={handleParseRecipe}
-                disabled={!recipeText.trim() || isParsing}
-                className="w-full rounded-full gap-2"
-                variant="outline"
-              >
-                {isParsing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Parsing…
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4" />
-                    Parse Ingredients
-                  </>
+
+              {/* Action row */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleParseRecipe}
+                  disabled={!recipeText.trim() || isParsing}
+                  className="flex-1 rounded-full gap-2"
+                  variant="outline"
+                >
+                  {isParsing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {inputMode === 'full-recipe' ? 'Extracting…' : 'Parsing…'}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-4 h-4" />
+                      Parse Ingredients
+                    </>
+                  )}
+                </Button>
+                {(recipeText.trim() || parsedIngredients.length > 0) && (
+                  <Button
+                    onClick={handleClear}
+                    variant="ghost"
+                    className="rounded-full gap-1.5 text-muted-foreground hover:text-foreground"
+                    disabled={isParsing}
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </Button>
                 )}
-              </Button>
+              </div>
             </div>
           )}
 
@@ -274,7 +327,7 @@ export function SubstitutesScreen({
                         initial={{ opacity: 0, scale: 0.85 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.85 }}
-                        onClick={() => fetchSubstitutes(ing)}
+                        onClick={() => fetchSubstitutes(ing, parsedIngredients)}
                         className={cn(
                           'flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-medium transition-colors',
                           isSelected
@@ -316,25 +369,7 @@ export function SubstitutesScreen({
               </motion.div>
             )}
 
-          {/* Empty state — recipe mode, nothing parsed yet */}
-          {mode === 'from-recipe' &&
-            !isOpenedFromRecipe &&
-            parsedIngredients.length === 0 &&
-            !isParsing &&
-            !recipeText.trim() && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center py-8"
-              >
-                <p className="text-sm text-muted-foreground">
-                  Paste a recipe above and we&apos;ll identify the ingredients
-                  for you.
-                </p>
-              </motion.div>
-            )}
-
-          {/* Loading */}
+          {/* Loading results */}
           {isLoadingResults && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -390,17 +425,13 @@ export function SubstitutesScreen({
 
                   <div className="flex gap-6 mt-3 pt-3 border-t border-border/50">
                     <div>
-                      <p className="text-xs text-muted-foreground">
-                        Similarity
-                      </p>
+                      <p className="text-xs text-muted-foreground">Similarity</p>
                       <p className="text-sm font-medium text-foreground">
                         {sub.similarityToOriginal}%
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">
-                        Context fit
-                      </p>
+                      <p className="text-xs text-muted-foreground">Context fit</p>
                       <p className="text-sm font-medium text-foreground">
                         {sub.contextFit}%
                       </p>
@@ -412,20 +443,19 @@ export function SubstitutesScreen({
           )}
 
           {/* No results */}
-          {!isLoadingResults &&
-            selectedIngredient &&
-            results.length === 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center py-12"
-              >
-                <p className="text-muted-foreground text-sm">
-                  No allergen-safe substitutes found for{' '}
-                  {epicureDisplay(selectedIngredient)}.
-                </p>
-              </motion.div>
-            )}
+          {!isLoadingResults && selectedIngredient && results.length === 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-12"
+            >
+              <p className="text-muted-foreground text-sm">
+                No allergen-safe substitutes found for{' '}
+                {epicureDisplay(selectedIngredient)}.
+              </p>
+            </motion.div>
+          )}
+
         </div>
       </div>
     </div>
