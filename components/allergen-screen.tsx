@@ -101,8 +101,8 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               <button
                 onClick={() => setSafeFoodsMode(!preferences.safeFoodsMode)}
                 disabled={preferences.safeIngredients.length === 0}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40"
-                style={{ backgroundColor: safeFoodsActive ? '#22c55e' : '#9ca3af' }}
+                className="relative inline-flex h-6 w-11 items-center rounded-full bg-secondary transition-colors disabled:opacity-40"
+                style={{ backgroundColor: safeFoodsActive ? '#22c55e' : undefined }}
                 aria-label="Toggle Safe Foods Mode"
               >
                 <span
@@ -144,8 +144,8 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               </div>
               <button
                 onClick={() => setShowMacros(!preferences.showMacros)}
-                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                style={{ backgroundColor: preferences.showMacros ? '#22c55e' : '#9ca3af' }}
+                className="relative inline-flex h-6 w-11 items-center rounded-full bg-secondary transition-colors"
+                style={{ backgroundColor: preferences.showMacros ? '#22c55e' : undefined }}
                 aria-label="Toggle nutritional information"
               >
                 <span className={cn(
