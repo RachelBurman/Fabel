@@ -21,11 +21,10 @@ const BEVERAGE_KEYS = new Set([
   // Milks
   "milk", "oat_milk", "almond_milk", "soy_milk", "rice_milk",
   "coconut_milk", "plant_based_milk", "goat_milk", "buttermilk",
-  // Wines
+  // Wines (drinking wines only — cooking wines excluded)
   "wine", "red_wine", "white_wine", "rose_wine", "sparkling_wine",
   "champagne", "plum_wine", "ginger_wine", "port_wine", "madeira_wine",
-  "marsala_wine", "moscatel_wine", "korean_rice_wine", "osmanthus_wine",
-  "rice_wine", "shaoxing_wine", "mei_kuei_lu_wine",
+  "moscatel_wine", "osmanthus_wine",
   // Beers, ciders & sodas
   "beer", "root_beer", "ginger_beer", "ginger_ale", "hard_cider", "apple_cider",
   // Spirits & liqueurs

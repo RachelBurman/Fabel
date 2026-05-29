@@ -66,6 +66,17 @@ function formatDrinkName(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
+function getDrinkEmoji(key: string): string {
+  if (key.includes('tea'))                                               return '🍵'
+  if (key === 'coffee')                                                  return '☕'
+  if (key.includes('milk') || key === 'buttermilk')                     return '🥛'
+  if (key.includes('beer') || key.includes('cider') || key === 'ginger_ale') return '🍺'
+  if (key.includes('wine') || key === 'champagne' || key === 'sake')    return '🍷'
+  if (key.includes('juice'))                                             return '🧃'
+  if (['whiskey', 'rum', 'gin', 'vodka'].includes(key) || key.includes('liqueur')) return '🍸'
+  return '🥤'
+}
+
 export function GeneratedRecipeScreen({
   recipe,
   loadingStep,
@@ -390,7 +401,7 @@ export function GeneratedRecipeScreen({
                         key={drink}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium"
                       >
-                        🍷 {formatDrinkName(drink)}
+                        {getDrinkEmoji(drink)} {formatDrinkName(drink)}
                       </span>
                     ))}
                   </div>
