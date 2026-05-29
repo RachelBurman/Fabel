@@ -27,6 +27,7 @@ interface GeneratedRecipeScreenProps {
   onFeedback?: (liked: boolean, reasons: string[], notes: string) => void
   showMacros?: boolean
   onFindSubstitute?: (ingredient: string, context: string[]) => void
+  lactoseIntolerant?: boolean
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -91,6 +92,7 @@ export function GeneratedRecipeScreen({
   onFeedback,
   showMacros = false,
   onFindSubstitute,
+  lactoseIntolerant = false,
 }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
@@ -378,6 +380,16 @@ export function GeneratedRecipeScreen({
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Lactaid warning */}
+              {lactoseIntolerant && recipe.ingredients.some(ing =>
+                /\b(milk|cream|butter|cheese|yogurt|ghee|dairy|lactose|whey|casein)\b/i.test(ing.name)
+              ) && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400">
+                  <span className="text-base shrink-0">⚠️</span>
+                  <p className="text-sm font-medium">May contain lactose — consider taking Lactaid before eating.</p>
+                </div>
+              )}
 
               {/* Ingredients */}
               <section>

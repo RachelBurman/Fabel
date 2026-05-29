@@ -125,7 +125,7 @@ interface IngredientsScreenProps {
 }
 
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
-  const { preferences, addIngredient, removeIngredient } = useFable()
+  const { preferences, addIngredient, removeIngredient, effectiveAllergens, effectiveCustomAllergens } = useFable()
   const [inputValue, setInputValue] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchResults, setSearchResults] = useState<string[]>([])
@@ -477,7 +477,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
               : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
 
             const isFlagged = (name: string) =>
-              hasUserAllergen(name, preferences.allergens, preferences.customAllergens)
+              hasUserAllergen(name, effectiveAllergens, effectiveCustomAllergens)
 
             const quickAddList = safeFoodsActive
               ? preferences.safeIngredients.filter(name => !isFlagged(name))

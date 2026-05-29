@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ALLERGENS } from '@/lib/types'
+import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
 import { Check, ArrowLeft, ShieldCheck, BarChart2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant } = useFable()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
   const totalCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
@@ -39,6 +39,75 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               <p className="text-sm text-muted-foreground">
                 {totalCount === 0 ? 'No restrictions selected' : `${totalCount} restriction${totalCount > 1 ? 's' : ''} active`}
               </p>
+            </div>
+          </div>
+
+          {/* Diet & Lifestyle presets */}
+          <h2 className="text-sm font-medium text-muted-foreground mb-3">Diet &amp; Lifestyle</h2>
+          <div className="space-y-2 mb-6">
+            {Object.values(DIET_PRESETS).map(preset => {
+              const isActive = preferences.activePresets.includes(preset.id)
+              return (
+                <div
+                  key={preset.id}
+                  className={cn(
+                    'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
+                    isActive ? 'bg-primary/5 border-primary/30' : 'bg-card border-border'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{preset.emoji}</span>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{preset.label}</p>
+                      <p className="text-xs text-muted-foreground">{preset.description}</p>
+                    </div>
+                  </div>
+                  <button
+                    role="switch"
+                    aria-checked={isActive}
+                    onClick={() => togglePreset(preset.id)}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                      isActive ? 'bg-primary' : 'bg-secondary'
+                    )}
+                  >
+                    <span className={cn(
+                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                      isActive ? 'translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+              )
+            })}
+
+            {/* Lactose Intolerance — separate from diet presets */}
+            <div
+              className={cn(
+                'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
+                preferences.lactoseIntolerant ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🥛</span>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
+                  <p className="text-xs text-muted-foreground">Shows a Lactaid reminder on dairy-containing recipes</p>
+                </div>
+              </div>
+              <button
+                role="switch"
+                aria-checked={preferences.lactoseIntolerant}
+                onClick={() => setLactoseIntolerant(!preferences.lactoseIntolerant)}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                  preferences.lactoseIntolerant ? 'bg-amber-500' : 'bg-secondary'
+                )}
+              >
+                <span className={cn(
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                  preferences.lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
+                )} />
+              </button>
             </div>
           </div>
 

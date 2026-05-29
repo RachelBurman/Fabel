@@ -77,6 +77,74 @@ export interface UserPreferences {
   safeIngredients: string[] // ingredients the user can definitely eat (Safe Foods Mode)
   safeFoodsMode: boolean    // restrict generation to safeIngredients only
   showMacros: boolean       // opt-in nutritional display; off by default
+  activePresets: string[]   // active diet preset IDs
+  lactoseIntolerant: boolean
+}
+
+export interface DietPreset {
+  id: string
+  label: string
+  emoji: string
+  description: string
+  ingredients: string[]     // Epicure keys to exclude
+}
+
+export const DIET_PRESETS: Record<string, DietPreset> = {
+  vegan: {
+    id: 'vegan',
+    label: 'Vegan',
+    emoji: '🌱',
+    description: 'Excludes all animal products',
+    ingredients: [
+      'chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'mince',
+      'bacon', 'ham', 'sausage', 'salami', 'chorizo',
+      'salmon', 'tuna', 'fish', 'cod', 'prawn', 'shrimp', 'crab',
+      'lobster', 'mussel', 'oyster', 'scallop', 'anchovy', 'sardine', 'mackerel',
+      'milk', 'cream', 'butter', 'cheese', 'yogurt', 'ghee',
+      'egg', 'honey', 'lard', 'gelatin',
+    ],
+  },
+  vegetarian: {
+    id: 'vegetarian',
+    label: 'Vegetarian',
+    emoji: '🥗',
+    description: 'Excludes meat and fish',
+    ingredients: [
+      'chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'mince',
+      'bacon', 'ham', 'sausage', 'salami', 'chorizo',
+      'salmon', 'tuna', 'fish', 'cod', 'prawn', 'shrimp', 'crab',
+      'lobster', 'mussel', 'oyster', 'scallop', 'anchovy', 'sardine', 'mackerel',
+      'lard', 'gelatin',
+    ],
+  },
+  keto: {
+    id: 'keto',
+    label: 'Keto',
+    emoji: '🥑',
+    description: 'Excludes high-carb ingredients',
+    ingredients: [
+      'pasta', 'rice', 'flour', 'bread', 'oats', 'quinoa', 'couscous',
+      'potato', 'sweet_potato', 'corn',
+      'lentil', 'chickpea', 'kidney_bean', 'black_bean', 'pea',
+      'sugar', 'honey', 'maple_syrup',
+      'banana', 'apple', 'grape', 'mango', 'orange',
+    ],
+  },
+  low_fodmap: {
+    id: 'low_fodmap',
+    label: 'Low-FODMAP',
+    emoji: '🟢',
+    description: 'Excludes common FODMAP triggers',
+    ingredients: [
+      'garlic', 'onion', 'apple', 'pear', 'watermelon', 'cherry',
+      'peach', 'mango', 'apricot',
+      'honey', 'agave_nectar',
+      'milk', 'cream', 'yogurt',
+      'wheat', 'rye', 'barley',
+      'cashew', 'pistachio',
+      'lentil', 'chickpea', 'kidney_bean', 'black_bean',
+    ],
+  },
 }
 
 export interface PairingSuggestion {

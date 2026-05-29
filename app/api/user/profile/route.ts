@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   if (!result.Item) return NextResponse.json({});
 
-  const { allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros } =
+  const { allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant } =
     result.Item;
 
   return NextResponse.json({
@@ -46,6 +46,8 @@ export async function GET(req: NextRequest) {
     safeIngredients,
     safeFoodsMode,
     showMacros,
+    activePresets,
+    lactoseIntolerant,
   });
 }
 
@@ -58,6 +60,8 @@ export async function PUT(req: NextRequest) {
     safeIngredients?: string[];
     safeFoodsMode?: boolean;
     showMacros?: boolean;
+    activePresets?: string[];
+    lactoseIntolerant?: boolean;
   };
   try {
     body = await req.json();
@@ -65,7 +69,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros } =
+  const { userId, allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant } =
     body;
   if (!userId)
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
@@ -81,6 +85,8 @@ export async function PUT(req: NextRequest) {
         safeIngredients: safeIngredients ?? [],
         safeFoodsMode: safeFoodsMode ?? false,
         showMacros: showMacros ?? false,
+        activePresets: activePresets ?? [],
+        lactoseIntolerant: lactoseIntolerant ?? false,
         updatedAt: new Date().toISOString(),
       },
     })

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, DIET_PRESETS } from '@/lib/types'
 
 interface FableContextType {
   preferences: UserPreferences
@@ -24,6 +24,10 @@ interface FableContextType {
   removeSafeIngredient: (ingredient: string) => void
   setSafeFoodsMode: (active: boolean) => void
   setShowMacros: (active: boolean) => void
+  togglePreset: (presetId: string) => void
+  setLactoseIntolerant: (active: boolean) => void
+  effectiveAllergens: string[]
+  effectiveCustomAllergens: string[]
   savedRecipes: Recipe[]
   saveRecipe: (recipe: Recipe) => void
   unsaveRecipe: (recipeId: string) => void
@@ -95,6 +99,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     safeIngredients: [],
     safeFoodsMode: false,
     showMacros: false,
+    activePresets: [],
+    lactoseIntolerant: false,
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -136,6 +142,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             safeIngredients?: string[]
             safeFoodsMode?: boolean
             showMacros?: boolean
+            activePresets?: string[]
+            lactoseIntolerant?: boolean
           } = await profileRes.json()
           // Only restore state if the profile has actual data
           if (profile.allergens !== undefined || profile.ingredients !== undefined) {
@@ -147,6 +155,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
               safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
               safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
               showMacros: profile.showMacros ?? prev.showMacros,
+              activePresets: profile.activePresets ?? prev.activePresets,
+              lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
             }))
             setHasCompletedOnboarding(true)
           }
@@ -200,6 +210,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             safeIngredients: preferences.safeIngredients,
             safeFoodsMode: preferences.safeFoodsMode,
             showMacros: preferences.showMacros,
+            activePresets: preferences.activePresets,
+            lactoseIntolerant: preferences.lactoseIntolerant,
           }),
         })
       } catch (err) {
@@ -209,7 +221,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -301,6 +313,19 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setShowMacros = useCallback((active: boolean) => {
     setPreferences(prev => ({ ...prev, showMacros: active }))
+  }, [])
+
+  const togglePreset = useCallback((presetId: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      activePresets: prev.activePresets.includes(presetId)
+        ? prev.activePresets.filter(id => id !== presetId)
+        : [...prev.activePresets, presetId],
+    }))
+  }, [])
+
+  const setLactoseIntolerant = useCallback((active: boolean) => {
+    setPreferences(prev => ({ ...prev, lactoseIntolerant: active }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -409,6 +434,19 @@ export function FableProvider({ children }: { children: ReactNode }) {
     setRecipeHistory(prev => [entry, ...prev])
   }, [])
 
+  // ── Computed effective restriction sets ─────────────────────────────────────
+  // Merges user-explicit + preset-derived exclusions so API calls and UI
+  // filtering use a single consistent set without mutating stored preferences.
+
+  const effectiveAllergens: string[] = preferences.lactoseIntolerant && !preferences.allergens.includes('milk')
+    ? [...preferences.allergens, 'milk']
+    : preferences.allergens
+
+  const effectiveCustomAllergens: string[] = (() => {
+    const presetIngredients = preferences.activePresets.flatMap(id => DIET_PRESETS[id]?.ingredients ?? [])
+    return [...new Set([...preferences.customAllergens, ...presetIngredients])]
+  })()
+
   // ── Onboarding ───────────────────────────────────────────────────────────────
 
   const completeOnboarding = useCallback(() => {
@@ -429,6 +467,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
         removeSafeIngredient,
         setSafeFoodsMode,
         setShowMacros,
+        togglePreset,
+        setLactoseIntolerant,
+        effectiveAllergens,
+        effectiveCustomAllergens,
         savedRecipes,
         saveRecipe,
         unsaveRecipe,

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -28,7 +28,7 @@ type Screen =
   | 'substitutes'
 
 function FableAppContent() {
-  const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe } = useFable()
+  const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
 
   // All hooks must be declared before any early return (Rules of Hooks)
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
@@ -78,7 +78,7 @@ function FableAppContent() {
 
   const handleOnboardingComplete = () => setCurrentScreen('ingredients')
 
-  // ── Show Pairings ────────────────────────────────────────────────────────────
+  // â”€â”€ Show Pairings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleShowPairings = useCallback(async (filters: RecipeFilters) => {
     setRecipeFilters(filters)
     setIsLoadingPairings(true)
@@ -94,8 +94,8 @@ function FableAppContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ingredients: preferences.ingredients,
-          allergens: preferences.allergens,
-          customAllergens: preferences.customAllergens,
+          allergens: effectiveAllergens,
+          customAllergens: effectiveCustomAllergens,
           mode: 'avoid',
           mealType: filters.mealType,
           cookTime: filters.cookTime,
@@ -114,7 +114,7 @@ function FableAppContent() {
     }
   }, [preferences, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Generate Recipe from scratch ─────────────────────────────────────────────
+  // â”€â”€ Generate Recipe from scratch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGenerateRecipe = useCallback(async (filters: RecipeFilters) => {
     setRecipeFilters(filters)
     setGeneratedRecipe(null)
@@ -129,7 +129,7 @@ function FableAppContent() {
       : {}
 
     try {
-      // When kitchen-only, skip Epicure pairings — Claude will work within the listed ingredients
+      // When kitchen-only, skip Epicure pairings â€” Claude will work within the listed ingredients
       let suggestionNames: string[] = []
       if (!filters.kitchenOnly) {
         const pairingsRes = await fetch('/api/recipes', {
@@ -137,8 +137,8 @@ function FableAppContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ingredients: preferences.ingredients,
-            allergens: preferences.allergens,
-            customAllergens: preferences.customAllergens,
+            allergens: effectiveAllergens,
+            customAllergens: effectiveCustomAllergens,
             mode: 'avoid',
             mealType: filters.mealType,
             cookTime: filters.cookTime,
@@ -157,8 +157,8 @@ function FableAppContent() {
         body: JSON.stringify({
           ingredients: preferences.ingredients,
           suggestions: suggestionNames,
-          allergens: preferences.allergens,
-          customAllergens: preferences.customAllergens,
+          allergens: effectiveAllergens,
+          customAllergens: effectiveCustomAllergens,
           mealType: filters.mealType,
           cookTime: filters.cookTime,
           kitchenOnly: filters.kitchenOnly,
@@ -182,7 +182,7 @@ function FableAppContent() {
     }
   }, [preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Generate Recipe from existing pairings ────────────────────────────────────
+  // â”€â”€ Generate Recipe from existing pairings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGenerateFromPairings = useCallback(async () => {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
@@ -201,8 +201,8 @@ function FableAppContent() {
         body: JSON.stringify({
           ingredients: preferences.ingredients,
           suggestions: pairings.map(s => s.ingredient),
-          allergens: preferences.allergens,
-          customAllergens: preferences.customAllergens,
+          allergens: effectiveAllergens,
+          customAllergens: effectiveCustomAllergens,
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
           kitchenOnly: recipeFilters.kitchenOnly,
@@ -226,7 +226,7 @@ function FableAppContent() {
     }
   }, [pairings, preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Save generated recipe ────────────────────────────────────────────────────
+  // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {
     if (!generatedRecipe) return
     saveRecipe({
@@ -244,7 +244,7 @@ function FableAppContent() {
     setGeneratedRecipeSaved(true)
   }, [generatedRecipe, saveRecipe])
 
-  // ── Generate recipe from an adapted ingredient list (substitutes screen) ─────
+  // â”€â”€ Generate recipe from an adapted ingredient list (substitutes screen) â”€â”€â”€â”€â”€
   const handleAdaptAndCook = useCallback(async (adaptedIngredientNames: string[], recipeContext?: string) => {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
@@ -266,8 +266,8 @@ function FableAppContent() {
         body: JSON.stringify({
           ingredients: items,
           suggestions: [],
-          allergens: preferences.allergens,
-          customAllergens: preferences.customAllergens,
+          allergens: effectiveAllergens,
+          customAllergens: effectiveCustomAllergens,
           mealType: 'main',
           cookTime: 'medium',
           kitchenOnly: true,
@@ -289,7 +289,7 @@ function FableAppContent() {
     }
   }, [preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Open substitutes (from ingredients screen or recipe screen) ──────────────
+  // â”€â”€ Open substitutes (from ingredients screen or recipe screen) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleOpenSubstitutes = useCallback(() => {
     setSubstituteIngredient(undefined)
     setSubstituteContext(undefined)
@@ -302,7 +302,7 @@ function FableAppContent() {
     navigate('substitutes')
   }, [navigate])
 
-  // ── Fetch macros on demand when toggle is turned on after generation ─────────
+  // â”€â”€ Fetch macros on demand when toggle is turned on after generation â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (!preferences.showMacros || !generatedRecipe || generatedRecipe.macros) return
     let cancelled = false
@@ -324,7 +324,7 @@ function FableAppContent() {
     return () => { cancelled = true }
   }, [preferences.showMacros, generatedRecipeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── View a recipe from history ────────────────────────────────────────────────
+  // â”€â”€ View a recipe from history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleViewHistoryRecipe = useCallback((recipe: GeneratedRecipe) => {
     setGeneratedRecipe(recipe)
     setGeneratedRecipeSaved(false)
@@ -333,7 +333,7 @@ function FableAppContent() {
     navigate('generated')
   }, [navigate])
 
-  // ── View a saved recipe ────────────────────────────────────────────────────────
+  // â”€â”€ View a saved recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleViewSavedRecipe = useCallback((recipe: import('@/lib/types').Recipe) => {
     if (!recipe.fullRecipe) return
     setGeneratedRecipe(recipe.fullRecipe)
@@ -343,7 +343,7 @@ function FableAppContent() {
     navigate('generated')
   }, [navigate])
 
-  // ── Recipe feedback ───────────────────────────────────────────────────────────
+  // â”€â”€ Recipe feedback â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleFeedback = useCallback((liked: boolean, reasons: string[], notes: string) => {
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     if (!uid || !generatedRecipeId || !generatedRecipe) return
@@ -501,10 +501,11 @@ function FableAppContent() {
                 isSaved={generatedRecipeSaved}
                 attempted={recipeAttempted}
                 onGoToIngredients={() => navigate('ingredients')}
-                allergens={preferences.allergens}
+                allergens={effectiveAllergens}
                 onFeedback={handleFeedback}
                 showMacros={preferences.showMacros}
                 onFindSubstitute={handleFindSubstitute}
+                lactoseIntolerant={preferences.lactoseIntolerant}
               />
             </motion.div>
           )}
