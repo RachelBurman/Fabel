@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { ALLERGENS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft, ShieldCheck } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
@@ -14,7 +14,7 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros } = useFable()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
   const totalCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
@@ -130,6 +130,33 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               <ShieldCheck className="w-4 h-4" />
               {preferences.safeIngredients.length === 0 ? 'Set up safe foods list' : 'Manage safe foods list'}
             </Button>
+          </div>
+
+          {/* Nutritional information toggle */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart2 className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Show nutritional information</p>
+                  <p className="text-xs text-muted-foreground">Calories, protein, carbs and fat per serving</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMacros(!preferences.showMacros)}
+                className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+                style={{ backgroundColor: preferences.showMacros ? 'hsl(var(--primary))' : undefined }}
+                aria-label="Toggle nutritional information"
+              >
+                <span className={cn(
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  preferences.showMacros ? 'translate-x-6' : 'translate-x-1'
+                )} />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2.5">
+              Calorie and macro information is hidden by default out of respect for users in eating disorder recovery.
+            </p>
           </div>
 
           {/* Done button */}

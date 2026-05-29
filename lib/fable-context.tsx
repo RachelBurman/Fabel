@@ -23,6 +23,7 @@ interface FableContextType {
   addSafeIngredient: (ingredient: string) => void
   removeSafeIngredient: (ingredient: string) => void
   setSafeFoodsMode: (active: boolean) => void
+  setShowMacros: (active: boolean) => void
   savedRecipes: Recipe[]
   saveRecipe: (recipe: Recipe) => void
   unsaveRecipe: (recipeId: string) => void
@@ -93,6 +94,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     savedRecipes: [],
     safeIngredients: [],
     safeFoodsMode: false,
+    showMacros: false,
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -133,6 +135,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             ingredients?: (string | IngredientItem)[]
             safeIngredients?: string[]
             safeFoodsMode?: boolean
+            showMacros?: boolean
           } = await profileRes.json()
           // Only restore state if the profile has actual data
           if (profile.allergens !== undefined || profile.ingredients !== undefined) {
@@ -143,6 +146,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
               ingredients: migrateIngredients(profile.ingredients) ?? prev.ingredients,
               safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
               safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
+              showMacros: profile.showMacros ?? prev.showMacros,
             }))
             setHasCompletedOnboarding(true)
           }
@@ -195,6 +199,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             ingredients: preferences.ingredients,
             safeIngredients: preferences.safeIngredients,
             safeFoodsMode: preferences.safeFoodsMode,
+            showMacros: preferences.showMacros,
           }),
         })
       } catch (err) {
@@ -204,7 +209,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -292,6 +297,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setSafeFoodsMode = useCallback((active: boolean) => {
     setPreferences(prev => ({ ...prev, safeFoodsMode: active }))
+  }, [])
+
+  const setShowMacros = useCallback((active: boolean) => {
+    setPreferences(prev => ({ ...prev, showMacros: active }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -419,6 +428,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         addSafeIngredient,
         removeSafeIngredient,
         setSafeFoodsMode,
+        setShowMacros,
         savedRecipes,
         saveRecipe,
         unsaveRecipe,

@@ -188,6 +188,7 @@ export async function POST(req: NextRequest) {
     kitchenOnly?: unknown;
     dislikedPatterns?: unknown;
     dislikedIngredients?: unknown;
+    showMacros?: unknown;
   };
   try {
     body = await req.json();
@@ -278,6 +279,8 @@ export async function POST(req: NextRequest) {
       )
     : [];
 
+  const showMacros = body.showMacros === true;
+
   const dislikedPatterns = Array.isArray(body.dislikedPatterns)
     ? (body.dislikedPatterns as unknown[]).filter((p): p is string => typeof p === "string")
     : [];
@@ -361,14 +364,18 @@ export async function POST(req: NextRequest) {
         `Create a ${mealType} that takes ${cookTimeLabel}. ` +
         `Focus on technique, texture, and preparation to make the most of simple ingredients.\n\n` +
         `REMINDER: Every ingredient name in your JSON response MUST appear in this approved list (or be "liquid of choice" / "seasoning of choice" per the rules above): ${humanSafe}. ` +
-        `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`
+        `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
+        (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
+        ` }`
       : dislikedPrefix + `${kitchenConstraint}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
         (kitchenOnly ? `` : `Also consider these suggested pairings: ${suggestions.join(", ")}. `) +
         `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
-        `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true }`;
+        `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
+        (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
+        ` }`;
 
   try {
     const message = await client.messages.create({

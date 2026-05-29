@@ -157,6 +157,7 @@ function FableAppContent() {
           mealType: filters.mealType,
           cookTime: filters.cookTime,
           kitchenOnly: filters.kitchenOnly,
+          showMacros: preferences.showMacros,
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...sfPayload,
@@ -200,6 +201,7 @@ function FableAppContent() {
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
           kitchenOnly: recipeFilters.kitchenOnly,
+          showMacros: preferences.showMacros,
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...sfPayload,
@@ -412,6 +414,7 @@ function FableAppContent() {
                 onGoToIngredients={() => navigate('ingredients')}
                 allergens={preferences.allergens}
                 onFeedback={handleFeedback}
+                showMacros={preferences.showMacros}
               />
             </motion.div>
           )}

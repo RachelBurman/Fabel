@@ -31,6 +31,13 @@ export interface GeneratedRecipeIngredient {
   unit: string
 }
 
+export interface RecipeMacros {
+  calories: number
+  protein: number  // grams per serving
+  carbs: number    // grams per serving
+  fat: number      // grams per serving
+}
+
 export interface GeneratedRecipe {
   title: string
   description: string
@@ -39,6 +46,7 @@ export interface GeneratedRecipe {
   cookTime: string
   servings: number
   allergenFree: boolean
+  macros?: RecipeMacros
 }
 
 export type IngredientArea = 'fridge' | 'freezer' | 'cupboard' | 'pantry'
@@ -68,6 +76,7 @@ export interface UserPreferences {
   savedRecipes: string[]
   safeIngredients: string[] // ingredients the user can definitely eat (Safe Foods Mode)
   safeFoodsMode: boolean    // restrict generation to safeIngredients only
+  showMacros: boolean       // opt-in nutritional display; off by default
 }
 
 export interface PairingSuggestion {

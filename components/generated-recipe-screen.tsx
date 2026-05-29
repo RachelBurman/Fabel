@@ -25,6 +25,7 @@ interface GeneratedRecipeScreenProps {
   onGoToIngredients?: () => void
   allergens?: string[]
   onFeedback?: (liked: boolean, reasons: string[], notes: string) => void
+  showMacros?: boolean
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -87,6 +88,7 @@ export function GeneratedRecipeScreen({
   onGoToIngredients,
   allergens = [],
   onFeedback,
+  showMacros = false,
 }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
@@ -275,6 +277,23 @@ export function GeneratedRecipeScreen({
                   </div>
                 )}
               </div>
+
+              {/* Macros row */}
+              {showMacros && recipe.macros && (
+                <div className="grid grid-cols-4 gap-3 py-4 border border-border rounded-2xl px-4 text-center">
+                  {[
+                    { label: 'Calories', value: String(recipe.macros.calories), unit: 'kcal' },
+                    { label: 'Protein',  value: String(recipe.macros.protein),  unit: 'g' },
+                    { label: 'Carbs',    value: String(recipe.macros.carbs),    unit: 'g' },
+                    { label: 'Fat',      value: String(recipe.macros.fat),      unit: 'g' },
+                  ].map(({ label, value, unit }) => (
+                    <div key={label}>
+                      <p className="text-base font-semibold text-foreground">{value}<span className="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span></p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Feedback row */}
               <div className="flex items-center justify-between -mt-4">

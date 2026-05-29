@@ -108,6 +108,13 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - Mode indicator badge in the app header; toggle in allergen settings
 - Safe ingredients and mode preference persisted in DynamoDB
 
+### Nutritional Information (Macros)
+- "Show nutritional information" toggle in Allergen Settings — **off by default**
+- Note displayed beneath the toggle: *"Calorie and macro information is hidden by default out of respect for users in eating disorder recovery."*
+- When on, Claude estimates calories, protein, carbs, and fat per serving as part of recipe generation
+- Displayed as a four-cell row (Calories · Protein · Carbs · Fat) below the cook time/servings line
+- Toggle preference persisted in DynamoDB on the user profile
+
 ### Collections
 - Saved recipes organised into named collections, persisted in DynamoDB
 - "All Saved" and "Collections" tabs on the saved screen
@@ -161,7 +168,7 @@ In-memory (loaded at server startup)
 
 ## In Progress
 
-- [ ] **Macros toggle** — opt-in nutritional information panel (off by default; eating disorder recovery users in mind)
+Nothing currently in progress.
 
 ---
 
