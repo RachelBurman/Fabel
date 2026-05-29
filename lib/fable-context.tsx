@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection } from '@/lib/types'
 
 interface FableContextType {
   preferences: UserPreferences
@@ -32,6 +32,11 @@ interface FableContextType {
   hasCompletedOnboarding: boolean
   completeOnboarding: () => void
   isLoadingProfile: boolean
+  collections: Collection[]
+  createCollection: (name: string) => void
+  deleteCollection: (collectionId: string) => void
+  addToCollection: (collectionId: string, recipeId: string) => void
+  removeFromCollection: (collectionId: string, recipeId: string) => void
 }
 
 const FableContext = createContext<FableContextType | undefined>(undefined)
@@ -50,6 +55,17 @@ function migrateIngredients(raw: (string | IngredientItem)[] | undefined): Ingre
     }
     return item
   })
+}
+
+// Map a DynamoDB item back to the Collection shape
+function itemToCollection(item: Record<string, unknown>): Collection {
+  return {
+    id: String(item.collectionId ?? ''),
+    name: String(item.name ?? ''),
+    recipeIds: Array.isArray(item.recipeIds) ? (item.recipeIds as string[]) : [],
+    createdAt: String(item.createdAt ?? ''),
+    updatedAt: String(item.updatedAt ?? ''),
+  }
 }
 
 // Map a DynamoDB item back to the Recipe shape
@@ -82,8 +98,11 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [collections, setCollections] = useState<Collection[]>([])
 
   const userIdRef = useRef<string>('')
+  const collectionsRef = useRef<Collection[]>([])
+  useEffect(() => { collectionsRef.current = collections }, [collections])
 
   // ── Initialise: load userId + fetch profile + saved recipes ─────────────────
   useEffect(() => {
@@ -101,9 +120,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
       userIdRef.current = uid
 
       try {
-        const [profileRes, savedRes] = await Promise.all([
+        const [profileRes, savedRes, collectionsRes] = await Promise.all([
           fetch(`/api/user/profile?userId=${uid}`),
           fetch(`/api/user/saved-recipes?userId=${uid}`),
+          fetch(`/api/user/collections?userId=${uid}`),
         ])
 
         if (profileRes.ok) {
@@ -137,6 +157,13 @@ export function FableProvider({ children }: { children: ReactNode }) {
               ...prev,
               savedRecipes: recipes.map(r => r.id),
             }))
+          }
+        }
+
+        if (collectionsRes.ok) {
+          const data: { collections: Record<string, unknown>[] } = await collectionsRes.json()
+          if (data.collections?.length) {
+            setCollections(data.collections.map(itemToCollection))
           }
         }
       } catch (err) {
@@ -309,6 +336,64 @@ export function FableProvider({ children }: { children: ReactNode }) {
     return savedRecipes.some(r => r.id === recipeId)
   }, [savedRecipes])
 
+  // ── Collections ───────────────────────────────────────────────────────────────
+
+  const createCollection = useCallback((name: string) => {
+    const uid = userIdRef.current
+    if (!uid || !name.trim()) return
+    const collectionId = crypto.randomUUID()
+    const now = new Date().toISOString()
+    setCollections(prev => [...prev, { id: collectionId, name: name.trim(), recipeIds: [], createdAt: now, updatedAt: now }])
+    fetch('/api/user/collections', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: uid, collectionId, name: name.trim() }),
+    }).catch(err => console.error('Failed to create collection:', err))
+  }, [])
+
+  const deleteCollection = useCallback((collectionId: string) => {
+    const uid = userIdRef.current
+    if (!uid) return
+    setCollections(prev => prev.filter(c => c.id !== collectionId))
+    fetch(`/api/user/collections/${encodeURIComponent(collectionId)}?userId=${uid}`, {
+      method: 'DELETE',
+    }).catch(err => console.error('Failed to delete collection:', err))
+  }, [])
+
+  const addToCollection = useCallback((collectionId: string, recipeId: string) => {
+    const uid = userIdRef.current
+    if (!uid) return
+    const current = collectionsRef.current.find(c => c.id === collectionId)
+    if (!current || current.recipeIds.includes(recipeId)) return
+    const newRecipeIds = [...current.recipeIds, recipeId]
+    setCollections(prev => prev.map(c => c.id === collectionId
+      ? { ...c, recipeIds: newRecipeIds, updatedAt: new Date().toISOString() }
+      : c
+    ))
+    fetch(`/api/user/collections/${encodeURIComponent(collectionId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: uid, recipeIds: newRecipeIds }),
+    }).catch(err => console.error('Failed to update collection:', err))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const removeFromCollection = useCallback((collectionId: string, recipeId: string) => {
+    const uid = userIdRef.current
+    if (!uid) return
+    const current = collectionsRef.current.find(c => c.id === collectionId)
+    if (!current) return
+    const newRecipeIds = current.recipeIds.filter(id => id !== recipeId)
+    setCollections(prev => prev.map(c => c.id === collectionId
+      ? { ...c, recipeIds: newRecipeIds, updatedAt: new Date().toISOString() }
+      : c
+    ))
+    fetch(`/api/user/collections/${encodeURIComponent(collectionId)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: uid, recipeIds: newRecipeIds }),
+    }).catch(err => console.error('Failed to update collection:', err))
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── History (session-only) ───────────────────────────────────────────────────
 
   const addToHistory = useCallback((entry: HistoryEntry) => {
@@ -343,6 +428,11 @@ export function FableProvider({ children }: { children: ReactNode }) {
         hasCompletedOnboarding,
         completeOnboarding,
         isLoadingProfile,
+        collections,
+        createCollection,
+        deleteCollection,
+        addToCollection,
+        removeFromCollection,
       }}
     >
       {children}

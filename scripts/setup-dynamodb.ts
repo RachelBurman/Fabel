@@ -48,6 +48,19 @@ async function main() {
   });
 
   await createTable({
+    TableName: "fable-collections",
+    KeySchema: [
+      { AttributeName: "userId", KeyType: "HASH" },
+      { AttributeName: "collectionId", KeyType: "RANGE" },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: "userId", AttributeType: "S" },
+      { AttributeName: "collectionId", AttributeType: "S" },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  });
+
+  await createTable({
     TableName: "fable-feedback",
     KeySchema: [
       { AttributeName: "userId", KeyType: "HASH" },

@@ -108,6 +108,15 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - Mode indicator badge in the app header; toggle in allergen settings
 - Safe ingredients and mode preference persisted in DynamoDB
 
+### Collections
+- Saved recipes organised into named collections, persisted in DynamoDB
+- "All Saved" and "Collections" tabs on the saved screen
+- Collection cards show a gradient colour-strip mosaic preview of the first 3 recipes inside
+- Bookmark icon on every saved recipe card opens an add-to-collection modal — toggle recipes in/out of any collection with a single tap
+- "New collection" creation inline in both the modal and the collections tab
+- Collection detail view shows the full recipe grid; removing a recipe removes it from the collection only (not from saved)
+- Collections load on session start alongside profile and saved recipes
+
 ### Navigation & History
 - Four-tab navigation — Ingredients, Recipe, History, Saved
 - Recipe tab persists the most recent recipe across navigation
@@ -131,13 +140,15 @@ Vercel — Next.js 16 (App Router)
   ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
-       └── saved-recipes       DynamoDB read/write (full recipe objects)
+       ├── saved-recipes       DynamoDB read/write (full recipe objects)
+       └── collections         DynamoDB CRUD (GET, POST, PUT, DELETE)
 
 DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
   │                            ingredients[]{name, displayName, subtype, quantity, unit,
   │                            area, dateType, useByDate, boughtDate, addedAt})
   ├── fable-saved-recipes      Saved recipes with full recipe JSON
+  ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], createdAt, updatedAt)
   └── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
                                recipeTitle, recipeIngredients, timestamp)
 
@@ -150,7 +161,6 @@ In-memory (loaded at server startup)
 
 ## In Progress
 
-- [ ] **Collections** — organise saved recipes into named collections with custom labels
 - [ ] **Macros toggle** — opt-in nutritional information panel (off by default; eating disorder recovery users in mind)
 
 ---

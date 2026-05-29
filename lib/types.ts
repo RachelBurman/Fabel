@@ -82,6 +82,14 @@ export interface HistoryEntry {
   timestamp: number
 }
 
+export interface Collection {
+  id: string        // collectionId
+  name: string
+  recipeIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
 // List of all allergens
 export const ALLERGENS: Allergen[] = [
   { id: 'gluten', name: 'Gluten', icon: '🌾' },
