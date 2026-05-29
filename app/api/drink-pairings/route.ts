@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   rankSimilar,
+  allIngredients,
   getAllergensForIngredient,
   ALLERGEN_CODES,
   type AllergenCode,
@@ -34,7 +35,28 @@ const BEVERAGE_KEYS = new Set([
   "kombucha",
 ]);
 
+// Pre-build a Set for O(1) key existence checks
+const epicureKeySet = new Set(allIngredients);
+
+/**
+ * Claude recipe ingredient names ("Chicken Breast", "garlic cloves") won't
+ * match Epicure keys ("chicken", "garlic") verbatim. Try a cascade of
+ * normalizations before giving up.
+ */
+function resolveToEpicureKey(name: string): string | null {
+  if (epicureKeySet.has(name)) return name;
+  const norm = name.toLowerCase().replace(/\s+/g, "_");
+  if (epicureKeySet.has(norm)) return norm;
+  const first = norm.split("_")[0];
+  if (first && epicureKeySet.has(first)) return first;
+  const last = norm.split("_").at(-1);
+  if (last && last !== first && epicureKeySet.has(last)) return last;
+  return null;
+}
+
 export async function POST(req: NextRequest) {
+  console.log("[drink-pairings] POST received");
+
   let body: { ingredients?: unknown; allergens?: unknown };
   try {
     body = await req.json();
@@ -47,6 +69,8 @@ export async function POST(req: NextRequest) {
   const inputIngredients: string[] = Array.isArray(ingredients)
     ? (ingredients as unknown[]).filter((i): i is string => typeof i === "string")
     : [];
+
+  console.log("[drink-pairings] ingredients received:", inputIngredients);
 
   const validAllergens: AllergenCode[] = Array.isArray(allergens)
     ? (allergens as unknown[]).filter(
@@ -61,14 +85,27 @@ export async function POST(req: NextRequest) {
   const scoreMap = new Map<string, number>();
   const inputSet = new Set(inputIngredients);
 
-  for (const ingredient of inputIngredients) {
-    for (const { name, score } of rankSimilar(ingredient)) {
+  for (const rawName of inputIngredients) {
+    const epicureKey = resolveToEpicureKey(rawName);
+    console.log(`[drink-pairings] resolving "${rawName}" → ${epicureKey ?? "NOT FOUND in Epicure"}`);
+    if (!epicureKey) continue;
+
+    for (const { name, score } of rankSimilar(epicureKey)) {
       if (BEVERAGE_KEYS.has(name) && !inputSet.has(name)) {
         const current = scoreMap.get(name) ?? -Infinity;
         if (score > current) scoreMap.set(name, score);
       }
     }
   }
+
+  // Log all beverage scores before allergen filtering
+  const allBeverageScores = Array.from(scoreMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, score]) => `${name}=${score.toFixed(4)}`);
+  console.log(
+    "[drink-pairings] beverage scores before filtering:",
+    allBeverageScores.length > 0 ? allBeverageScores.join(", ") : "NONE — all ingredients unresolved"
+  );
 
   const pairings = Array.from(scoreMap.entries())
     .filter(([name]) => {
@@ -78,6 +115,8 @@ export async function POST(req: NextRequest) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([drink, score]) => ({ drink, score: Math.round(score * 10000) / 10000 }));
+
+  console.log("[drink-pairings] returning:", pairings.map((p) => p.drink).join(", ") || "EMPTY");
 
   return NextResponse.json({ pairings });
 }
