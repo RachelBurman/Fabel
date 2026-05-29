@@ -558,7 +558,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe }: Ingredie
                 onClick={() => setKitchenOnly(v => !v)}
                 className={cn(
                   'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  kitchenOnly ? 'bg-primary' : 'bg-secondary'
+                  kitchenOnly ? 'bg-green-500' : 'bg-secondary'
                 )}
               >
                 <span className={cn(

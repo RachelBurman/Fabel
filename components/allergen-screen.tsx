@@ -101,16 +101,16 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               <button
                 onClick={() => setSafeFoodsMode(!preferences.safeFoodsMode)}
                 disabled={preferences.safeIngredients.length === 0}
-                className="relative inline-flex h-6 w-11 items-center rounded-full bg-secondary transition-colors disabled:opacity-40"
-                style={{ backgroundColor: safeFoodsActive ? '#22c55e' : undefined }}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:opacity-40',
+                  safeFoodsActive ? 'bg-green-500' : 'bg-secondary'
+                )}
                 aria-label="Toggle Safe Foods Mode"
               >
-                <span
-                  className={cn(
-                    'inline-block h-4 w-4 transform rounded-full bg-slate-200 shadow transition-transform',
-                    safeFoodsActive ? 'translate-x-6' : 'translate-x-1'
-                  )}
-                />
+                <span className={cn(
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                  safeFoodsActive ? 'translate-x-5' : 'translate-x-0'
+                )} />
               </button>
             </div>
 
@@ -144,13 +144,15 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               </div>
               <button
                 onClick={() => setShowMacros(!preferences.showMacros)}
-                className="relative inline-flex h-6 w-11 items-center rounded-full bg-secondary transition-colors"
-                style={{ backgroundColor: preferences.showMacros ? '#22c55e' : undefined }}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                  preferences.showMacros ? 'bg-green-500' : 'bg-secondary'
+                )}
                 aria-label="Toggle nutritional information"
               >
                 <span className={cn(
-                  'inline-block h-4 w-4 transform rounded-full bg-slate-200 shadow transition-transform',
-                  preferences.showMacros ? 'translate-x-6' : 'translate-x-1'
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                  preferences.showMacros ? 'translate-x-5' : 'translate-x-0'
                 )} />
               </button>
             </div>
