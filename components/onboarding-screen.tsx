@@ -238,7 +238,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               transition={{ delay: 0.3, duration: 0.35 }}
               className="text-lg text-muted-foreground text-center max-w-md mb-4 text-pretty"
             >
-              Tell us exactly what you <span className="text-foreground font-medium">can</span> eat and
+              Tell us exactly what you <span className="text-foreground font-medium">can</span>{' '}eat and
               we&apos;ll work only within those ingredients — nothing outside your safe list.
             </motion.p>
 
