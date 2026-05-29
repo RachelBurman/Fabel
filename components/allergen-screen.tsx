@@ -102,12 +102,12 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
                 onClick={() => setSafeFoodsMode(!preferences.safeFoodsMode)}
                 disabled={preferences.safeIngredients.length === 0}
                 className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40"
-                style={{ backgroundColor: safeFoodsActive ? '#22c55e' : undefined }}
+                style={{ backgroundColor: safeFoodsActive ? '#22c55e' : '#9ca3af' }}
                 aria-label="Toggle Safe Foods Mode"
               >
                 <span
                   className={cn(
-                    'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                    'inline-block h-4 w-4 transform rounded-full bg-slate-200 shadow transition-transform',
                     safeFoodsActive ? 'translate-x-6' : 'translate-x-1'
                   )}
                 />
@@ -145,11 +145,11 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
               <button
                 onClick={() => setShowMacros(!preferences.showMacros)}
                 className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
-                style={{ backgroundColor: preferences.showMacros ? 'hsl(var(--primary))' : undefined }}
+                style={{ backgroundColor: preferences.showMacros ? '#22c55e' : '#9ca3af' }}
                 aria-label="Toggle nutritional information"
               >
                 <span className={cn(
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  'inline-block h-4 w-4 transform rounded-full bg-slate-200 shadow transition-transform',
                   preferences.showMacros ? 'translate-x-6' : 'translate-x-1'
                 )} />
               </button>
