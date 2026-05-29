@@ -51,7 +51,7 @@ pnpm dev
 
 ---
 
-## Features
+## Shipped Features
 
 ### Allergen System
 - EU Big 14 allergen picker with emoji cards
@@ -79,22 +79,23 @@ pnpm dev
 - **Generate Recipe** — Claude generates novel, restaurant-quality recipes
 - Ingredients sorted by expiry date (ascending) before being passed to Claude — expiring items get used first
 - Claude receives rich descriptions (e.g. `"2 pieces Chicken Breast (Epicure: chicken)"`) for cut-accurate recipes
+- Ingredient quantities displayed rounded — whole-unit items (pieces, cloves, fillets) always shown as integers
 - Recipes respect allergen profile, meal type, and cook time
 - Prompt caching on the system prompt (~90% cost reduction on repeated calls)
 - Food-themed gradient hero on every recipe card with title-hash colour variation across five palettes
+
+### Drink Pairings
+- Automatically suggested after every recipe is generated
+- Top 3 recipe ingredients by quantity run through Epicure cosine similarity to find the closest-matching beverages
+- Filtered against a curated list of 55 drinking beverages (cooking wines, vinegars, and non-drink items excluded)
+- Allergen profile applied — e.g. milk-allergic users will not see milk or oat milk suggestions
+- Context-aware emoji per drink type: 🍵 tea · ☕ coffee · 🥛 milk · 🍺 beer/cider · 🍷 wine · 🧃 juice · 🍸 spirits
 
 ### Recipe Feedback
 - 👍 / 👎 buttons on every generated recipe
 - Dislike opens a compact feedback panel: five reason checkboxes ("Too many ingredients", "Didn't like the ingredients", "Wrong cuisine style", "Too complex", "Wrong meal size") plus a free-text field
 - Feedback stored in DynamoDB (`fable-feedback` table): `userId`, `recipeId`, `liked`, `reasons`, `notes`, `recipeTitle`, `recipeIngredients`, `timestamp`
-- Recent disliked patterns and ingredients are loaded at session start and injected into the Claude prompt so future recipes actively avoid them
-
-### Drink Pairings
-- Automatically suggested after every recipe is generated
-- Top 3 recipe ingredients by quantity are run through the Epicure similarity search to find the closest-matching beverages
-- Results are filtered against a curated list of 25 known beverage Epicure keys (wine, beer, tea, coffee, juice, and more)
-- Allergen profile applied — e.g. milk-allergic users will not see milk or oat milk suggestions
-- Displayed as compact chips with a 🍷 icon below the recipe method
+- Recent disliked patterns and ingredients loaded at session start and injected into the Claude prompt — future recipes actively avoid them
 
 ### Safe Foods Mode
 For users with MCAS, severe allergies, or highly restricted therapeutic diets.
@@ -149,24 +150,24 @@ In-memory (loaded at server startup)
 
 ## In Progress
 
-- [ ] Collections — organise saved recipes into named collections
-- [ ] Macros toggle — opt-in nutritional information (off by default, eating disorder recovery users in mind)
+- [ ] **Collections** — organise saved recipes into named collections with custom labels
+- [ ] **Macros toggle** — opt-in nutritional information panel (off by default; eating disorder recovery users in mind)
 
 ---
 
 ## Roadmap
 
 ### Near Term
-- [ ] Ingredient substitutes mode — paste any recipe, get allergen-safe ingredient swaps
-- [ ] Diet restriction presets — vegan, vegetarian, keto, low-FODMAP
+- [ ] Ingredient substitutes — paste any recipe, get allergen-safe swaps for every ingredient
+- [ ] Diet restriction presets — vegan, vegetarian, keto, low-FODMAP one-tap setup
 - [ ] Medication flags — e.g. "take Lactaid before eating this" for lactose intolerance
 - [ ] High histamine preset — for MCAS users who react to histamine-rich foods
 
 ### Medium Term
 - [ ] Recipe cost calculator — grocery API integration (Tesco, Sainsbury's, Kroger)
-- [ ] Recipe sharing — share generated recipes with a link
+- [ ] Recipe sharing — share generated recipes via link
 - [ ] Food waste dashboard — track expiring ingredients and log waste saved
-- [ ] Push notifications — alerts for ingredients expiring soon
+- [ ] Push notifications — alerts for ingredients approaching expiry
 
 ### Research & Future
 - [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
