@@ -6,11 +6,33 @@ import {
   type AllergenCode,
 } from "@/lib/epicure";
 
+// Keys verified to exist in data/epicure-core.json
 const BEVERAGE_KEYS = new Set([
-  "wine", "red_wine", "white_wine", "beer", "tea", "green_tea", "coffee",
-  "juice", "lemon_juice", "orange_juice", "sparkling_water", "water",
-  "cider", "sake", "whiskey", "rum", "gin", "vodka", "champagne",
-  "prosecco", "kombucha", "coconut_water", "milk", "oat_milk", "ginger_beer",
+  // Teas
+  "tea", "black_tea", "green_tea", "white_tea", "oolong_tea", "herbal_tea",
+  "fruit_tea", "rooibos_tea", "earl_grey_tea", "jasmine_tea", "thai_tea",
+  "milk_tea", "honey_citron_tea", "pu_erh_tea", "brick_tea",
+  // Coffee
+  "coffee",
+  // Waters
+  "water", "sparkling_water", "tonic_water", "coconut_water",
+  // Juices
+  "fruit_juice", "vegetable_juice", "clamato_juice",
+  // Milks
+  "milk", "oat_milk", "almond_milk", "soy_milk", "rice_milk",
+  "coconut_milk", "plant_based_milk", "goat_milk", "buttermilk",
+  // Wines
+  "wine", "red_wine", "white_wine", "rose_wine", "sparkling_wine",
+  "champagne", "plum_wine", "ginger_wine", "port_wine", "madeira_wine",
+  "marsala_wine", "moscatel_wine", "korean_rice_wine", "osmanthus_wine",
+  "rice_wine", "shaoxing_wine", "mei_kuei_lu_wine",
+  // Beers, ciders & sodas
+  "beer", "root_beer", "ginger_beer", "ginger_ale", "hard_cider", "apple_cider",
+  // Spirits & liqueurs
+  "whiskey", "rum", "gin", "vodka", "sake",
+  "coffee_liqueur", "ginger_liqueur",
+  // Other
+  "kombucha",
 ]);
 
 export async function POST(req: NextRequest) {
