@@ -19,6 +19,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
+| Testing | Jest 29, ts-jest, React Testing Library — 46 tests across 4 suites |
 
 ---
 
@@ -112,7 +113,8 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - "Show nutritional information" toggle in Allergen Settings — **off by default**
 - Note displayed beneath the toggle: *"Calorie and macro information is hidden by default out of respect for users in eating disorder recovery."*
 - When on, Claude estimates calories, protein, carbs, and fat per serving as part of recipe generation
-- Displayed as a four-cell row (Calories · Protein · Carbs · Fat) below the cook time/servings line
+- If the toggle is turned on after a recipe has already been generated, macros are fetched on demand via `/api/macros` (Claude Haiku) and patched into the displayed recipe without regenerating it
+- Displayed under the label "Estimated nutritional information" as a four-cell row (Calories · Protein · Carbs · Fat) with a disclaimer: *"Estimates based on ingredients and quantities — consult a nutritionist for precise values."*
 - Toggle preference persisted in DynamoDB on the user profile
 
 ### Collections
@@ -124,8 +126,23 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - Collection detail view shows the full recipe grid; removing a recipe removes it from the collection only (not from saved)
 - Collections load on session start alongside profile and saved recipes
 
+### Substitutes Mode
+Allergen-safe ingredient substitution using Epicure embeddings, with full recipe adaptation.
+
+- **From my kitchen** — tap any kitchen ingredient to see the top 3 safe substitutes, scored by a weighted combination of similarity to the original (60%) and cosine fit to the rest of the dish (40%)
+- **From a recipe** — paste a full recipe or enter an ingredient list; Claude extracts the ingredients, then each one is automatically checked:
+  - ✅ **In kitchen** — ingredient is available, included as-is
+  - 🔄 **Allergen** — contains a user allergen; best safe kitchen substitute auto-suggested via embedding search
+  - ⚠️ **Missing** — not in kitchen, not an allergen; included in the adapted recipe anyway
+- Substitution plan displayed as a formatted list before committing, with quantities where known (e.g. `🔄 Butter (2 tbsp) → Olive Oil (82% match) from your kitchen`)
+- **Cook with these substitutions** — builds the adapted ingredient list and generates a full recipe via Claude, maintaining the spirit of the original dish
+- **Functional category scoring** — same-category substitutes get a +0.1 score bonus, different-category a −0.3 penalty; grain ingredients (pasta, rice, flour) are hard-filtered from fat/dairy/liquid targets regardless of embedding score
+- **Expiry-aware ranking** (From my kitchen) — kitchen substitutes expiring within 2 days are boosted up the ranking; expiry badge shown on result cards (red for today, amber for 2 days). Boost only applies if the base score is ≥ 45%
+- Swap icon (↔) on every ingredient row in the generated recipe screen opens Substitutes pre-loaded with that ingredient and the rest of the recipe as context
+- Find Substitutes button on the ingredients screen; dedicated Substitutes tab in the bottom navigation
+
 ### Navigation & History
-- Four-tab navigation — Ingredients, Recipe, History, Saved
+- Five-tab navigation — Kitchen, Recipe, Substitutes, History, Saved
 - Recipe tab persists the most recent recipe across navigation
 - History tab — all recipes generated this session, newest first
 - Saved tab — hearted recipes persisted in DynamoDB; deletable
@@ -145,6 +162,9 @@ Vercel — Next.js 16 (App Router)
   ├── /api/generate-recipe     Anthropic Claude recipe generation + validation
   ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
   ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
+  ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
+  ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
+  ├── /api/extract-ingredients Claude ingredient extraction from arbitrary recipe text
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
        ├── saved-recipes       DynamoDB read/write (full recipe objects)
@@ -168,25 +188,13 @@ In-memory (loaded at server startup)
 
 ## In Progress
 
-### Substitutes Mode
-Building allergen-safe ingredient substitution using Epicure embeddings to find swaps that fit the context of the whole dish.
-
-**API** (`app/api/substitutes/route.ts`) — accepts an ingredient, the other ingredients in the dish as context, and the user's allergens. Uses `rankSimilar` to find the top 50 candidates, filters allergens, scores each candidate by combining similarity to the original (60%) with average cosine similarity to all context ingredients (40%), and returns the top 3 substitutes with scores.
-
-**Screen** (`components/substitutes-screen.tsx`) — two entry modes:
-- **From my recipe** — user pastes a recipe or ingredient list, Fable parses it into chips, tapping any chip fetches substitutes for that ingredient in context of the rest
-- **From my kitchen** — shows current kitchen ingredients as chips; same substitute results view
-
-**Claude integration** — after embedding-based ranking, a short Claude call generates a one-sentence culinary explanation for each substitute (max 100 tokens): why the swap works given the other ingredients in the dish.
-
-**Navigation** — accessible via a Substitutes button on the ingredients screen alongside Generate Recipe and Show Pairings; also reachable from the generated recipe screen via a swap icon on each ingredient row.
+Nothing currently in progress.
 
 ---
 
 ## Roadmap
 
 ### Near Term
-- [ ] Ingredient substitutes — paste any recipe, get allergen-safe swaps for every ingredient
 - [ ] Diet restriction presets — vegan, vegetarian, keto, low-FODMAP one-tap setup
 - [ ] Medication flags — e.g. "take Lactaid before eating this" for lactose intolerance
 - [ ] High histamine preset — for MCAS users who react to histamine-rich foods
