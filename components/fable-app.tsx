@@ -239,6 +239,28 @@ function FableAppContent() {
     setGeneratedRecipeSaved(true)
   }, [generatedRecipe, saveRecipe])
 
+  // ── Fetch macros on demand when toggle is turned on after generation ─────────
+  useEffect(() => {
+    if (!preferences.showMacros || !generatedRecipe || generatedRecipe.macros) return
+    let cancelled = false
+    fetch('/api/macros', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: generatedRecipe.title,
+        ingredients: generatedRecipe.ingredients,
+        servings: generatedRecipe.servings,
+      }),
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then((macros: import('@/lib/types').RecipeMacros | null) => {
+        if (cancelled || !macros) return
+        setGeneratedRecipe(prev => prev ? { ...prev, macros } : prev)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [preferences.showMacros, generatedRecipeId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── View a recipe from history ────────────────────────────────────────────────
   const handleViewHistoryRecipe = useCallback((recipe: GeneratedRecipe) => {
     setGeneratedRecipe(recipe)
