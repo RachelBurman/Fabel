@@ -245,7 +245,7 @@ function FableAppContent() {
   }, [generatedRecipe, saveRecipe])
 
   // ── Generate recipe from an adapted ingredient list (substitutes screen) ─────
-  const handleAdaptAndCook = useCallback(async (adaptedIngredientNames: string[]) => {
+  const handleAdaptAndCook = useCallback(async (adaptedIngredientNames: string[], recipeContext?: string) => {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
     setRecipeAttempted(true)
@@ -272,6 +272,7 @@ function FableAppContent() {
           cookTime: 'medium',
           kitchenOnly: true,
           showMacros: preferences.showMacros,
+          ...(recipeContext ? { recipeContext } : {}),
         }),
       })
       if (!res.ok) throw new Error(`Generate error: ${res.status}`)

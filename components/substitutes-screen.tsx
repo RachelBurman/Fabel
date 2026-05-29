@@ -68,7 +68,7 @@ export interface SubstitutesScreenProps {
   /** Other recipe ingredient keys to use as context. */
   initialContext?: string[]
   /** Called when the user wants to generate a recipe from the adapted ingredient list. */
-  onAdaptAndCook?: (adaptedIngredients: string[]) => void
+  onAdaptAndCook?: (adaptedIngredients: string[], recipeContext?: string) => void
 }
 
 type Mode = 'from-kitchen' | 'from-recipe'
@@ -353,11 +353,34 @@ export function SubstitutesScreen({
   // ── Cook with substitutions ──────────────────────────────────────────────────
 
   const handleCookWithSubstitutions = () => {
-    if (!analysis || !onAdaptAndCook) return
-    const adapted = analysis.map((item) =>
-      item.status === 'allergen' && item.substitute ? item.substitute.name : item.key
-    )
-    onAdaptAndCook(adapted)
+    if (!onAdaptAndCook) return
+
+    // Build the complete adapted list from every parsed ingredient
+    const adapted = (analysis
+      ? analysis
+          .map((item): string | null => {
+            if (item.status === 'allergen') {
+              // Replace with substitute; skip if none found (don't include the allergen itself)
+              return item.substitute ? item.substitute.name : null
+            }
+            // Green and amber both included as-is
+            return item.key
+          })
+          .filter((k): k is string => k !== null)
+      // Analysis hasn't run — include all parsed ingredients as-is
+      : parsedIngredients)
+
+    // Best-effort recipe name: first non-empty, non-ingredient-looking line
+    const recipeContext = (() => {
+      const source = fullRecipeText || ingredientsText
+      const firstLine = source.split('\n').find((l) => {
+        const t = l.trim()
+        return t.length > 0 && t.length <= 80 && !/^\d/.test(t)
+      })
+      return firstLine?.trim() || undefined
+    })()
+
+    onAdaptAndCook(adapted, recipeContext)
   }
 
   // ── Derived ──────────────────────────────────────────────────────────────────

@@ -189,6 +189,7 @@ export async function POST(req: NextRequest) {
     dislikedPatterns?: unknown;
     dislikedIngredients?: unknown;
     showMacros?: unknown;
+    recipeContext?: unknown;
   };
   try {
     body = await req.json();
@@ -337,6 +338,15 @@ export async function POST(req: NextRequest) {
     ? `KITCHEN CONSTRAINT: Only use the exact ingredients listed. Do not suggest, add, or imply any other ingredients. Work creatively within only what the user has available.\n\n`
     : "";
 
+  const recipeContext =
+    typeof body.recipeContext === "string" && body.recipeContext.trim()
+      ? body.recipeContext.trim()
+      : null;
+
+  const adaptContext = recipeContext
+    ? `Adapt this recipe: "${recipeContext}". Use the provided ingredients and maintain the spirit of the original dish where possible.\n\n`
+    : "";
+
   const dislikedPrefix =
     dislikedPatterns.length > 0 || dislikedIngredients.length > 0
       ? `User feedback from past recipes: ` +
@@ -367,7 +377,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : dislikedPrefix + `${kitchenConstraint}` +
+      : dislikedPrefix + adaptContext + `${kitchenConstraint}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
