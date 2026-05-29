@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { useFable } from '@/lib/fable-context'
 import { getEffectiveUseByDate } from '@/lib/shelf-life'
-import { normaliseCandidates } from '@/lib/epicure'
+import { normaliseCandidates } from '@/lib/ingredient-utils'
 import { cn } from '@/lib/utils'
 import allergenMapData from '@/data/allergen-map.json'
 
