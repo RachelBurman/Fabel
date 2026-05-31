@@ -26,6 +26,7 @@ interface FableContextType {
   setShowMacros: (active: boolean) => void
   togglePreset: (presetId: string) => void
   setLactoseIntolerant: (active: boolean) => void
+  setLactoseMode: (mode: 'include' | 'exclude') => void
   effectiveAllergens: string[]
   effectiveCustomAllergens: string[]
   savedRecipes: Recipe[]
@@ -101,6 +102,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     showMacros: false,
     activePresets: [],
     lactoseIntolerant: false,
+    lactoseMode: 'include' as const,
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -144,9 +146,15 @@ export function FableProvider({ children }: { children: ReactNode }) {
             showMacros?: boolean
             activePresets?: string[]
             lactoseIntolerant?: boolean
+            lactoseMode?: 'include' | 'exclude'
           } = await profileRes.json()
-          // Only restore state if the profile has actual data
-          if (profile.allergens !== undefined || profile.ingredients !== undefined) {
+          // Restore state if the profile has any data worth loading
+          if (
+            profile.allergens !== undefined ||
+            profile.ingredients !== undefined ||
+            profile.activePresets !== undefined ||
+            profile.lactoseIntolerant !== undefined
+          ) {
             setPreferences(prev => ({
               ...prev,
               allergens: profile.allergens ?? prev.allergens,
@@ -157,6 +165,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
               showMacros: profile.showMacros ?? prev.showMacros,
               activePresets: profile.activePresets ?? prev.activePresets,
               lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
+              lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
             }))
             setHasCompletedOnboarding(true)
           }
@@ -212,6 +221,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             showMacros: preferences.showMacros,
             activePresets: preferences.activePresets,
             lactoseIntolerant: preferences.lactoseIntolerant,
+            lactoseMode: preferences.lactoseMode,
           }),
         })
       } catch (err) {
@@ -221,7 +231,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -326,6 +336,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setLactoseIntolerant = useCallback((active: boolean) => {
     setPreferences(prev => ({ ...prev, lactoseIntolerant: active }))
+  }, [])
+
+  const setLactoseMode = useCallback((mode: 'include' | 'exclude') => {
+    setPreferences(prev => ({ ...prev, lactoseMode: mode }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -438,7 +452,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
   // Merges user-explicit + preset-derived exclusions so API calls and UI
   // filtering use a single consistent set without mutating stored preferences.
 
-  const effectiveAllergens: string[] = preferences.lactoseIntolerant && !preferences.allergens.includes('milk')
+  const effectiveAllergens: string[] = preferences.lactoseIntolerant && preferences.lactoseMode === 'exclude' && !preferences.allergens.includes('milk')
     ? [...preferences.allergens, 'milk']
     : preferences.allergens
 
@@ -469,6 +483,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         setShowMacros,
         togglePreset,
         setLactoseIntolerant,
+        setLactoseMode,
         effectiveAllergens,
         effectiveCustomAllergens,
         savedRecipes,

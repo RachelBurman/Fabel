@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
@@ -15,14 +15,20 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, isLoadingProfile } = useFable()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
   const activePresetLabels = preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id)
   const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant
 
-  // Auto-expand the diet section if any lifestyle option is already active
-  const [isDietExpanded, setIsDietExpanded] = useState(() => anyDietActive)
+  const [isDietExpanded, setIsDietExpanded] = useState(false)
+
+  // Expand the diet section once profile loads if any option is active
+  useEffect(() => {
+    if (!isLoadingProfile && anyDietActive) {
+      setIsDietExpanded(true)
+    }
+  }, [isLoadingProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Header subtitle ────────────────────────────────────────────────────────
   const allergenCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
@@ -116,33 +122,81 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
                     })}
 
                     {/* Lactose Intolerance */}
-                    <div
-                      className={cn(
-                        'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
-                        preferences.lactoseIntolerant ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">🥛</span>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
-                          <p className="text-xs text-muted-foreground">Shows a Lactaid reminder on dairy-containing recipes</p>
+                    <div className={cn(
+                      'rounded-xl border transition-colors',
+                      preferences.lactoseIntolerant ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                    )}>
+                      <div className="flex items-center justify-between gap-4 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">🥛</span>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
+                            <p className="text-xs text-muted-foreground">
+                              {preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
+                                ? 'Dairy allowed — Lactaid reminder shown on recipes'
+                                : preferences.lactoseIntolerant
+                                ? 'Dairy excluded from all results'
+                                : 'Shows a Lactaid reminder on dairy-containing recipes'}
+                            </p>
+                          </div>
                         </div>
+                        <button
+                          role="switch"
+                          aria-checked={preferences.lactoseIntolerant}
+                          onClick={() => setLactoseIntolerant(!preferences.lactoseIntolerant)}
+                          className={cn(
+                            'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                            preferences.lactoseIntolerant ? 'bg-amber-500' : 'bg-secondary'
+                          )}
+                        >
+                          <span className={cn(
+                            'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                            preferences.lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
+                          )} />
+                        </button>
                       </div>
-                      <button
-                        role="switch"
-                        aria-checked={preferences.lactoseIntolerant}
-                        onClick={() => setLactoseIntolerant(!preferences.lactoseIntolerant)}
-                        className={cn(
-                          'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                          preferences.lactoseIntolerant ? 'bg-amber-500' : 'bg-secondary'
+
+                      <AnimatePresence initial={false}>
+                        {preferences.lactoseIntolerant && (
+                          <motion.div
+                            key="lactose-mode"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.18, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
+                              {([
+                                { value: 'include' as const, label: 'Include dairy with reminders', desc: "Dairy stays in recipes — you'll see a Lactaid reminder" },
+                                { value: 'exclude' as const, label: 'Exclude dairy entirely', desc: 'Treats dairy like an allergen, filtered from all results' },
+                              ]).map(({ value, label, desc }) => (
+                                <button
+                                  key={value}
+                                  onClick={() => setLactoseMode(value)}
+                                  className={cn(
+                                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                                    preferences.lactoseMode === value ? 'bg-amber-500/10' : 'hover:bg-amber-500/5'
+                                  )}
+                                >
+                                  <div className={cn(
+                                    'mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center',
+                                    preferences.lactoseMode === value ? 'border-amber-500 bg-amber-500' : 'border-muted-foreground'
+                                  )}>
+                                    {preferences.lactoseMode === value && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-white block" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">{label}</p>
+                                    <p className="text-xs text-muted-foreground">{desc}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
                         )}
-                      >
-                        <span className={cn(
-                          'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
-                          preferences.lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
-                        )} />
-                      </button>
+                      </AnimatePresence>
                     </div>
                   </div>
                 </motion.div>

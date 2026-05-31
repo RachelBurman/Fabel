@@ -242,18 +242,21 @@ export function SubstitutesScreen({
           if (allergenLabel) {
             const context = ingredients.filter((i) => i !== key)
             const sub = await fetchTopSubstitute(key, context, preferences.allergens, kitchenIngredients)
+            // Only accept substitutes that are a reasonable match (≥45 combined score).
+            // Below this threshold the swap is too dissimilar to suggest.
+            const acceptedSub = sub && sub.combinedScore >= 45 ? sub : null
             return {
               key,
               displayName: epicureDisplay(key),
               quantityDisplay,
               status: 'allergen' as const,
               allergenLabel,
-              substitute: sub
+              substitute: acceptedSub
                 ? {
-                    name: sub.name,
-                    displayName: sub.displayName,
-                    combinedScore: sub.combinedScore,
-                    inKitchen: matchesKitchen(sub.name, kitchenIngredients),
+                    name: acceptedSub.name,
+                    displayName: acceptedSub.displayName,
+                    combinedScore: acceptedSub.combinedScore,
+                    inKitchen: matchesKitchen(acceptedSub.name, kitchenIngredients),
                   }
                 : null,
             }
@@ -580,6 +583,18 @@ export function SubstitutesScreen({
                       }
 
                       if (item.status === 'allergen') {
+                        if (!item.substitute) {
+                          return (
+                            <div key={item.key} className="flex items-start gap-3 px-4 py-3 bg-card">
+                              <span className="text-base leading-none mt-0.5 shrink-0">❌</span>
+                              <p className="text-sm">
+                                <span className="font-medium text-foreground">{item.displayName}</span>
+                                {qty && <span className="text-muted-foreground">{qty}</span>}
+                                <span className="text-muted-foreground"> — contains {item.allergenLabel}, no suitable substitute found — will be omitted</span>
+                              </p>
+                            </div>
+                          )
+                        }
                         return (
                           <div key={item.key} className="flex items-start gap-3 px-4 py-3 bg-card">
                             <span className="text-base leading-none mt-0.5 shrink-0">🔄</span>
@@ -589,22 +604,15 @@ export function SubstitutesScreen({
                                 {qty && <span className="text-muted-foreground opacity-60">{qty}</span>}
                                 <span className="text-xs text-red-600 dark:text-red-400 ml-2 no-underline">contains {item.allergenLabel}</span>
                               </p>
-                              {item.substitute ? (
-                                <p className="text-sm text-muted-foreground">
-                                  {'→ '}
-                                  <span className="font-medium text-foreground">{item.substitute.displayName}</span>
-                                  <span className="text-xs ml-1">({item.substitute.combinedScore}% match)</span>
-                                  {item.substitute.inKitchen && (
-                                    <span className="text-xs text-green-600 dark:text-green-400 ml-1">from your kitchen</span>
-                                  )}
-                                  <span className="text-xs ml-1">— being swapped</span>
-                                </p>
-                              ) : (
-                                <p className="text-sm text-muted-foreground">
-                                  {'→ '}no safe substitute found
-                                  <span className="text-foreground"> — will be omitted</span>
-                                </p>
-                              )}
+                              <p className="text-sm text-muted-foreground">
+                                {'→ '}
+                                <span className="font-medium text-foreground">{item.substitute.displayName}</span>
+                                <span className="text-xs ml-1">({item.substitute.combinedScore}% match)</span>
+                                {item.substitute.inKitchen && (
+                                  <span className="text-xs text-green-600 dark:text-green-400 ml-1">from your kitchen</span>
+                                )}
+                                <span className="text-xs ml-1">— being swapped</span>
+                              </p>
                             </div>
                           </div>
                         )
