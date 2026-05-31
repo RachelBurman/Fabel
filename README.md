@@ -232,14 +232,12 @@ In-memory (loaded at server startup)
 - ✅ Diet restriction presets (Vegan, Vegetarian, Keto, Low-FODMAP)
 - ✅ Lactose intolerance with include/exclude modes and Lactaid reminder
 - ✅ Quick-add chips filter allergens automatically
-- ✅ 101 passing tests across 5 test suites
 - ✅ Cuisine inspiration filter — 13 cuisines + Surprise me, horizontal scroll chip row
 - ✅ Occasion filter — Weeknight, Dinner Party, Street Food, Comfort Food, Packed Lunch, Romantic Dinner, Meal Prep, Celebration
 - ✅ Servings stepper — scale recipe quantities for 1–12 people (default 2)
 - ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
 - ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
-
-### In Progress
+- ✅ 230 passing tests across 10 test suites
 
 ### Near Term
 - [ ] Onboarding tutorial slideshow — 4-5 slides on first launch
@@ -269,7 +267,7 @@ In-memory (loaded at server startup)
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **101** passing automated tests ensuring allergen safety accuracy
+- **230** passing automated tests across 10 suites ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
