@@ -1,7 +1,8 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, User, X } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { useFable } from '@/lib/fable-context'
@@ -63,15 +64,32 @@ export function Header({ onSettingsClick }: HeaderProps) {
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const isDark = theme === 'dark'
 
+  const [guestOpen, setGuestOpen] = useState(false)
+  const rightGroupRef = useRef<HTMLDivElement>(null)
+
   const handleThemeToggle = () => {
     const newDark = !isDark
     setTheme(newDark ? 'dark' : 'light')
     setDarkMode(newDark)
   }
 
+  // Close popover on click outside the whole right button group
+  useEffect(() => {
+    if (!guestOpen) return
+    const handler = (e: MouseEvent) => {
+      if (rightGroupRef.current && !rightGroupRef.current.contains(e.target as Node)) {
+        setGuestOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [guestOpen])
+
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="flex items-center justify-between h-16 px-6">
+
+        {/* Left: logo + Safe Foods badge */}
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Leaf className="w-4 h-4 text-primary" />
@@ -89,7 +107,63 @@ export function Header({ onSettingsClick }: HeaderProps) {
             </motion.div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+
+        {/* Right: Guest badge + dark mode + settings */}
+        <div ref={rightGroupRef} className="relative flex items-center gap-1">
+
+          {/* Guest badge */}
+          <button
+            onClick={() => setGuestOpen(v => !v)}
+            aria-label="Guest mode — tap to learn more"
+            aria-expanded={guestOpen}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
+              guestOpen
+                ? 'bg-secondary/80 text-foreground'
+                : 'bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80'
+            )}
+          >
+            <User className="w-3 h-3 shrink-0" />
+            Guest
+          </button>
+
+          {/* Guest popover */}
+          <AnimatePresence>
+            {guestOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+              >
+                <div className="px-4 pt-4 pb-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                        <User className="w-3.5 h-3.5 text-muted-foreground" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground leading-snug">
+                        You&apos;re using Fable as a guest
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setGuestOpen(false)}
+                      aria-label="Close"
+                      className="text-muted-foreground hover:text-foreground transition-colors mt-0.5 shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed pl-9">
+                    Your allergens, kitchen and recipes are saved to this browser. Create an account to access your data across all your devices — coming soon.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Dark mode toggle */}
           <button
             onClick={handleThemeToggle}
             aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -97,6 +171,8 @@ export function Header({ onSettingsClick }: HeaderProps) {
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
+
+          {/* Settings */}
           {onSettingsClick && (
             <button
               onClick={onSettingsClick}
@@ -106,6 +182,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
             </button>
           )}
         </div>
+
       </div>
     </header>
   )

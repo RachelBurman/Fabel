@@ -239,6 +239,9 @@ In-memory (loaded at server startup)
 - ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
 - ✅ 230 passing tests across 10 test suites
 
+### In Progress
+- [ ] Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
+
 ### Near Term
 - [ ] Onboarding tutorial slideshow — 4-5 slides on first launch
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
@@ -254,6 +257,7 @@ In-memory (loaded at server startup)
 - [ ] Native mobile app — iOS and Android for camera/barcode features
 
 ### Research & Future
+- [ ] User authentication — Clerk or NextAuth for cross-device persistence, replacing anonymous UUID system. Guest mode remains fully functional.
 - [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
 - [ ] On-device AI — Liquid AI LFM2.5 for private on-device allergen filtering
 - [ ] Medical nutrition database — elemental formulas for severe MCAS
