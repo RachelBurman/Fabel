@@ -7,8 +7,33 @@ import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen, 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
+import { useFable } from '@/lib/fable-context'
 
 export type LoadingStep = 'pairings' | 'recipe'
+
+// ─── Equipment detection ──────────────────────────────────────────────────────
+
+const EQUIPMENT_RULES: { key: string; label: string; pattern: RegExp }[] = [
+  { key: 'hob',         label: 'Hob',            pattern: /\b(hob|stovetop|saucepan|frying pan|boil(s|ed|ing)?)\b/i },
+  { key: 'oven',        label: 'Oven',            pattern: /\b(bake[ds]?|baking|roast(s|ed|ing)?|grill(s|ed|ing)?)\b|(?<!pizza )\boven\b/i },
+  { key: 'microwave',   label: 'Microwave',       pattern: /\bmicrowave\b/i },
+  { key: 'air_fryer',   label: 'Air Fryer',       pattern: /\bair[ -]fr(yer|ied|ies|y(ing|s)?)\b/i },
+  { key: 'slow_cooker', label: 'Slow Cooker',     pattern: /\bslow[ -]cook(er|s|ing|ed)?\b/i },
+  { key: 'pizza_oven',  label: 'Pizza Oven',      pattern: /\bpizza oven\b/i },
+  { key: 'barbecue',    label: 'Barbecue/Grill',  pattern: /\b(barbecue[ds]?|bbq|grill(s|ed|ing)?)\b/i },
+]
+
+function detectMissingEquipment(steps: string[], userEquipment: string[]): string[] {
+  const has = new Set(userEquipment)
+  const allText = steps.join(' ')
+  const missing: string[] = []
+  for (const rule of EQUIPMENT_RULES) {
+    if (!has.has(rule.key) && rule.pattern.test(allText)) {
+      missing.push(rule.label)
+    }
+  }
+  return missing
+}
 
 interface DrinkPairing {
   drink: string
@@ -96,8 +121,10 @@ export function GeneratedRecipeScreen({
   lactoseIntolerant = false,
   lactoseMode,
 }: GeneratedRecipeScreenProps) {
+  const { preferences } = useFable()
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
+  const missingEquipment = recipe ? detectMissingEquipment(recipe.steps, preferences.kitchenEquipment) : []
 
   const [drinkPairings, setDrinkPairings] = useState<DrinkPairing[]>([])
   const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
@@ -265,6 +292,17 @@ export function GeneratedRecipeScreen({
               <p className="text-muted-foreground leading-relaxed text-pretty">
                 {recipe.description}
               </p>
+
+              {missingEquipment.length > 0 && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-base shrink-0">⚠️</span>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">Some steps may require equipment you haven&apos;t selected:</span>
+                    {' '}{missingEquipment.join(', ')}.{' '}
+                    You may need to adapt these steps.
+                  </p>
+                </div>
+              )}
 
               {lactoseIntolerant && lactoseMode === 'include' && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
