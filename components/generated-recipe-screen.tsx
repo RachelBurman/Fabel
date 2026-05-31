@@ -392,16 +392,6 @@ export function GeneratedRecipeScreen({
                 )}
               </AnimatePresence>
 
-              {/* Lactaid warning */}
-              {lactoseIntolerant && recipe.ingredients.some(ing =>
-                /\b(milk|cream|butter|cheese|yogurt|ghee|dairy|lactose|whey|casein)\b/i.test(ing.name)
-              ) && (
-                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-700 dark:text-amber-400">
-                  <span className="text-base shrink-0">⚠️</span>
-                  <p className="text-sm font-medium">May contain lactose — consider taking Lactaid before eating.</p>
-                </div>
-              )}
-
               {/* Ingredients */}
               <section>
                 <h2 className="text-lg font-semibold text-foreground mb-4">Ingredients</h2>

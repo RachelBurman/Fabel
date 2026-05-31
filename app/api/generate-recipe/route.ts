@@ -190,7 +190,6 @@ export async function POST(req: NextRequest) {
     dislikedIngredients?: unknown;
     showMacros?: unknown;
     recipeContext?: unknown;
-    lactoseMode?: unknown;
   };
   try {
     body = await req.json();
@@ -313,12 +312,7 @@ export async function POST(req: NextRequest) {
           .join(", ")}.`
       : "";
 
-  const lactoseClause =
-    body.lactoseMode === "include"
-      ? ` This user is lactose intolerant but has chosen to include dairy. If the recipe contains any dairy ingredient, append exactly this sentence to the end of the description field: "⚠️ Contains dairy — consider taking Lactaid before eating."`
-      : "";
-
-  // Human-readable forms for the prompt
+// Human-readable forms for the prompt
   const humanSafe = safeIngredients.map((s) => s.replace(/_/g, " ")).join(", ");
   const humanAvailable = sortedItems.map(buildIngredientDescription).join(", ");
 
@@ -388,7 +382,7 @@ export async function POST(req: NextRequest) {
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
         (kitchenOnly ? `` : `Also consider these suggested pairings: ${suggestions.join(", ")}. `) +
-        `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause}${lactoseClause} ` +
+        `This recipe must contain absolutely zero of these allergens: ${allergenClause}.${customClause} ` +
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`;
