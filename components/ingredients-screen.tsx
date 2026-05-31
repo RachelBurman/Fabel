@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
-import { type IngredientArea, type IngredientUnit, INGREDIENT_UNITS } from '@/lib/types'
+import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
-import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar, ArrowLeftRight, ChevronDown, Minus } from 'lucide-react'
+import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar, ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -63,6 +63,8 @@ const CUISINES: { value: string; label: string }[] = [
   { value: 'surprise', label: '🌍 Surprise me' },
 ]
 
+const CUISINES_INITIAL_COUNT = 4 // shown collapsed before "More cuisines +"
+
 const OCCASIONS: { value: string; label: string }[] = [
   { value: 'Weeknight',      label: 'Weeknight' },
   { value: 'Dinner Party',   label: 'Dinner Party' },
@@ -75,15 +77,72 @@ const OCCASIONS: { value: string; label: string }[] = [
 ]
 
 const EQUIPMENT_OPTIONS: { value: string; label: string; defaultOn: boolean }[] = [
-  { value: 'hob',         label: '🔥 Hob',            defaultOn: true  },
-  { value: 'oven',        label: '🫙 Oven',            defaultOn: true  },
-  { value: 'microwave',   label: '📦 Microwave',       defaultOn: false },
-  { value: 'air_fryer',   label: '💨 Air Fryer',       defaultOn: false },
-  { value: 'slow_cooker', label: '🐢 Slow Cooker',     defaultOn: false },
-  { value: 'pizza_oven',  label: '🍕 Pizza Oven',      defaultOn: false },
-  { value: 'barbecue',    label: '🔥 Barbecue/Grill',  defaultOn: false },
-  { value: 'instant_pot', label: '⚡ Instant Pot',     defaultOn: false },
+  { value: 'hob',         label: '🔥 Hob',           defaultOn: true  },
+  { value: 'oven',        label: '🫙 Oven',           defaultOn: true  },
+  { value: 'microwave',   label: '📦 Microwave',      defaultOn: false },
+  { value: 'air_fryer',   label: '💨 Air Fryer',      defaultOn: false },
+  { value: 'slow_cooker', label: '🐢 Slow Cooker',    defaultOn: false },
+  { value: 'pizza_oven',  label: '🍕 Pizza Oven',     defaultOn: false },
+  { value: 'barbecue',    label: '🔥 Barbecue/Grill', defaultOn: false },
+  { value: 'instant_pot', label: '⚡ Instant Pot',    defaultOn: false },
 ]
+
+// ─── Serving size warning ─────────────────────────────────────────────────────
+
+const PROTEIN_NAMES = new Set([
+  'chicken', 'beef', 'pork', 'salmon', 'tuna', 'cod', 'tofu', 'egg',
+  'turkey', 'lamb', 'shrimp', 'prawn', 'duck', 'mackerel', 'haddock',
+  'tilapia', 'sardine', 'anchovy', 'mince', 'bacon', 'ham', 'sausage',
+  'salami', 'chorizo', 'fish', 'steak',
+])
+
+const GRAIN_NAMES = new Set([
+  'rice', 'pasta', 'oats', 'quinoa', 'noodle', 'couscous',
+  'barley', 'polenta', 'bulgur', 'cornmeal',
+])
+
+const VEGETABLE_NAMES = new Set([
+  'spinach', 'broccoli', 'carrot', 'potato', 'zucchini', 'pepper',
+  'cucumber', 'kale', 'tomato', 'onion', 'mushroom', 'cabbage',
+  'cauliflower', 'sweet_potato', 'asparagus', 'leek', 'celery',
+  'beetroot', 'parsnip', 'aubergine', 'bok_choy', 'fennel', 'pea',
+  'corn', 'artichoke', 'pumpkin', 'courgette',
+])
+
+function toGrams(quantity: string, unit: string): number | null {
+  const qty = parseFloat(quantity)
+  if (isNaN(qty)) return null
+  if (unit === 'grams') return qty
+  if (unit === 'kg') return qty * 1000
+  return null
+}
+
+function computeServingWarnings(ingredients: IngredientItem[], servings: number): string[] {
+  if (servings <= 2) return []
+  const warnings: string[] = []
+  for (const ing of ingredients) {
+    if (!ing.quantity) continue
+    const unit = ing.unit ?? 'pieces'
+    const label = ing.displayName ?? displayName(ing.name)
+
+    if (PROTEIN_NAMES.has(ing.name)) {
+      if (unit === 'pieces') {
+        const pieces = parseFloat(ing.quantity)
+        if (!isNaN(pieces) && pieces < servings) warnings.push(label)
+      } else {
+        const grams = toGrams(ing.quantity, unit)
+        if (grams !== null && grams < servings * 150) warnings.push(label)
+      }
+    } else if (GRAIN_NAMES.has(ing.name)) {
+      const grams = toGrams(ing.quantity, unit)
+      if (grams !== null && grams < servings * 80) warnings.push(label)
+    } else if (VEGETABLE_NAMES.has(ing.name)) {
+      const grams = toGrams(ing.quantity, unit)
+      if (grams !== null && grams < servings * 100) warnings.push(label)
+    }
+  }
+  return warnings
+}
 
 // ─── Area + unit config ───────────────────────────────────────────────────────
 
@@ -130,6 +189,34 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
 
+// ─── Step indicator ───────────────────────────────────────────────────────────
+
+function StepIndicator({ step }: { step: 1 | 2 }) {
+  return (
+    <div className="flex items-center justify-center gap-3 mb-6">
+      <div className="flex items-center gap-2">
+        <div className={cn(
+          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold',
+          step === 1 ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
+        )}>1</div>
+        <span className={cn('text-sm font-medium', step === 1 ? 'text-foreground' : 'text-muted-foreground')}>
+          Kitchen
+        </span>
+      </div>
+      <div className="w-8 h-px bg-border" />
+      <div className="flex items-center gap-2">
+        <div className={cn(
+          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold',
+          step === 2 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
+        )}>2</div>
+        <span className={cn('text-sm font-medium', step === 2 ? 'text-foreground' : 'text-muted-foreground')}>
+          Preferences
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
@@ -169,9 +256,14 @@ interface IngredientsScreenProps {
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
   const { preferences, addIngredient, removeIngredient, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
   const showLactoseTag = preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
+  const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+
   const [inputValue, setInputValue] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchResults, setSearchResults] = useState<string[]>([])
+
+  // Step navigation
+  const [step, setStep] = useState<1 | 2>(1)
 
   // Staging state
   const [pendingName, setPendingName] = useState<string | null>(null)
@@ -191,6 +283,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const [occasion, setOccasion] = useState('')
   const [servings, setServings] = useState(2)
   const [equipmentExpanded, setEquipmentExpanded] = useState(false)
+  const [cuisineExpanded, setCuisineExpanded] = useState(false)
 
   // Portal dropdown positioning
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -225,6 +318,11 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   useEffect(() => {
     if (showDropdown) recomputeCoords()
   }, [showDropdown, recomputeCoords])
+
+  // Scroll to top when changing steps
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [step])
 
   const resetStaging = useCallback(() => {
     setPendingName(null)
@@ -282,6 +380,11 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     if (e.key === 'Escape') setShowDropdown(false)
   }
 
+  const handleGoToStep2 = () => {
+    resetStaging()
+    setStep(2)
+  }
+
   const expectedExpiry = pendingName && pendingBoughtDate
     ? addDays(pendingBoughtDate, getShelfLifeDays(pendingName))
     : null
@@ -290,500 +393,589 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const addedNames = new Set(preferences.ingredients.map(i => i.name))
   const filters: RecipeFilters = { mealType, cookTime, kitchenOnly, cuisine, occasion, servings }
 
+  // Cuisine: auto-expand if selected cuisine is in the hidden portion
+  const cuisineIsHidden = cuisine !== '' && !CUISINES.slice(0, CUISINES_INITIAL_COUNT).find(c => c.value === cuisine)
+  const showAllCuisines = cuisineExpanded || cuisineIsHidden
+  const visibleCuisines = showAllCuisines ? CUISINES : CUISINES.slice(0, CUISINES_INITIAL_COUNT)
+
+  // Serving size warnings — only when servings > 2
+  const servingWarnings = computeServingWarnings(preferences.ingredients, servings)
+
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
 
-          <IngredientsHeader safeFoodsActive={preferences.safeFoodsMode && preferences.safeIngredients.length > 0} />
+          <StepIndicator step={step} />
 
-          {/* Search */}
-          <div className="relative mb-4">
-            <div ref={inputWrapperRef} className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search 1,790 ingredients…"
-                value={inputValue}
-                onChange={e => { setInputValue(e.target.value); setShowDropdown(e.target.value.length > 0) }}
-                onKeyDown={handleInputKeyDown}
-                onFocus={() => { if (inputValue.length > 0) setShowDropdown(true); recomputeCoords() }}
-                onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                className="pl-12 pr-4 py-6 text-base rounded-xl bg-card border-border"
-              />
-            </div>
-          </div>
+          <AnimatePresence mode="wait">
 
-          {/* ── Staging panel ── */}
-          <AnimatePresence>
-            {pendingName && (
+            {/* ══ Step 1: Your Kitchen ══════════════════════════════════════ */}
+            {step === 1 && (
               <motion.div
-                initial={{ opacity: 0, y: -8, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -8, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="mb-4 overflow-hidden"
+                key="step1"
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -16 }}
+                transition={{ duration: 0.18 }}
+                className="flex flex-col flex-1"
               >
-                <div className="bg-card border border-primary/20 rounded-xl p-4 space-y-4">
+                <IngredientsHeader safeFoodsActive={safeFoodsActive} />
 
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-foreground">{displayName(pendingName)}</span>
-                    <button onClick={resetStaging} className="text-muted-foreground hover:text-foreground transition-colors">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Specify type <span className="opacity-60">(optional)</span></p>
-                    <input
+                {/* Search */}
+                <div className="relative mb-4">
+                  <div ref={inputWrapperRef} className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input
                       type="text"
-                      placeholder="e.g. breast, thighs, ribeye, baby"
-                      value={pendingSubtype}
-                      onChange={e => setPendingSubtype(e.target.value)}
-                      className="w-full text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
+                      placeholder="Search 1,790 ingredients…"
+                      value={inputValue}
+                      onChange={e => { setInputValue(e.target.value); setShowDropdown(e.target.value.length > 0) }}
+                      onKeyDown={handleInputKeyDown}
+                      onFocus={() => { if (inputValue.length > 0) setShowDropdown(true); recomputeCoords() }}
+                      onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                      className="pl-12 pr-4 py-6 text-base rounded-xl bg-card border-border"
                     />
-                    <p className="text-[11px] text-muted-foreground/60 mt-1">Helps generate more accurate recipes</p>
                   </div>
+                </div>
 
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">Quantity</p>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="0.1"
-                        step="0.1"
-                        value={pendingQuantity}
-                        onChange={e => setPendingQuantity(e.target.value)}
-                        className="w-20 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
-                      />
-                      <select
-                        value={pendingUnit}
-                        onChange={e => setPendingUnit(e.target.value as IngredientUnit)}
-                        className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
-                      >
-                        {INGREDIENT_UNITS.map(u => (
-                          <option key={u} value={u}>{u}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                {/* ── Staging panel ── */}
+                <AnimatePresence>
+                  {pendingName && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, y: -8, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="mb-4 overflow-hidden"
+                    >
+                      <div className="bg-card border border-primary/20 rounded-xl p-4 space-y-4">
 
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
-                    <div className="flex flex-wrap gap-2">
-                      {AREAS.map(({ value, emoji, label }) => (
-                        <button
-                          key={value}
-                          onClick={() => setPendingArea(value)}
-                          className={cn(
-                            'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-colors',
-                            pendingArea === value
-                              ? 'bg-primary/15 text-primary border-primary/30'
-                              : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
-                          )}
-                        >
-                          <span>{emoji}</span>{label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">Date</p>
-                    <div className="flex gap-2 mb-2">
-                      {(['use-by', 'bought'] as const).map(dt => (
-                        <button
-                          key={dt}
-                          onClick={() => setPendingDateType(dt)}
-                          className={cn(
-                            'flex-1 py-1.5 text-sm rounded-lg border transition-colors',
-                            pendingDateType === dt
-                              ? 'bg-primary/15 text-primary border-primary/30'
-                              : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
-                          )}
-                        >
-                          {dt === 'use-by' ? 'Use by date' : 'Bought date'}
-                        </button>
-                      ))}
-                    </div>
-
-                    {pendingDateType === 'use-by' ? (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <input
-                          type="date"
-                          value={pendingDate}
-                          onChange={e => setPendingDate(e.target.value)}
-                          className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
-                        />
-                        {pendingDate && (
-                          <button onClick={() => setPendingDate('')} className="text-muted-foreground hover:text-foreground">
-                            <X className="w-3.5 h-3.5" />
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-foreground">{displayName(pendingName)}</span>
+                          <button onClick={resetStaging} className="text-muted-foreground hover:text-foreground transition-colors">
+                            <X className="w-4 h-4" />
                           </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Specify type <span className="opacity-60">(optional)</span></p>
                           <input
-                            type="date"
-                            value={pendingBoughtDate}
-                            onChange={e => setPendingBoughtDate(e.target.value)}
-                            className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            type="text"
+                            placeholder="e.g. breast, thighs, ribeye, baby"
+                            value={pendingSubtype}
+                            onChange={e => setPendingSubtype(e.target.value)}
+                            className="w-full text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
                           />
-                          {pendingBoughtDate && (
-                            <button onClick={() => setPendingBoughtDate('')} className="text-muted-foreground hover:text-foreground">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
+                          <p className="text-[11px] text-muted-foreground/60 mt-1">Helps generate more accurate recipes</p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              min="0.1"
+                              step="0.1"
+                              value={pendingQuantity}
+                              onChange={e => setPendingQuantity(e.target.value)}
+                              className="w-20 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            />
+                            <select
+                              value={pendingUnit}
+                              onChange={e => setPendingUnit(e.target.value as IngredientUnit)}
+                              className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                            >
+                              {INGREDIENT_UNITS.map(u => (
+                                <option key={u} value={u}>{u}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
+                          <div className="flex flex-wrap gap-2">
+                            {AREAS.map(({ value, emoji, label }) => (
+                              <button
+                                key={value}
+                                onClick={() => setPendingArea(value)}
+                                className={cn(
+                                  'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full border transition-colors',
+                                  pendingArea === value
+                                    ? 'bg-primary/15 text-primary border-primary/30'
+                                    : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
+                                )}
+                              >
+                                <span>{emoji}</span>{label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Date</p>
+                          <div className="flex gap-2 mb-2">
+                            {(['use-by', 'bought'] as const).map(dt => (
+                              <button
+                                key={dt}
+                                onClick={() => setPendingDateType(dt)}
+                                className={cn(
+                                  'flex-1 py-1.5 text-sm rounded-lg border transition-colors',
+                                  pendingDateType === dt
+                                    ? 'bg-primary/15 text-primary border-primary/30'
+                                    : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
+                                )}
+                              >
+                                {dt === 'use-by' ? 'Use by date' : 'Bought date'}
+                              </button>
+                            ))}
+                          </div>
+
+                          {pendingDateType === 'use-by' ? (
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                              <input
+                                type="date"
+                                value={pendingDate}
+                                onChange={e => setPendingDate(e.target.value)}
+                                className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                              />
+                              {pendingDate && (
+                                <button onClick={() => setPendingDate('')} className="text-muted-foreground hover:text-foreground">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1.5">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
+                                <input
+                                  type="date"
+                                  value={pendingBoughtDate}
+                                  onChange={e => setPendingBoughtDate(e.target.value)}
+                                  className="flex-1 text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
+                                />
+                                {pendingBoughtDate && (
+                                  <button onClick={() => setPendingBoughtDate('')} className="text-muted-foreground hover:text-foreground">
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              {expectedExpiry && (
+                                <p className="text-[11px] text-muted-foreground pl-6">
+                                  Expected to last until{' '}
+                                  <span className="font-medium text-foreground">{formatDate(expectedExpiry)}</span>
+                                  {' '}· {getShelfLifeDays(pendingName!)}d shelf life
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
-                        {expectedExpiry && (
-                          <p className="text-[11px] text-muted-foreground pl-6">
-                            Expected to last until{' '}
-                            <span className="font-medium text-foreground">{formatDate(expectedExpiry)}</span>
-                            {' '}· {getShelfLifeDays(pendingName!)}d shelf life
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
 
-                  <Button size="sm" onClick={handleConfirmAdd} className="w-full rounded-full gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add {pendingSubtype
-                      ? `${displayName(pendingName)} ${pendingSubtype}`
-                      : displayName(pendingName)}
+                        <Button size="sm" onClick={handleConfirmAdd} className="w-full rounded-full gap-2">
+                          <Plus className="w-4 h-4" />
+                          Add {pendingSubtype
+                            ? `${displayName(pendingName)} ${pendingSubtype}`
+                            : displayName(pendingName)}
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* ── Selected ingredients ── */}
+                {preferences.ingredients.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      Your ingredients ({preferences.ingredients.length})
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      <AnimatePresence mode="popLayout">
+                        {preferences.ingredients.map(ingredient => {
+                          const effectiveDate = getEffectiveUseByDate(ingredient)
+                          const days = getDaysUntilExpiry(effectiveDate)
+                          const isRed   = days !== null && days <= 1
+                          const isAmber = days !== null && days === 2
+                          const cfg = areaConfig(ingredient.area)
+                          const label = ingredient.displayName ?? displayName(ingredient.name)
+                          const showQty = ingredient.quantity &&
+                            (ingredient.quantity !== '1' || ingredient.unit !== 'pieces')
+
+                          return (
+                            <motion.button
+                              key={ingredient.id}
+                              initial={{ opacity: 0, scale: 0.8 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.8 }}
+                              layout
+                              onClick={() => removeIngredient(ingredient.name)}
+                              className={cn(
+                                'group flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors',
+                                isRed
+                                  ? 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20 dark:text-red-400 dark:border-red-400/20 dark:bg-red-400/10'
+                                  : isAmber
+                                    ? 'bg-amber-500/10 text-amber-700 border-amber-500/20 hover:bg-amber-500/20 dark:text-amber-400 dark:border-amber-400/20 dark:bg-amber-400/10'
+                                    : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+                              )}
+                            >
+                              {showQty && (
+                                <span className="text-xs opacity-75">{ingredient.quantity} {ingredient.unit}</span>
+                              )}
+                              <span className="text-xs opacity-80">{cfg.emoji}</span>
+                              <span className="text-sm">{label}</span>
+                              {showLactoseTag && (allergenMap[ingredient.name] ?? []).includes('milk') && (
+                                <span className="text-xs opacity-75" title="Contains lactose">🥛</span>
+                              )}
+                              {isRed && <span className="text-xs font-medium opacity-90">Use today!</span>}
+                              <X className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 shrink-0" />
+                            </motion.button>
+                          )
+                        })}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Quick-add chips ── */}
+                {(() => {
+                  const label = safeFoodsActive
+                    ? preferences.ingredients.length === 0 ? 'Your safe ingredients:' : 'Add more from your safe list:'
+                    : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
+
+                  const isFlagged = (name: string) =>
+                    hasUserAllergen(name, effectiveAllergens, effectiveCustomAllergens)
+
+                  const quickAddList = safeFoodsActive
+                    ? preferences.safeIngredients.filter(name => !isFlagged(name) && !addedNames.has(name))
+                    : POPULAR_POOL.filter(name => !isFlagged(name) && !addedNames.has(name)).slice(0, QUICK_ADD_COUNT)
+
+                  return (
+                    <div className="flex-1">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {quickAddList.map(name => (
+                          <button
+                            key={name}
+                            onClick={() => handleQuickAdd(name)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          >
+                            <Plus className="w-3.5 h-3.5 opacity-50" />
+                            {displayName(name)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* ── Next ── */}
+                <div className="pt-6 mt-6 border-t border-border">
+                  <Button
+                    size="lg"
+                    onClick={handleGoToStep2}
+                    className="w-full rounded-full gap-2"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
               </motion.div>
             )}
-          </AnimatePresence>
 
-          {/* ── Selected ingredients ── */}
-          {preferences.ingredients.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                Your ingredients ({preferences.ingredients.length})
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                <AnimatePresence mode="popLayout">
-                  {preferences.ingredients.map(ingredient => {
-                    const effectiveDate = getEffectiveUseByDate(ingredient)
-                    const days = getDaysUntilExpiry(effectiveDate)
-                    const isRed   = days !== null && days <= 1
-                    const isAmber = days !== null && days === 2
-                    const cfg = areaConfig(ingredient.area)
-                    const label = ingredient.displayName ?? displayName(ingredient.name)
-                    const showQty = ingredient.quantity &&
-                      (ingredient.quantity !== '1' || ingredient.unit !== 'pieces')
-
-                    return (
-                      <motion.button
-                        key={ingredient.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
-                        layout
-                        onClick={() => removeIngredient(ingredient.name)}
-                        className={cn(
-                          'group flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors',
-                          isRed
-                            ? 'bg-red-500/10 text-red-700 border-red-500/20 hover:bg-red-500/20 dark:text-red-400 dark:border-red-400/20 dark:bg-red-400/10'
-                            : isAmber
-                              ? 'bg-amber-500/10 text-amber-700 border-amber-500/20 hover:bg-amber-500/20 dark:text-amber-400 dark:border-amber-400/20 dark:bg-amber-400/10'
-                              : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
-                        )}
-                      >
-                        {showQty && (
-                          <span className="text-xs opacity-75">{ingredient.quantity} {ingredient.unit}</span>
-                        )}
-                        <span className="text-xs opacity-80">{cfg.emoji}</span>
-                        <span className="text-sm">{label}</span>
-                        {showLactoseTag && (allergenMap[ingredient.name] ?? []).includes('milk') && (
-                          <span className="text-xs opacity-75" title="Contains lactose">🥛</span>
-                        )}
-                        {isRed && <span className="text-xs font-medium opacity-90">Use today!</span>}
-                        <X className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 shrink-0" />
-                      </motion.button>
-                    )
-                  })}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-
-          {/* ── Quick-add chips ── */}
-          {(() => {
-            const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-            const label = safeFoodsActive
-              ? preferences.ingredients.length === 0 ? 'Your safe ingredients:' : 'Add more from your safe list:'
-              : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
-
-            const isFlagged = (name: string) =>
-              hasUserAllergen(name, effectiveAllergens, effectiveCustomAllergens)
-
-            const quickAddList = safeFoodsActive
-              ? preferences.safeIngredients.filter(name => !isFlagged(name) && !addedNames.has(name))
-              : POPULAR_POOL.filter(name => !isFlagged(name) && !addedNames.has(name)).slice(0, QUICK_ADD_COUNT)
-
-            return (
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {quickAddList.map(name => (
-                    <button
-                      key={name}
-                      onClick={() => handleQuickAdd(name)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    >
-                      <Plus className="w-3.5 h-3.5 opacity-50" />
-                      {displayName(name)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )
-          })()}
-
-          {/* ── Filters ── */}
-          <div className="mt-6 space-y-4">
-
-            {/* Meal type */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
-              <div className="flex flex-wrap gap-2">
-                {MEAL_TYPES.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setMealType(value)}
-                    className={cn(
-                      'px-3 py-1.5 text-sm rounded-full transition-colors',
-                      mealType === value
-                        ? 'bg-primary/15 text-primary border border-primary/30'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    )}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Cook time */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
-              <div className="flex flex-wrap gap-2">
-                {COOK_TIMES.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setCookTime(value)}
-                    className={cn(
-                      'px-3 py-1.5 text-sm rounded-full transition-colors',
-                      cookTime === value
-                        ? 'bg-primary/15 text-primary border border-primary/30'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    )}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Cuisine */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Cuisine</h3>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-                <button
-                  onClick={() => setCuisine('')}
-                  className={cn(
-                    'shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors',
-                    cuisine === ''
-                      ? 'bg-primary/15 text-primary border border-primary/30'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  )}
-                >
-                  Any cuisine
-                </button>
-                {CUISINES.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setCuisine(cuisine === value ? '' : value)}
-                    className={cn(
-                      'shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors',
-                      cuisine === value
-                        ? 'bg-primary/15 text-primary border border-primary/30'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    )}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Occasion */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Occasion</h3>
-              <div className="flex flex-wrap gap-2">
-                {OCCASIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setOccasion(occasion === value ? '' : value)}
-                    className={cn(
-                      'px-3 py-1.5 text-sm rounded-full transition-colors',
-                      occasion === value
-                        ? 'bg-primary/15 text-primary border border-primary/30'
-                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    )}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
-
-            {/* Servings */}
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Servings</h3>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setServings(v => Math.max(1, v - 1))}
-                  disabled={servings <= 1}
-                  className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
-                  aria-label="Decrease servings"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="w-16 text-center text-base font-medium text-foreground">
-                  {servings} {servings === 1 ? 'person' : 'people'}
-                </span>
-                <button
-                  onClick={() => setServings(v => Math.min(12, v + 1))}
-                  disabled={servings >= 12}
-                  className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
-                  aria-label="Increase servings"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Kitchen equipment — collapsible */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <button
-                onClick={() => setEquipmentExpanded(v => !v)}
-                className="flex items-center justify-between w-full px-4 py-3 text-left"
+            {/* ══ Step 2: Recipe Preferences ═══════════════════════════════ */}
+            {step === 2 && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }}
+                transition={{ duration: 0.18 }}
+                className="flex flex-col flex-1"
               >
-                <div>
-                  <p className="text-sm font-medium text-foreground">What equipment do you have?</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {preferences.kitchenEquipment.length === 0
-                      ? 'No equipment selected'
-                      : preferences.kitchenEquipment.map(e => EQUIPMENT_OPTIONS.find(o => o.value === e)?.label ?? e).join(', ')}
+                {/* Back */}
+                <button
+                  onClick={() => setStep(1)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 self-start"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Back to Kitchen
+                </button>
+
+                <h2 className="text-xl font-semibold text-foreground mb-6">Recipe Preferences</h2>
+
+                {/* ── Filters ── */}
+                <div className="space-y-4">
+
+                  {/* Meal type */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {MEAL_TYPES.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setMealType(value)}
+                          className={cn(
+                            'px-3 py-1.5 text-sm rounded-full transition-colors',
+                            mealType === value
+                              ? 'bg-primary/15 text-primary border border-primary/30'
+                              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                          )}
+                        >{label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cook time */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {COOK_TIMES.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setCookTime(value)}
+                          className={cn(
+                            'px-3 py-1.5 text-sm rounded-full transition-colors',
+                            cookTime === value
+                              ? 'bg-primary/15 text-primary border border-primary/30'
+                              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                          )}
+                        >{label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cuisine */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Cuisine</h3>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setCuisine('')}
+                        className={cn(
+                          'px-3 py-1.5 text-sm rounded-full transition-colors',
+                          cuisine === ''
+                            ? 'bg-primary/15 text-primary border border-primary/30'
+                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                        )}
+                      >Any cuisine</button>
+                      {visibleCuisines.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setCuisine(cuisine === value ? '' : value)}
+                          className={cn(
+                            'px-3 py-1.5 text-sm rounded-full transition-colors',
+                            cuisine === value
+                              ? 'bg-primary/15 text-primary border border-primary/30'
+                              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                          )}
+                        >{label}</button>
+                      ))}
+                      {!showAllCuisines && (
+                        <button
+                          onClick={() => setCuisineExpanded(true)}
+                          className="px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        >
+                          More cuisines +
+                        </button>
+                      )}
+                      {cuisineExpanded && (
+                        <button
+                          onClick={() => setCuisineExpanded(false)}
+                          className="px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-muted-foreground hover:bg-secondary/80"
+                        >
+                          Show less
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Occasion */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Occasion</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {OCCASIONS.map(({ value, label }) => (
+                        <button
+                          key={value}
+                          onClick={() => setOccasion(occasion === value ? '' : value)}
+                          className={cn(
+                            'px-3 py-1.5 text-sm rounded-full transition-colors',
+                            occasion === value
+                              ? 'bg-primary/15 text-primary border border-primary/30'
+                              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                          )}
+                        >{label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Servings */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Servings</h3>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setServings(v => Math.max(1, v - 1))}
+                        disabled={servings <= 1}
+                        className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
+                        aria-label="Decrease servings"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-16 text-center text-base font-medium text-foreground">
+                        {servings} {servings === 1 ? 'person' : 'people'}
+                      </span>
+                      <button
+                        onClick={() => setServings(v => Math.min(12, v + 1))}
+                        disabled={servings >= 12}
+                        className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
+                        aria-label="Increase servings"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Kitchen equipment — collapsible */}
+                  <div className="bg-card border border-border rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setEquipmentExpanded(v => !v)}
+                      className="flex items-center justify-between w-full px-4 py-3 text-left"
+                    >
+                      <div>
+                        <p className="text-sm font-medium text-foreground">What equipment do you have?</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {preferences.kitchenEquipment.length === 0
+                            ? 'No equipment selected'
+                            : preferences.kitchenEquipment.map(e => EQUIPMENT_OPTIONS.find(o => o.value === e)?.label ?? e).join(', ')}
+                        </p>
+                      </div>
+                      <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0 ml-2', equipmentExpanded && 'rotate-180')} />
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {equipmentExpanded && (
+                        <motion.div
+                          key="equipment"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 gap-2">
+                            {EQUIPMENT_OPTIONS.map(({ value, label }) => {
+                              const isOn = preferences.kitchenEquipment.includes(value)
+                              return (
+                                <button
+                                  key={value}
+                                  onClick={() => toggleKitchenEquipment(value)}
+                                  className={cn(
+                                    'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors text-left',
+                                    isOn
+                                      ? 'bg-primary/10 border-primary/30 text-primary'
+                                      : 'bg-secondary border-transparent text-secondary-foreground hover:bg-secondary/80'
+                                  )}
+                                >
+                                  <div className={cn(
+                                    'w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center',
+                                    isOn ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                                  )}>
+                                    {isOn && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                                  </div>
+                                  {label}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Kitchen-only toggle */}
+                  <div className="flex items-center justify-between gap-4 py-0.5">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Use my kitchen only</p>
+                      <p className="text-xs text-muted-foreground">No extras — recipes use exactly what you&apos;ve added</p>
+                    </div>
+                    <button
+                      role="switch"
+                      aria-checked={kitchenOnly}
+                      onClick={() => setKitchenOnly(v => !v)}
+                      className={cn(
+                        'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                        kitchenOnly ? 'bg-green-500' : 'bg-secondary'
+                      )}
+                    >
+                      <span className={cn(
+                        'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                        kitchenOnly ? 'translate-x-5' : 'translate-x-0'
+                      )} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* ── Serving size warning ── */}
+                {servingWarnings.length > 0 && (
+                  <div className="mt-4 bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3 flex gap-3 items-start">
+                    <span className="shrink-0 mt-0.5">⚠️</span>
+                    <div>
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                        You may not have enough {servingWarnings.join(', ')} for {servings} servings
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Consider reducing servings or adding more
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Actions ── */}
+                <div className="pt-4 border-t border-border space-y-3 mt-6">
+                  <Button
+                    size="lg"
+                    onClick={() => onGenerateRecipe(filters)}
+                    disabled={preferences.ingredients.length === 0}
+                    className="w-full rounded-full gap-2 py-6"
+                  >
+                    <Sparkles className="w-5 h-5" />
+                    Generate Recipe
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => onShowPairings(filters)}
+                    disabled={preferences.ingredients.length === 0}
+                    className="w-full rounded-full gap-2"
+                  >
+                    <Layers className="w-5 h-5" />
+                    Show Pairings
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={onFindSubstitutes}
+                    disabled={preferences.ingredients.length === 0}
+                    className="w-full rounded-full gap-2"
+                  >
+                    <ArrowLeftRight className="w-5 h-5" />
+                    Find Substitutes
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    {safeFoodsActive
+                      ? 'Recipes will use only ingredients from your safe foods list'
+                      : "We'll find recipes that match your ingredients and avoid your allergens"}
                   </p>
                 </div>
-                <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0 ml-2', equipmentExpanded && 'rotate-180')} />
-              </button>
+              </motion.div>
+            )}
 
-              <AnimatePresence initial={false}>
-                {equipmentExpanded && (
-                  <motion.div
-                    key="equipment"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                    className="overflow-hidden"
-                  >
-                    <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 gap-2">
-                      {EQUIPMENT_OPTIONS.map(({ value, label }) => {
-                        const isOn = preferences.kitchenEquipment.includes(value)
-                        return (
-                          <button
-                            key={value}
-                            onClick={() => toggleKitchenEquipment(value)}
-                            className={cn(
-                              'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors text-left',
-                              isOn
-                                ? 'bg-primary/10 border-primary/30 text-primary'
-                                : 'bg-secondary border-transparent text-secondary-foreground hover:bg-secondary/80'
-                            )}
-                          >
-                            <div className={cn(
-                              'w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center',
-                              isOn ? 'bg-primary border-primary' : 'border-muted-foreground/40'
-                            )}>
-                              {isOn && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
-                            </div>
-                            {label}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Kitchen-only toggle */}
-            <div className="flex items-center justify-between gap-4 py-0.5">
-              <div>
-                <p className="text-sm font-medium text-foreground">Use my kitchen only</p>
-                <p className="text-xs text-muted-foreground">No extras — recipes use exactly what you&apos;ve added</p>
-              </div>
-              <button
-                role="switch"
-                aria-checked={kitchenOnly}
-                onClick={() => setKitchenOnly(v => !v)}
-                className={cn(
-                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  kitchenOnly ? 'bg-green-500' : 'bg-secondary'
-                )}
-              >
-                <span className={cn(
-                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
-                  kitchenOnly ? 'translate-x-5' : 'translate-x-0'
-                )} />
-              </button>
-            </div>
-          </div>
-
-          {/* ── Actions ── */}
-          <div className="pt-4 border-t border-border space-y-3 mt-6">
-            <Button
-              size="lg"
-              onClick={() => onGenerateRecipe(filters)}
-              disabled={preferences.ingredients.length === 0}
-              className="w-full rounded-full gap-2 py-6"
-            >
-              <Sparkles className="w-5 h-5" />
-              Generate Recipe
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => onShowPairings(filters)}
-              disabled={preferences.ingredients.length === 0}
-              className="w-full rounded-full gap-2"
-            >
-              <Layers className="w-5 h-5" />
-              Show Pairings
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={onFindSubstitutes}
-              disabled={preferences.ingredients.length === 0}
-              className="w-full rounded-full gap-2"
-            >
-              <ArrowLeftRight className="w-5 h-5" />
-              Find Substitutes
-            </Button>
-            <p className="text-xs text-center text-muted-foreground">
-              {preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-                ? 'Recipes will use only ingredients from your safe foods list'
-                : "We'll find recipes that match your ingredients and avoid your allergens"}
-            </p>
-          </div>
+          </AnimatePresence>
 
         </div>
       </div>
 
-      {/* Autocomplete dropdown */}
+      {/* Autocomplete dropdown — portal to body for z-index */}
       {isMounted && createPortal(
         <AnimatePresence>
           {showDropdown && dropdownItems.length > 0 && (
