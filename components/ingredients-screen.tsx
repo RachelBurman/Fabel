@@ -524,31 +524,23 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
               hasUserAllergen(name, effectiveAllergens, effectiveCustomAllergens)
 
             const quickAddList = safeFoodsActive
-              ? preferences.safeIngredients.filter(name => !isFlagged(name))
-              : POPULAR_POOL.filter(name => !isFlagged(name)).slice(0, QUICK_ADD_COUNT)
+              ? preferences.safeIngredients.filter(name => !isFlagged(name) && !addedNames.has(name))
+              : POPULAR_POOL.filter(name => !isFlagged(name) && !addedNames.has(name)).slice(0, QUICK_ADD_COUNT)
 
             return (
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
                 <div className="flex flex-wrap gap-2">
-                  {quickAddList.map(name => {
-                    const selected = addedNames.has(name)
-                    return (
-                      <button
-                        key={name}
-                        onClick={() => selected ? removeIngredient(name) : handleQuickAdd(name)}
-                        className={cn(
-                          'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors',
-                          selected
-                            ? 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'
-                            : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                        )}
-                      >
-                        {selected ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5 opacity-50" />}
-                        {displayName(name)}
-                      </button>
-                    )
-                  })}
+                  {quickAddList.map(name => (
+                    <button
+                      key={name}
+                      onClick={() => handleQuickAdd(name)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    >
+                      <Plus className="w-3.5 h-3.5 opacity-50" />
+                      {displayName(name)}
+                    </button>
+                  ))}
                 </div>
               </div>
             )
