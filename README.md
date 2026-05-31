@@ -19,7 +19,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
-| Testing | Jest 29, ts-jest, React Testing Library — 46 tests across 4 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 101 tests across 5 suites |
 
 ---
 
@@ -199,34 +199,58 @@ In-memory (loaded at server startup)
 
 ---
 
-## In Progress
-
-Nothing currently in progress.
-
----
-
 ## Roadmap
 
+### ✅ Completed
+- ✅ Allergen truth table with edge cases (oat milk, almond milk etc)
+- ✅ Custom allergen search across all 1,790 ingredients
+- ✅ Safe Foods Mode for MCAS and restricted diets
+- ✅ Kitchen areas (fridge, freezer, cupboard, pantry)
+- ✅ Use-by and bought date tracking with shelf life calculation
+- ✅ Expiry prioritisation in recipe generation
+- ✅ Quantities and subtypes per ingredient
+- ✅ Use my kitchen only mode
+- ✅ Meal type filter (Snack, Starter, Main, Dessert)
+- ✅ Cook time filter (Quick, Medium, Slow Cook)
+- ✅ Drink pairings via Epicure embeddings
+- ✅ Collections feature with DynamoDB persistence
+- ✅ Like/dislike feedback system
+- ✅ Macros toggle (off by default, eating disorder safe)
+- ✅ Substitutes mode with context-aware scoring
+- ✅ Recipe adaptation from pasted recipes
+- ✅ Diet restriction presets (Vegan, Vegetarian, Keto, Low-FODMAP)
+- ✅ Lactose intolerance with include/exclude modes and Lactaid reminder
+- ✅ Quick-add chips filter allergens automatically
+- ✅ 101 passing tests across 5 test suites
+
+### In Progress
+- [ ] Cuisine inspiration filter — Chinese, Korean, Spanish, Italian, Japanese, Indian, Mexican, French, Moroccan, Thai, British, Greek, Turkish
+- [ ] Occasion filter — Weeknight, Dinner Party, Street Food, Comfort Food, Packed Lunch, Romantic Dinner
+- [ ] Servings stepper — scale recipe quantities for 1–12 people
+- [ ] Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot
+- [ ] Dark mode
+
 ### Near Term
-- [ ] High histamine preset — for MCAS users who react to histamine-rich foods
-- [ ] Onboarding tutorial slideshow — 4-5 slides shown on first launch highlighting key features (allergen setup, Safe Foods Mode, kitchen areas, macros toggle, drink pairings). Skippable, never shown again after completion. Accessible anytime via a "?" help button in the header.
-- [ ] Nutritional database integration — replace Claude's estimated macros with verified data from USDA FoodData Central (free, government-maintained, 300,000+ foods) or Edamam's recipe nutrition API. Provides clinically accurate calorie and macro information per ingredient rather than AI estimates.
+- [ ] Onboarding tutorial slideshow — 4-5 slides on first launch
+- [ ] Nutritional database integration — USDA FoodData Central for accurate macros
+- [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
+- [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
+- [ ] Ingredient substitutes improvements — better functional category matching
 
 ### Medium Term
+- [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware suggestions
 - [ ] Recipe cost calculator — grocery API integration (Tesco, Sainsbury's, Kroger)
-- [ ] Recipe sharing — share generated recipes via link
-- [ ] Food waste dashboard — track expiring ingredients and log waste saved
-- [ ] Push notifications — alerts for ingredients approaching expiry
+- [ ] Push notifications — expiring ingredient alerts
+- [ ] Recipe sharing — share generated recipes with friends
+- [ ] Native mobile app — iOS and Android for camera/barcode features
 
 ### Research & Future
 - [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
-- [ ] Medical nutrition database — elemental formulas and medical-grade substitutes for severe MCAS
-- [ ] FALCPA and Monash University FODMAP data integration
+- [ ] On-device AI — Liquid AI LFM2.5 for private on-device allergen filtering
+- [ ] Medical nutrition database — elemental formulas for severe MCAS
 - [ ] Multilingual UI — Epicure supports 7 languages
-- [ ] AI-generated recipe photography
-- [ ] On-device AI — explore Liquid AI's LFM2.5 (1.2B parameter, open weights on HuggingFace) for running allergen filtering and ingredient matching entirely on-device. Particularly compelling for MCAS users whose sensitive medical dietary data would never leave their phone.
-- [ ] Barcode/QR scanning — scan food product barcodes via camera, match to nearest Epicure ingredient using Open Food Facts API (free, 3M+ products), auto-detect allergens from product ingredient list, add to kitchen with use-by date from packaging.
-- [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware recipe suggestions (post-workout high protein, low-energy quick meals), automatic allergy import from health records, and glucose-aware suggestions for diabetic users with CGM data.
+- [ ] Garmin/Apple Health/Google Health integration for glucose-aware suggestions for diabetic users
+- [ ] High histamine preset for MCAS
 
 ---
 
@@ -234,8 +258,10 @@ Nothing currently in progress.
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
+- **101** passing automated tests ensuring allergen safety accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
+- Lactose intolerance include/exclude modes with medication reminders
 - Macros are off by default — a deliberate decision for eating disorder recovery users
 
 ---
