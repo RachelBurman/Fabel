@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
-import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar, ArrowLeftRight, ChevronDown, ChevronLeft, ChevronRight, Minus } from 'lucide-react'
+import { Plus, X, Search, ChefHat, Sparkles, Layers, Calendar, ArrowLeftRight, ChevronLeft, ChevronRight, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -191,28 +191,28 @@ function formatDate(dateStr: string): string {
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
-function StepIndicator({ step }: { step: 1 | 2 }) {
+function StepIndicator({ step, onNavigate }: { step: 1 | 2; onNavigate: (s: 1 | 2) => void }) {
   return (
-    <div className="flex items-center justify-center gap-3 mb-6">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-center gap-3 mb-4">
+      <button onClick={() => onNavigate(1)} className="flex items-center gap-2">
         <div className={cn(
-          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold',
-          step === 1 ? 'bg-primary text-primary-foreground' : 'bg-primary/20 text-primary'
+          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors',
+          step === 1 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
         )}>1</div>
-        <span className={cn('text-sm font-medium', step === 1 ? 'text-foreground' : 'text-muted-foreground')}>
+        <span className={cn('text-sm font-medium transition-colors', step === 1 ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           Kitchen
         </span>
-      </div>
+      </button>
       <div className="w-8 h-px bg-border" />
-      <div className="flex items-center gap-2">
+      <button onClick={() => onNavigate(2)} className="flex items-center gap-2">
         <div className={cn(
-          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold',
+          'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold transition-colors',
           step === 2 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
         )}>2</div>
-        <span className={cn('text-sm font-medium', step === 2 ? 'text-foreground' : 'text-muted-foreground')}>
+        <span className={cn('text-sm font-medium transition-colors', step === 2 ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
           Preferences
         </span>
-      </div>
+      </button>
     </div>
   )
 }
@@ -221,22 +221,22 @@ function StepIndicator({ step }: { step: 1 | 2 }) {
 
 function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
   return (
-    <div className="text-center mb-8">
+    <div className="text-center mb-5">
       <div
-        className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+        className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"
         style={safeFoodsActive
           ? { backgroundColor: 'rgba(34,197,94,0.12)' }
           : { backgroundColor: 'var(--primary-10, oklch(0.55 0.12 145 / 0.1))' }}
       >
         <ChefHat
-          className="w-8 h-8"
+          className="w-6 h-6"
           style={safeFoodsActive ? { color: '#16a34a' } : { color: 'var(--primary)' }}
         />
       </div>
-      <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
+      <h1 className="text-xl md:text-2xl font-semibold text-foreground mb-1 text-balance">
         {safeFoodsActive ? 'Which safe ingredients do you have today?' : "What's in your kitchen?"}
       </h1>
-      <p className="text-muted-foreground text-pretty">
+      <p className="text-sm text-muted-foreground text-pretty">
         {safeFoodsActive
           ? 'Pick from your safe list — recipes will use only these ingredients'
           : "Add the ingredients you have and we'll find matching recipes"}
@@ -282,7 +282,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const [cuisine, setCuisine] = useState('')
   const [occasion, setOccasion] = useState('')
   const [servings, setServings] = useState(2)
-  const [equipmentExpanded, setEquipmentExpanded] = useState(false)
   const [cuisineExpanded, setCuisineExpanded] = useState(false)
 
   // Portal dropdown positioning
@@ -403,10 +402,10 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
-      <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
+      <div className="flex-1 flex flex-col px-6 py-4 md:py-8">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
 
-          <StepIndicator step={step} />
+          <StepIndicator step={step} onNavigate={setStep} />
 
           <AnimatePresence mode="wait">
 
@@ -423,7 +422,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                 <IngredientsHeader safeFoodsActive={safeFoodsActive} />
 
                 {/* Search */}
-                <div className="relative mb-4">
+                <div className="relative mb-3">
                   <div ref={inputWrapperRef} className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
@@ -587,7 +586,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
                 {/* ── Selected ingredients ── */}
                 {preferences.ingredients.length > 0 && (
-                  <div className="mb-6">
+                  <div className="mb-3">
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">
                       Your ingredients ({preferences.ingredients.length})
                     </h3>
@@ -653,7 +652,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
                   return (
                     <div className="flex-1">
-                      <h3 className="text-sm font-medium text-muted-foreground mb-3">{label}</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">{label}</h3>
                       <div className="flex flex-wrap gap-2">
                         {quickAddList.map(name => (
                           <button
@@ -671,7 +670,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                 })()}
 
                 {/* ── Next ── */}
-                <div className="pt-6 mt-6 border-t border-border">
+                <div className="pt-4 mt-4 border-t border-border">
                   <Button
                     size="lg"
                     onClick={handleGoToStep2}
@@ -835,61 +834,26 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     </div>
                   </div>
 
-                  {/* Kitchen equipment — collapsible */}
-                  <div className="bg-card border border-border rounded-xl overflow-hidden">
-                    <button
-                      onClick={() => setEquipmentExpanded(v => !v)}
-                      className="flex items-center justify-between w-full px-4 py-3 text-left"
-                    >
-                      <div>
-                        <p className="text-sm font-medium text-foreground">What equipment do you have?</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {preferences.kitchenEquipment.length === 0
-                            ? 'No equipment selected'
-                            : preferences.kitchenEquipment.map(e => EQUIPMENT_OPTIONS.find(o => o.value === e)?.label ?? e).join(', ')}
-                        </p>
-                      </div>
-                      <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0 ml-2', equipmentExpanded && 'rotate-180')} />
-                    </button>
-
-                    <AnimatePresence initial={false}>
-                      {equipmentExpanded && (
-                        <motion.div
-                          key="equipment"
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2, ease: 'easeInOut' }}
-                          className="overflow-hidden"
-                        >
-                          <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 gap-2">
-                            {EQUIPMENT_OPTIONS.map(({ value, label }) => {
-                              const isOn = preferences.kitchenEquipment.includes(value)
-                              return (
-                                <button
-                                  key={value}
-                                  onClick={() => toggleKitchenEquipment(value)}
-                                  className={cn(
-                                    'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors text-left',
-                                    isOn
-                                      ? 'bg-primary/10 border-primary/30 text-primary'
-                                      : 'bg-secondary border-transparent text-secondary-foreground hover:bg-secondary/80'
-                                  )}
-                                >
-                                  <div className={cn(
-                                    'w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center',
-                                    isOn ? 'bg-primary border-primary' : 'border-muted-foreground/40'
-                                  )}>
-                                    {isOn && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
-                                  </div>
-                                  {label}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                  {/* Kitchen equipment */}
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Kitchen equipment</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {EQUIPMENT_OPTIONS.map(({ value, label }) => {
+                        const isOn = preferences.kitchenEquipment.includes(value)
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => toggleKitchenEquipment(value)}
+                            className={cn(
+                              'px-3 py-1.5 text-sm rounded-full transition-colors',
+                              isOn
+                                ? 'bg-primary/15 text-primary border border-primary/30'
+                                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                            )}
+                          >{label}</button>
+                        )
+                      })}
+                    </div>
                   </div>
 
                   {/* Kitchen-only toggle */}
