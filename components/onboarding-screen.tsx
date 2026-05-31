@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ALLERGENS } from '@/lib/types'
+import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, Leaf, ArrowRight, ShieldCheck, Shield } from 'lucide-react'
+import { Check, Leaf, ArrowRight, ShieldCheck, Shield, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
@@ -17,8 +17,9 @@ interface OnboardingScreenProps {
 type Step = 'welcome' | 'allergens' | 'safe-foods-intro' | 'safe-foods-setup'
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode } = useFable()
+  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode, togglePreset, setLactoseIntolerant, setLactoseMode } = useFable()
   const [step, setStep] = useState<Step>('welcome')
+  const [isDietExpanded, setIsDietExpanded] = useState(false)
 
   const handleContinue = () => {
     if (step === 'welcome') setStep('allergens')
@@ -133,11 +134,160 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               {/* Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
-                  Select your allergens
+                  Your dietary restrictions
                 </h2>
                 <p className="text-muted-foreground text-pretty">
-                  We&apos;ll filter out recipes that contain these ingredients
+                  Set your diet and allergens — we&apos;ll filter recipes to match
                 </p>
+              </div>
+
+              {/* Diet & Lifestyle — collapsible */}
+              <div className="mb-6">
+                <button
+                  onClick={() => setIsDietExpanded(v => !v)}
+                  className="flex items-center justify-between w-full text-left group mb-3"
+                >
+                  <h3 className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                    Diet &amp; Lifestyle
+                  </h3>
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                    {preferences.activePresets.length > 0 || preferences.lactoseIntolerant
+                      ? [
+                          ...preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id),
+                          ...(preferences.lactoseIntolerant ? ['Lactose'] : []),
+                        ].join(', ') + ' active'
+                      : 'None active'}
+                    <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
+                  </span>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isDietExpanded && (
+                    <motion.div
+                      key="diet-onboarding"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
+                      <div className="space-y-2">
+                        {Object.values(DIET_PRESETS).map(preset => {
+                          const isActive = preferences.activePresets.includes(preset.id)
+                          return (
+                            <div
+                              key={preset.id}
+                              className={cn(
+                                'flex items-center justify-between gap-4 px-4 py-3 rounded-xl border transition-colors',
+                                isActive ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-xl">{preset.emoji}</span>
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">{preset.label}</p>
+                                  <p className="text-xs text-muted-foreground">{preset.description}</p>
+                                </div>
+                              </div>
+                              <button
+                                role="switch"
+                                aria-checked={isActive}
+                                onClick={() => togglePreset(preset.id)}
+                                className={cn(
+                                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                                  isActive ? 'bg-amber-500' : 'bg-secondary'
+                                )}
+                              >
+                                <span className={cn(
+                                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                                  isActive ? 'translate-x-5' : 'translate-x-0'
+                                )} />
+                              </button>
+                            </div>
+                          )
+                        })}
+
+                        {/* Lactose Intolerance */}
+                        <div className={cn(
+                          'rounded-xl border transition-colors',
+                          preferences.lactoseIntolerant ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                        )}>
+                          <div className="flex items-center justify-between gap-4 px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">🥛</span>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
+                                    ? 'Dairy allowed — Lactaid reminder shown on recipes'
+                                    : preferences.lactoseIntolerant
+                                    ? 'Dairy excluded from all results'
+                                    : 'Shows a Lactaid reminder on dairy-containing recipes'}
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              role="switch"
+                              aria-checked={preferences.lactoseIntolerant}
+                              onClick={() => setLactoseIntolerant(!preferences.lactoseIntolerant)}
+                              className={cn(
+                                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                                preferences.lactoseIntolerant ? 'bg-amber-500' : 'bg-secondary'
+                              )}
+                            >
+                              <span className={cn(
+                                'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                                preferences.lactoseIntolerant ? 'translate-x-5' : 'translate-x-0'
+                              )} />
+                            </button>
+                          </div>
+
+                          <AnimatePresence initial={false}>
+                            {preferences.lactoseIntolerant && (
+                              <motion.div
+                                key="lactose-mode-onboarding"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.18, ease: 'easeInOut' }}
+                                className="overflow-hidden"
+                              >
+                                <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
+                                  {([
+                                    { value: 'include' as const, label: 'Include dairy with reminders', desc: "Dairy stays in recipes — you'll see a Lactaid reminder" },
+                                    { value: 'exclude' as const, label: 'Exclude dairy entirely', desc: 'Treats dairy like an allergen, filtered from all results' },
+                                  ]).map(({ value, label, desc }) => (
+                                    <button
+                                      key={value}
+                                      onClick={() => setLactoseMode(value)}
+                                      className={cn(
+                                        'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                                        preferences.lactoseMode === value ? 'bg-amber-500/10' : 'hover:bg-amber-500/5'
+                                      )}
+                                    >
+                                      <div className={cn(
+                                        'mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center',
+                                        preferences.lactoseMode === value ? 'border-amber-500 bg-amber-500' : 'border-muted-foreground'
+                                      )}>
+                                        {preferences.lactoseMode === value && (
+                                          <span className="w-1.5 h-1.5 rounded-full bg-white block" />
+                                        )}
+                                      </div>
+                                      <div>
+                                        <p className="text-sm font-medium text-foreground">{label}</p>
+                                        <p className="text-xs text-muted-foreground">{desc}</p>
+                                      </div>
+                                    </button>
+                                  ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Allergen Grid — fills available height */}
