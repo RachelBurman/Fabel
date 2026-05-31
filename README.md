@@ -72,6 +72,10 @@ pnpm dev
 - Quick-add chips for popular ingredients (adapts to Safe Foods list when mode is active)
 - Meal type filter — Snack, Starter, Main Course, Dessert
 - Cook time filter — Quick (<30 min), Medium (30–60 min), Slow Cook (60 min+)
+- **Cuisine filter** — 13 cuisines + "Surprise me", horizontal-scrollable chip row, single-select with "Any cuisine" default
+- **Occasion filter** — Weeknight, Dinner Party, Street Food, Comfort Food, Packed Lunch, Romantic Dinner, Meal Prep, Celebration
+- **Servings stepper** — +/− control for 1–12 people (default 2); quantities in the prompt are scaled accordingly
+- **Kitchen equipment** — collapsible "What equipment do you have?" section with checkboxes for Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue/Grill, Instant Pot; Hob and Oven on by default; preference persisted permanently to DynamoDB
 - **Use my kitchen only** toggle — constrains recipe generation to exactly the ingredients added; skips Epicure pairings and adds a hard prompt constraint so Claude adds nothing extra
 - Ingredient list persisted in DynamoDB with debounced auto-save; old string-array profiles migrated automatically
 
@@ -108,6 +112,12 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - Quick-add chips on the ingredient screen switch to the user's safe foods list
 - Mode indicator badge in the app header; toggle in allergen settings
 - Safe ingredients and mode preference persisted in DynamoDB
+
+### Dark Mode
+- 🌙 / ☀️ toggle in the header alongside the settings cog
+- Toggle also available in Allergen Settings
+- Preference persisted to DynamoDB — carries across devices
+- Full `dark:` variant support via Tailwind and the existing `.dark` CSS variable theme
 
 ### Nutritional Information (Macros)
 - "Show nutritional information" toggle in Allergen Settings — **off by default**
@@ -186,7 +196,8 @@ Vercel — Next.js 16 (App Router)
 DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
   │                            ingredients[]{name, displayName, subtype, quantity, unit,
-  │                            area, dateType, useByDate, boughtDate, addedAt})
+  │                            area, dateType, useByDate, boughtDate, addedAt},
+  │                            kitchenEquipment[], darkMode)
   ├── fable-saved-recipes      Saved recipes with full recipe JSON
   ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], createdAt, updatedAt)
   └── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
@@ -222,13 +233,13 @@ In-memory (loaded at server startup)
 - ✅ Lactose intolerance with include/exclude modes and Lactaid reminder
 - ✅ Quick-add chips filter allergens automatically
 - ✅ 101 passing tests across 5 test suites
+- ✅ Cuisine inspiration filter — 13 cuisines + Surprise me, horizontal scroll chip row
+- ✅ Occasion filter — Weeknight, Dinner Party, Street Food, Comfort Food, Packed Lunch, Romantic Dinner, Meal Prep, Celebration
+- ✅ Servings stepper — scale recipe quantities for 1–12 people (default 2)
+- ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
+- ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
 
 ### In Progress
-- [ ] Cuisine inspiration filter — Chinese, Korean, Spanish, Italian, Japanese, Indian, Mexican, French, Moroccan, Thai, British, Greek, Turkish
-- [ ] Occasion filter — Weeknight, Dinner Party, Street Food, Comfort Food, Packed Lunch, Romantic Dinner
-- [ ] Servings stepper — scale recipe quantities for 1–12 people
-- [ ] Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot
-- [ ] Dark mode
 
 ### Near Term
 - [ ] Onboarding tutorial slideshow — 4-5 slides on first launch

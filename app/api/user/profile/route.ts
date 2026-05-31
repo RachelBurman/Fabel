@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   if (!result.Item) return NextResponse.json({});
 
-  const { allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant, lactoseMode } =
+  const { allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant, lactoseMode, kitchenEquipment, darkMode } =
     result.Item;
 
   return NextResponse.json({
@@ -49,6 +49,8 @@ export async function GET(req: NextRequest) {
     activePresets,
     lactoseIntolerant,
     lactoseMode,
+    kitchenEquipment,
+    darkMode,
   });
 }
 
@@ -64,6 +66,8 @@ export async function PUT(req: NextRequest) {
     activePresets?: string[];
     lactoseIntolerant?: boolean;
     lactoseMode?: 'include' | 'exclude';
+    kitchenEquipment?: string[];
+    darkMode?: boolean;
   };
   try {
     body = await req.json();
@@ -71,7 +75,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant, lactoseMode } =
+  const { userId, allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant, lactoseMode, kitchenEquipment, darkMode } =
     body;
   if (!userId)
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
@@ -90,6 +94,8 @@ export async function PUT(req: NextRequest) {
         activePresets: activePresets ?? [],
         lactoseIntolerant: lactoseIntolerant ?? false,
         lactoseMode: lactoseMode ?? 'include',
+        kitchenEquipment: kitchenEquipment ?? ['hob', 'oven'],
+        darkMode: darkMode ?? false,
         updatedAt: new Date().toISOString(),
       },
     })

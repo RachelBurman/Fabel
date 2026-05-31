@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
@@ -15,8 +16,16 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, isLoadingProfile } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, isLoadingProfile } = useFable()
+  const { theme, setTheme } = useTheme()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+  const isDark = theme === 'dark'
+
+  const handleThemeToggle = () => {
+    const newDark = !isDark
+    setTheme(newDark ? 'dark' : 'light')
+    setDarkMode(newDark)
+  }
 
   const activePresetLabels = preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id)
   const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant
@@ -315,6 +324,32 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
             <p className="text-xs text-muted-foreground mt-2.5">
               Calorie and macro information is hidden by default out of respect for users in eating disorder recovery.
             </p>
+          </div>
+
+          {/* Dark mode */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {isDark ? <Moon className="w-5 h-5 text-muted-foreground" /> : <Sun className="w-5 h-5 text-muted-foreground" />}
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Dark mode</p>
+                  <p className="text-xs text-muted-foreground">{isDark ? 'Currently using dark theme' : 'Currently using light theme'}</p>
+                </div>
+              </div>
+              <button
+                onClick={handleThemeToggle}
+                className={cn(
+                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                  isDark ? 'bg-green-500' : 'bg-secondary'
+                )}
+                aria-label="Toggle dark mode"
+              >
+                <span className={cn(
+                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                  isDark ? 'translate-x-5' : 'translate-x-0'
+                )} />
+              </button>
+            </div>
           </div>
 
           {/* Done */}

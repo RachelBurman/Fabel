@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, INGREDIENT_UNITS } from '@/lib/types'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
-import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar, ArrowLeftRight } from 'lucide-react'
+import { Plus, X, Search, ChefHat, Sparkles, Layers, Check, Calendar, ArrowLeftRight, ChevronDown, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -28,6 +28,9 @@ export interface RecipeFilters {
   mealType: MealType
   cookTime: CookTime
   kitchenOnly: boolean
+  cuisine: string   // '' = any cuisine
+  occasion: string  // '' = no specific occasion
+  servings: number
 }
 
 const MEAL_TYPES: { value: MealType; label: string }[] = [
@@ -41,6 +44,45 @@ const COOK_TIMES: { value: CookTime; label: string }[] = [
   { value: 'quick',  label: 'Quick (<30m)' },
   { value: 'medium', label: 'Medium (30–60m)' },
   { value: 'slow',   label: 'Slow Cook (60m+)' },
+]
+
+const CUISINES: { value: string; label: string }[] = [
+  { value: 'chinese',  label: '🇨🇳 Chinese' },
+  { value: 'korean',   label: '🇰🇷 Korean' },
+  { value: 'spanish',  label: '🇪🇸 Spanish' },
+  { value: 'italian',  label: '🇮🇹 Italian' },
+  { value: 'japanese', label: '🇯🇵 Japanese' },
+  { value: 'indian',   label: '🇮🇳 Indian' },
+  { value: 'mexican',  label: '🇲🇽 Mexican' },
+  { value: 'french',   label: '🇫🇷 French' },
+  { value: 'moroccan', label: '🇲🇦 Moroccan' },
+  { value: 'thai',     label: '🇹🇭 Thai' },
+  { value: 'british',  label: '🇬🇧 British' },
+  { value: 'greek',    label: '🇬🇷 Greek' },
+  { value: 'turkish',  label: '🇹🇷 Turkish' },
+  { value: 'surprise', label: '🌍 Surprise me' },
+]
+
+const OCCASIONS: { value: string; label: string }[] = [
+  { value: 'Weeknight',      label: 'Weeknight' },
+  { value: 'Dinner Party',   label: 'Dinner Party' },
+  { value: 'Street Food',    label: 'Street Food' },
+  { value: 'Comfort Food',   label: 'Comfort Food' },
+  { value: 'Packed Lunch',   label: 'Packed Lunch' },
+  { value: 'Romantic Dinner',label: 'Romantic Dinner' },
+  { value: 'Meal Prep',      label: 'Meal Prep' },
+  { value: 'Celebration',    label: 'Celebration' },
+]
+
+const EQUIPMENT_OPTIONS: { value: string; label: string; defaultOn: boolean }[] = [
+  { value: 'hob',         label: '🔥 Hob',            defaultOn: true  },
+  { value: 'oven',        label: '🫙 Oven',            defaultOn: true  },
+  { value: 'microwave',   label: '📦 Microwave',       defaultOn: false },
+  { value: 'air_fryer',   label: '💨 Air Fryer',       defaultOn: false },
+  { value: 'slow_cooker', label: '🐢 Slow Cooker',     defaultOn: false },
+  { value: 'pizza_oven',  label: '🍕 Pizza Oven',      defaultOn: false },
+  { value: 'barbecue',    label: '🔥 Barbecue/Grill',  defaultOn: false },
+  { value: 'instant_pot', label: '⚡ Instant Pot',     defaultOn: false },
 ]
 
 // ─── Area + unit config ───────────────────────────────────────────────────────
@@ -125,7 +167,7 @@ interface IngredientsScreenProps {
 }
 
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
-  const { preferences, addIngredient, removeIngredient, effectiveAllergens, effectiveCustomAllergens } = useFable()
+  const { preferences, addIngredient, removeIngredient, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
   const showLactoseTag = preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
   const [inputValue, setInputValue] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -138,13 +180,17 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const [pendingQuantity, setPendingQuantity] = useState('1')
   const [pendingUnit, setPendingUnit] = useState<IngredientUnit>('pieces')
   const [pendingDateType, setPendingDateType] = useState<'use-by' | 'bought'>('use-by')
-  const [pendingDate, setPendingDate] = useState('')      // use-by date
-  const [pendingBoughtDate, setPendingBoughtDate] = useState('') // bought date
+  const [pendingDate, setPendingDate] = useState('')
+  const [pendingBoughtDate, setPendingBoughtDate] = useState('')
 
   // Filter state
   const [mealType, setMealType] = useState<MealType>('main')
   const [cookTime, setCookTime] = useState<CookTime>('medium')
   const [kitchenOnly, setKitchenOnly] = useState(false)
+  const [cuisine, setCuisine] = useState('')
+  const [occasion, setOccasion] = useState('')
+  const [servings, setServings] = useState(2)
+  const [equipmentExpanded, setEquipmentExpanded] = useState(false)
 
   // Portal dropdown positioning
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -236,14 +282,13 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     if (e.key === 'Escape') setShowDropdown(false)
   }
 
-  // Calculated expected expiry preview for the "bought date" mode
   const expectedExpiry = pendingName && pendingBoughtDate
     ? addDays(pendingBoughtDate, getShelfLifeDays(pendingName))
     : null
 
   const dropdownItems = searchResults.filter(r => !preferences.ingredients.some(i => i.name === r))
   const addedNames = new Set(preferences.ingredients.map(i => i.name))
-  const filters: RecipeFilters = { mealType, cookTime, kitchenOnly }
+  const filters: RecipeFilters = { mealType, cookTime, kitchenOnly, cuisine, occasion, servings }
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background flex flex-col">
@@ -281,7 +326,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
               >
                 <div className="bg-card border border-primary/20 rounded-xl p-4 space-y-4">
 
-                  {/* Title row */}
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-foreground">{displayName(pendingName)}</span>
                     <button onClick={resetStaging} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -289,7 +333,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     </button>
                   </div>
 
-                  {/* Subtype */}
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Specify type <span className="opacity-60">(optional)</span></p>
                     <input
@@ -302,7 +345,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     <p className="text-[11px] text-muted-foreground/60 mt-1">Helps generate more accurate recipes</p>
                   </div>
 
-                  {/* Quantity + Unit */}
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Quantity</p>
                     <div className="flex gap-2">
@@ -326,7 +368,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     </div>
                   </div>
 
-                  {/* Area */}
                   <div>
                     <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
                     <div className="flex flex-wrap gap-2">
@@ -347,7 +388,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     </div>
                   </div>
 
-                  {/* Date type toggle + picker */}
                   <div>
                     <p className="text-xs text-muted-foreground mb-2">Date</p>
                     <div className="flex gap-2 mb-2">
@@ -516,6 +556,8 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
           {/* ── Filters ── */}
           <div className="mt-6 space-y-4">
+
+            {/* Meal type */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
               <div className="flex flex-wrap gap-2">
@@ -533,6 +575,8 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                 ))}
               </div>
             </div>
+
+            {/* Cook time */}
             <div>
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
               <div className="flex flex-wrap gap-2">
@@ -549,6 +593,138 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   >{label}</button>
                 ))}
               </div>
+            </div>
+
+            {/* Cuisine */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Cuisine</h3>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+                <button
+                  onClick={() => setCuisine('')}
+                  className={cn(
+                    'shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors',
+                    cuisine === ''
+                      ? 'bg-primary/15 text-primary border border-primary/30'
+                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  )}
+                >
+                  Any cuisine
+                </button>
+                {CUISINES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setCuisine(cuisine === value ? '' : value)}
+                    className={cn(
+                      'shrink-0 px-3 py-1.5 text-sm rounded-full transition-colors',
+                      cuisine === value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    )}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Occasion */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Occasion</h3>
+              <div className="flex flex-wrap gap-2">
+                {OCCASIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setOccasion(occasion === value ? '' : value)}
+                    className={cn(
+                      'px-3 py-1.5 text-sm rounded-full transition-colors',
+                      occasion === value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                    )}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Servings */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Servings</h3>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setServings(v => Math.max(1, v - 1))}
+                  disabled={servings <= 1}
+                  className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
+                  aria-label="Decrease servings"
+                >
+                  <Minus className="w-4 h-4" />
+                </button>
+                <span className="w-16 text-center text-base font-medium text-foreground">
+                  {servings} {servings === 1 ? 'person' : 'people'}
+                </span>
+                <button
+                  onClick={() => setServings(v => Math.min(12, v + 1))}
+                  disabled={servings >= 12}
+                  className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center text-secondary-foreground hover:bg-secondary/80 disabled:opacity-40 transition-colors"
+                  aria-label="Increase servings"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Kitchen equipment — collapsible */}
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <button
+                onClick={() => setEquipmentExpanded(v => !v)}
+                className="flex items-center justify-between w-full px-4 py-3 text-left"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">What equipment do you have?</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {preferences.kitchenEquipment.length === 0
+                      ? 'No equipment selected'
+                      : preferences.kitchenEquipment.map(e => EQUIPMENT_OPTIONS.find(o => o.value === e)?.label ?? e).join(', ')}
+                  </p>
+                </div>
+                <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0 ml-2', equipmentExpanded && 'rotate-180')} />
+              </button>
+
+              <AnimatePresence initial={false}>
+                {equipmentExpanded && (
+                  <motion.div
+                    key="equipment"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 pt-1 border-t border-border grid grid-cols-2 gap-2">
+                      {EQUIPMENT_OPTIONS.map(({ value, label }) => {
+                        const isOn = preferences.kitchenEquipment.includes(value)
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => toggleKitchenEquipment(value)}
+                            className={cn(
+                              'flex items-center gap-2 px-3 py-2.5 rounded-lg border text-sm transition-colors text-left',
+                              isOn
+                                ? 'bg-primary/10 border-primary/30 text-primary'
+                                : 'bg-secondary border-transparent text-secondary-foreground hover:bg-secondary/80'
+                            )}
+                          >
+                            <div className={cn(
+                              'w-4 h-4 rounded border-2 shrink-0 flex items-center justify-center',
+                              isOn ? 'bg-primary border-primary' : 'border-muted-foreground/40'
+                            )}>
+                              {isOn && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                            </div>
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Kitchen-only toggle */}

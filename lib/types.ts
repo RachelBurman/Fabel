@@ -80,6 +80,8 @@ export interface UserPreferences {
   activePresets: string[]   // active diet preset IDs
   lactoseIntolerant: boolean
   lactoseMode: 'include' | 'exclude' // 'include' = dairy allowed with Lactaid reminder; 'exclude' = treat dairy as allergen
+  kitchenEquipment: string[] // equipment the user has available (persisted)
+  darkMode: boolean           // app-level dark mode preference (persisted)
 }
 
 export interface DietPreset {

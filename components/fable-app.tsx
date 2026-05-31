@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem } from '@/lib/types'
 import { OnboardingScreen } from '@/components/onboarding-screen'
@@ -29,6 +30,7 @@ type Screen =
 
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
+  const { setTheme } = useTheme()
 
   // All hooks must be declared before any early return (Rules of Hooks)
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
@@ -36,7 +38,7 @@ function FableAppContent() {
 
   const [pairings, setPairings] = useState<PairingSuggestion[]>([])
   const [isLoadingPairings, setIsLoadingPairings] = useState(false)
-  const [recipeFilters, setRecipeFilters] = useState<RecipeFilters>({ mealType: 'main', cookTime: 'medium', kitchenOnly: false })
+  const [recipeFilters, setRecipeFilters] = useState<RecipeFilters>({ mealType: 'main', cookTime: 'medium', kitchenOnly: false, cuisine: '', occasion: '', servings: 2 })
 
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [generatedRecipeId, setGeneratedRecipeId] = useState('')
@@ -55,6 +57,13 @@ function FableAppContent() {
       setCurrentScreen('ingredients')
     }
   }, [hasCompletedOnboarding, currentScreen])
+
+  // Sync dark mode from DynamoDB once profile finishes loading
+  useEffect(() => {
+    if (!isLoadingProfile) {
+      setTheme(preferences.darkMode ? 'dark' : 'light')
+    }
+  }, [isLoadingProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load recent disliked patterns to influence future generation
   useEffect(() => {
@@ -162,6 +171,10 @@ function FableAppContent() {
           mealType: filters.mealType,
           cookTime: filters.cookTime,
           kitchenOnly: filters.kitchenOnly,
+          cuisine: filters.cuisine,
+          occasion: filters.occasion,
+          servings: filters.servings,
+          kitchenEquipment: preferences.kitchenEquipment,
           showMacros: preferences.showMacros,
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
@@ -207,6 +220,10 @@ function FableAppContent() {
           mealType: recipeFilters.mealType,
           cookTime: recipeFilters.cookTime,
           kitchenOnly: recipeFilters.kitchenOnly,
+          cuisine: recipeFilters.cuisine,
+          occasion: recipeFilters.occasion,
+          servings: recipeFilters.servings,
+          kitchenEquipment: preferences.kitchenEquipment,
           showMacros: preferences.showMacros,
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),

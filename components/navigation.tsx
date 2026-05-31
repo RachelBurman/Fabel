@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight } from 'lucide-react'
+import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { useFable } from '@/lib/fable-context'
 
@@ -57,8 +58,16 @@ interface HeaderProps {
 }
 
 export function Header({ onSettingsClick }: HeaderProps) {
-  const { preferences } = useFable()
+  const { preferences, setDarkMode } = useFable()
+  const { theme, setTheme } = useTheme()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+  const isDark = theme === 'dark'
+
+  const handleThemeToggle = () => {
+    const newDark = !isDark
+    setTheme(newDark ? 'dark' : 'light')
+    setDarkMode(newDark)
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
@@ -80,14 +89,23 @@ export function Header({ onSettingsClick }: HeaderProps) {
             </motion.div>
           )}
         </div>
-        {onSettingsClick && (
+        <div className="flex items-center gap-1">
           <button
-            onClick={onSettingsClick}
+            onClick={handleThemeToggle}
+            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
-            <Settings className="w-5 h-5" />
+            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-        )}
+          {onSettingsClick && (
+            <button
+              onClick={onSettingsClick}
+              className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
     </header>
   )

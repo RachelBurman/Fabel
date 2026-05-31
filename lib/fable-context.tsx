@@ -27,6 +27,9 @@ interface FableContextType {
   togglePreset: (presetId: string) => void
   setLactoseIntolerant: (active: boolean) => void
   setLactoseMode: (mode: 'include' | 'exclude') => void
+  setKitchenEquipment: (equipment: string[]) => void
+  toggleKitchenEquipment: (item: string) => void
+  setDarkMode: (dark: boolean) => void
   effectiveAllergens: string[]
   effectiveCustomAllergens: string[]
   savedRecipes: Recipe[]
@@ -103,6 +106,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     activePresets: [],
     lactoseIntolerant: false,
     lactoseMode: 'include' as const,
+    kitchenEquipment: ['hob', 'oven'],
+    darkMode: false,
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -147,6 +152,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             activePresets?: string[]
             lactoseIntolerant?: boolean
             lactoseMode?: 'include' | 'exclude'
+            kitchenEquipment?: string[]
+            darkMode?: boolean
           } = await profileRes.json()
           // Restore state if the profile has any data worth loading
           if (
@@ -166,6 +173,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
               activePresets: profile.activePresets ?? prev.activePresets,
               lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
               lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
+              kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
+              darkMode: profile.darkMode ?? prev.darkMode,
             }))
             setHasCompletedOnboarding(true)
           }
@@ -222,6 +231,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             activePresets: preferences.activePresets,
             lactoseIntolerant: preferences.lactoseIntolerant,
             lactoseMode: preferences.lactoseMode,
+            kitchenEquipment: preferences.kitchenEquipment,
+            darkMode: preferences.darkMode,
           }),
         })
       } catch (err) {
@@ -231,7 +242,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.darkMode])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -340,6 +351,23 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setLactoseMode = useCallback((mode: 'include' | 'exclude') => {
     setPreferences(prev => ({ ...prev, lactoseMode: mode }))
+  }, [])
+
+  const setKitchenEquipment = useCallback((equipment: string[]) => {
+    setPreferences(prev => ({ ...prev, kitchenEquipment: equipment }))
+  }, [])
+
+  const toggleKitchenEquipment = useCallback((item: string) => {
+    setPreferences(prev => ({
+      ...prev,
+      kitchenEquipment: prev.kitchenEquipment.includes(item)
+        ? prev.kitchenEquipment.filter(e => e !== item)
+        : [...prev.kitchenEquipment, item],
+    }))
+  }, [])
+
+  const setDarkMode = useCallback((dark: boolean) => {
+    setPreferences(prev => ({ ...prev, darkMode: dark }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -484,6 +512,9 @@ export function FableProvider({ children }: { children: ReactNode }) {
         togglePreset,
         setLactoseIntolerant,
         setLactoseMode,
+        setKitchenEquipment,
+        toggleKitchenEquipment,
+        setDarkMode,
         effectiveAllergens,
         effectiveCustomAllergens,
         savedRecipes,

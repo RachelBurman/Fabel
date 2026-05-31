@@ -190,6 +190,10 @@ export async function POST(req: NextRequest) {
     dislikedIngredients?: unknown;
     showMacros?: unknown;
     recipeContext?: unknown;
+    cuisine?: unknown;
+    occasion?: unknown;
+    servings?: unknown;
+    kitchenEquipment?: unknown;
   };
   try {
     body = await req.json();
@@ -289,6 +293,18 @@ export async function POST(req: NextRequest) {
     ? (body.dislikedIngredients as unknown[]).filter((i): i is string => typeof i === "string")
     : [];
 
+  const cuisine =
+    typeof body.cuisine === "string" && body.cuisine.trim() ? body.cuisine.trim() : "";
+  const occasion =
+    typeof body.occasion === "string" && body.occasion.trim() ? body.occasion.trim() : "";
+  const servings =
+    typeof body.servings === "number" && body.servings >= 1
+      ? Math.round(body.servings)
+      : 2;
+  const kitchenEquipment = Array.isArray(body.kitchenEquipment)
+    ? (body.kitchenEquipment as unknown[]).filter((e): e is string => typeof e === "string")
+    : [];
+
   const mealType =
     typeof body.mealType === "string" ? body.mealType : "main course";
 
@@ -334,6 +350,22 @@ export async function POST(req: NextRequest) {
       : `Salt/seasoning: NO salt or seasoning appears in the safe list. Do NOT add salt, pepper, spices, herbs, or any seasoning unless it explicitly appears in the approved list. If a step would normally call for seasoning, use the ingredient name "seasoning of choice" and include this note in the step: "(use any salt or seasoning you can safely consume, or omit entirely)".`
     : "";
 
+  const cuisineClause =
+    cuisine === "surprise"
+      ? `Create a dish inspired by a cuisine of your choice — be adventurous and pick something unexpected. `
+      : cuisine
+      ? `Create a ${cuisine}-inspired dish. `
+      : "";
+
+  const occasionClause = occasion ? `This is for ${occasion}. ` : "";
+
+  const servingsClause = `Recipe should serve ${servings} ${servings === 1 ? "person" : "people"}, scale quantities accordingly. `;
+
+  const equipmentClause =
+    kitchenEquipment.length > 0
+      ? `Only use cooking techniques compatible with: ${kitchenEquipment.join(", ")}. Do not suggest methods requiring equipment not in this list. `
+      : "";
+
   const kitchenConstraint = kitchenOnly
     ? `KITCHEN CONSTRAINT: Only use the exact ingredients listed. Do not suggest, add, or imply any other ingredients. Work creatively within only what the user has available.\n\n`
     : "";
@@ -369,6 +401,7 @@ export async function POST(req: NextRequest) {
         `${liquidInstruction}\n\n` +
         `${saltInstruction}\n\n` +
         `${kitchenConstraint}` +
+        `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `The user has these approved ingredients available today (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
         `Create a ${mealType} that takes ${cookTimeLabel}. ` +
@@ -378,6 +411,7 @@ export async function POST(req: NextRequest) {
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
       : dislikedPrefix + adaptContext + `${kitchenConstraint}` +
+        `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
         `Prioritise using ingredients that expire soonest. ` +
