@@ -126,6 +126,7 @@ interface IngredientsScreenProps {
 
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
   const { preferences, addIngredient, removeIngredient, effectiveAllergens, effectiveCustomAllergens } = useFable()
+  const showLactoseTag = preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
   const [inputValue, setInputValue] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchResults, setSearchResults] = useState<string[]>([])
@@ -459,6 +460,9 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                         )}
                         <span className="text-xs opacity-80">{cfg.emoji}</span>
                         <span className="text-sm">{label}</span>
+                        {showLactoseTag && (allergenMap[ingredient.name] ?? []).includes('milk') && (
+                          <span className="text-xs opacity-75" title="Contains lactose">🥛</span>
+                        )}
                         {isRed && <span className="text-xs font-medium opacity-90">Use today!</span>}
                         <X className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 shrink-0" />
                       </motion.button>

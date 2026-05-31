@@ -28,6 +28,7 @@ interface GeneratedRecipeScreenProps {
   showMacros?: boolean
   onFindSubstitute?: (ingredient: string, context: string[]) => void
   lactoseIntolerant?: boolean
+  lactoseMode?: 'include' | 'exclude'
 }
 
 const STEPS: { key: LoadingStep; label: string }[] = [
@@ -93,6 +94,7 @@ export function GeneratedRecipeScreen({
   showMacros = false,
   onFindSubstitute,
   lactoseIntolerant = false,
+  lactoseMode,
 }: GeneratedRecipeScreenProps) {
   const isLoading = loadingStep !== null
   const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
@@ -263,6 +265,15 @@ export function GeneratedRecipeScreen({
               <p className="text-muted-foreground leading-relaxed text-pretty">
                 {recipe.description}
               </p>
+
+              {lactoseIntolerant && lactoseMode === 'include' && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-base shrink-0">🥛</span>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">Contains dairy</span> — consider taking Lactaid before eating.
+                  </p>
+                </div>
+              )}
 
               {/* Meta row */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 py-4 border-y border-border text-sm text-muted-foreground">

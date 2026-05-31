@@ -145,11 +145,14 @@ Allergen-safe ingredient substitution using Epicure embeddings, with full recipe
 One-tap diet restriction setup above the EU Big 14 allergen grid.
 
 - **Four presets**: 🌱 Vegan, 🥗 Vegetarian, 🥑 Keto, 🟢 Low-FODMAP — each maps to a curated list of Epicure ingredient keys excluded from recipe generation and pairings
-- **Lactose Intolerance** toggle — shows an amber "⚠️ May contain lactose — consider Lactaid" banner on any generated recipe whose ingredients match dairy keywords
+- **Lactose Intolerance** toggle with two sub-modes (expand when enabled):
+  - **Include dairy with reminders** — dairy stays in recipes; Claude adds a Lactaid note to the description; a 🥛 banner appears on the recipe screen; dairy kitchen ingredients show a 🥛 indicator on their tag
+  - **Exclude dairy entirely** — treats dairy exactly like a milk allergen, filtered from all results and recipe generation
+- `lactoseMode: 'include' | 'exclude'` persisted in DynamoDB alongside the toggle flag
 - Presets stack with EU Big 14 allergens and custom allergen selections; exclusions are computed at call time (`effectiveCustomAllergens`) without mutating stored preferences
-- Collapsible section with chevron and active-preset summary ("Vegan, Keto active") so the page stays clean when nothing is selected
-- All presets and lactose flag persisted in DynamoDB on the user profile
+- Collapsible section auto-expands on load when any option is active (watches `isLoadingProfile` to handle async DynamoDB load)
 - Header subtitle reflects the full restriction picture: "Vegan + 3 allergens active"
+- Substitutes "From a recipe" allergen mode: ingredients below the 45% combined score threshold show `❌ [ingredient] — contains [allergen], no suitable substitute found — will be omitted` rather than the 🔄 swap format
 
 ### Navigation & History
 - Five-tab navigation — Kitchen, Recipe, Substitutes, History, Saved

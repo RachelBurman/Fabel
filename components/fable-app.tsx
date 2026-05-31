@@ -163,6 +163,7 @@ function FableAppContent() {
           cookTime: filters.cookTime,
           kitchenOnly: filters.kitchenOnly,
           showMacros: preferences.showMacros,
+          ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...sfPayload,
@@ -207,6 +208,7 @@ function FableAppContent() {
           cookTime: recipeFilters.cookTime,
           kitchenOnly: recipeFilters.kitchenOnly,
           showMacros: preferences.showMacros,
+          ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...sfPayload,
@@ -272,6 +274,7 @@ function FableAppContent() {
           cookTime: 'medium',
           kitchenOnly: true,
           showMacros: preferences.showMacros,
+          ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(recipeContext ? { recipeContext } : {}),
         }),
       })
@@ -506,6 +509,7 @@ function FableAppContent() {
                 showMacros={preferences.showMacros}
                 onFindSubstitute={handleFindSubstitute}
                 lactoseIntolerant={preferences.lactoseIntolerant}
+                lactoseMode={preferences.lactoseMode}
               />
             </motion.div>
           )}

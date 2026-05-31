@@ -79,6 +79,7 @@ export interface UserPreferences {
   showMacros: boolean       // opt-in nutritional display; off by default
   activePresets: string[]   // active diet preset IDs
   lactoseIntolerant: boolean
+  lactoseMode: 'include' | 'exclude' // 'include' = dairy allowed with Lactaid reminder; 'exclude' = treat dairy as allergen
 }
 
 export interface DietPreset {
