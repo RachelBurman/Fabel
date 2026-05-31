@@ -269,6 +269,38 @@ In-memory (loaded at server startup)
 
 ---
 
+## Upcoming Engineering Work
+
+### AWS & Database Enhancements
+
+#### 1. Close the feedback loop *(next up)*
+`fable-feedback` currently stores like/dislike + reason tags but does not influence generation.
+The fix: `/api/generate-recipe` reads the user's feedback history from DynamoDB before building the Claude prompt, extracts preference patterns (disliked cuisines, flagged ingredients, preferred cook times), and injects them as weighted constraints. DynamoDB becomes a personalisation engine, not just a log.
+
+#### 2. DynamoDB Streams + AWS Lambda — real-time preference learning
+Attach a Lambda function to a DynamoDB Stream on `fable-feedback`. Every like/dislike write triggers Lambda, which updates a preference profile in `fable-users` automatically. No polling, no cron — event-driven and AWS-native. This also provides the Lambda usage story for the architecture and gives the ingredient photo recognition endpoint a natural home.
+
+#### 3. `fable-ingredient-insights` table — aggregate analytics layer
+A fifth DynamoDB table written to by Lambda after feedback events. Tracks aggregate signals: most-liked cuisines, most-substituted ingredients, common allergen combinations. Not user-facing — exists to demonstrate scale thinking and provide data for future recommendation improvements.
+
+#### 4. TTL on recipe history
+Set DynamoDB Time To Live (TTL) on `fable-saved-recipes` history entries. Unsaved recipes expire after 90 days; explicitly saved recipes never expire. Keeps the table clean at scale and demonstrates awareness of data lifecycle management — a DynamoDB-native feature used deliberately.
+
+#### 5. AWS Lambda — Claude Vision ingredient recognition
+A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera at fridge or cupboard, image is sent to Claude Vision, recognised ingredients are matched against the 1,790 Epicure keys, and the kitchen is auto-populated. Lambda here keeps the heavy Vision call isolated from the Next.js serverless functions and gives the architecture a clean compute separation story.
+
+### Key Architecture Decisions
+
+**Feedback as a personalisation engine** — `fable-feedback` is not a log. It is the input to a preference model that shapes every subsequent Claude prompt for that user. Like/dislike + reason tags → weighted constraints → better generation over time.
+
+**DynamoDB Streams for event-driven preference updates** — preference profiles in `fable-users` are updated reactively via Lambda on every feedback write, not on request. No latency cost at generation time.
+
+**TTL for data lifecycle hygiene** — unsaved recipe history entries carry a TTL. Deliberate data expiry is not an afterthought; it is part of the table design.
+
+**Lambda as compute boundary** — Claude Vision calls and stream processors run in Lambda, not in Next.js API routes. Keeps serverless functions lean and gives each concern its own scaling profile.
+
+---
+
 ## Impact
 
 - **250 million+** people worldwide live with food allergies
