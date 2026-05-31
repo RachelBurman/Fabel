@@ -62,6 +62,29 @@ function acceptSubstitute(combinedScore: number): boolean {
   return combinedScore >= SUBSTITUTE_THRESHOLD
 }
 
+// ─── Logic mirrored from generated-recipe-screen.tsx banner visibility ───────
+// Banner appears once: between description and meta row.
+// Controlled entirely by lactoseMode — NOT by ingredient names.
+
+function shouldShowLactaidBanner(
+  lactoseIntolerant: boolean,
+  lactoseMode: 'include' | 'exclude' | undefined
+): boolean {
+  return lactoseIntolerant && lactoseMode === 'include'
+}
+
+// The old (removed) trigger that checked ingredient names.
+// Kept here to document the behaviour that was replaced.
+const OLD_DAIRY_REGEX =
+  /\b(milk|cream|butter|cheese|yogurt|ghee|dairy|lactose|whey|casein)\b/i
+
+function oldIngredientBasedTrigger(
+  lactoseIntolerant: boolean,
+  ingredientNames: string[]
+): boolean {
+  return lactoseIntolerant && ingredientNames.some((n) => OLD_DAIRY_REGEX.test(n))
+}
+
 // ─── Logic mirrored from fable-context.tsx DynamoDB loading gate ─────────────
 
 function shouldLoadProfile(profile: {
@@ -340,5 +363,63 @@ describe('allergen data — dairy ingredients have milk allergen code', () => {
 
   it('chicken has no allergen codes', () => {
     expect(getAllergensForIngredient('chicken')).toHaveLength(0)
+  })
+})
+
+describe('Lactaid banner — show once, correct position', () => {
+  it('shows when lactoseIntolerant + include mode', () => {
+    expect(shouldShowLactaidBanner(true, 'include')).toBe(true)
+  })
+
+  it('hidden when mode is exclude', () => {
+    expect(shouldShowLactaidBanner(true, 'exclude')).toBe(false)
+  })
+
+  it('hidden when not lactoseIntolerant, include mode', () => {
+    expect(shouldShowLactaidBanner(false, 'include')).toBe(false)
+  })
+
+  it('hidden when not lactoseIntolerant, exclude mode', () => {
+    expect(shouldShowLactaidBanner(false, 'exclude')).toBe(false)
+  })
+
+  it('hidden when lactoseMode is undefined (legacy profiles)', () => {
+    expect(shouldShowLactaidBanner(true, undefined)).toBe(false)
+  })
+
+  it('hidden when both false/undefined', () => {
+    expect(shouldShowLactaidBanner(false, undefined)).toBe(false)
+  })
+})
+
+describe('Lactaid banner — old ingredient-regex trigger replaced', () => {
+  // The old banner fired on dairy ingredient names regardless of lactoseMode.
+  // It has been removed; the new banner is controlled solely by lactoseMode.
+
+  it('old trigger fires on butter — confirming it would have shown incorrectly in exclude mode', () => {
+    // This documents why the old approach was wrong: a user in exclude mode
+    // (dairy filtered out entirely) would still see the warning if Claude
+    // somehow included butter — a contradiction.
+    expect(oldIngredientBasedTrigger(true, ['butter'])).toBe(true)
+    // New logic: exclude mode → no banner, even if dairy slips through
+    expect(shouldShowLactaidBanner(true, 'exclude')).toBe(false)
+  })
+
+  it('old trigger fires on cream — new logic does not', () => {
+    expect(oldIngredientBasedTrigger(true, ['cream', 'garlic'])).toBe(true)
+    expect(shouldShowLactaidBanner(true, 'exclude')).toBe(false)
+  })
+
+  it('new logic shows banner even when recipe has no dairy-named ingredients', () => {
+    // If a user is in include mode, the banner appears as a standing reminder
+    // regardless of what the recipe contains — they opted into dairy.
+    const recipeIngredients = ['chicken', 'garlic', 'lemon']
+    const oldWouldHide = !oldIngredientBasedTrigger(true, recipeIngredients)
+    expect(oldWouldHide).toBe(true) // old logic would hide the banner
+    expect(shouldShowLactaidBanner(true, 'include')).toBe(true) // new logic always shows in include mode
+  })
+
+  it('new logic hides banner in include mode when lactoseIntolerant is false', () => {
+    expect(shouldShowLactaidBanner(false, 'include')).toBe(false)
   })
 })
