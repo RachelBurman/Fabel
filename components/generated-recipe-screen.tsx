@@ -163,7 +163,7 @@ export function GeneratedRecipeScreen({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto">
 

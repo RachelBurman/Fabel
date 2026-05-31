@@ -145,3 +145,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Safe-area bottom padding for devices with a home indicator (iPhone X+).
+   Applied to the bottom nav so its content sits above the gesture bar. */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

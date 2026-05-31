@@ -408,12 +408,12 @@ function FableAppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-dvh flex flex-col bg-background">
       {showNavigation && (
         <Header onSettingsClick={() => navigate('allergens')} />
       )}
 
-      <main className={showNavigation ? 'pb-20' : ''}>
+      <main className={`flex-1 min-h-0 overflow-y-auto${showNavigation ? ' pb-16' : ''}`}>
         <AnimatePresence mode="wait">
 
           {currentScreen === 'onboarding' && (
