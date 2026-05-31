@@ -248,6 +248,8 @@ In-memory (loaded at server startup)
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
 - [ ] Ingredient substitutes improvements — better functional category matching
+- [ ] Equipment-aware ingredient substitution — when a recipe step requires equipment the user doesn't have, use Epicure similarity search to suggest alternative ingredients that achieve the same result with available equipment (e.g. slow cooker → hob-friendly cuts)
+- [ ] Navigation consolidation — reduce from 5 tabs to 4 on mobile by combining Substitutes and History into an "Explore" tab. Evaluate collapsible sidebar as an alternative navigation pattern for tablet/desktop breakpoints where bottom tabs feel less natural. Current 5-tab layout works for hackathon submission.
 
 ### Medium Term
 - [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware suggestions
