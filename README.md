@@ -19,8 +19,8 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
-| Lambda | AWS Lambda (`nodejs22.x`) — DynamoDB Streams feedback processor |
-| Testing | Jest 29, ts-jest, React Testing Library — 448 tests across 19 suites |
+| Lambda | AWS Lambda (`nodejs22.x`) — DynamoDB Streams feedback processor + ingredient insights writer |
+| Testing | Jest 29, ts-jest, React Testing Library — 473 tests across 21 suites |
 
 ---
 
@@ -35,6 +35,9 @@ cp .env.example .env.local  # then fill in the values below
 
 # Create DynamoDB tables (one-time setup)
 pnpm setup:dynamodb
+
+# Seed the ingredient insights table with realistic starter data
+pnpm seed:insights
 
 # Start the dev server
 pnpm dev
@@ -187,6 +190,18 @@ A 5-slide introductory slideshow that appears on first launch and is re-launchab
 - Recipe tab persists the most recent recipe across navigation
 - History tab — all recipes generated this session, newest first
 - Saved tab — hearted recipes persisted in DynamoDB; deletable
+- **Tab visibility** — Navigation settings let users hide individual tabs; at least 2 must remain visible; persisted to DynamoDB
+
+### Discover Section
+Trending ingredient insights surfaced above the recipe generation flow.
+
+- **Trending for you** — top 3 recipe types (cuisine + occasion) trending for the user's allergen profile this week; tapping pre-fills the cuisine and occasion filters
+- **Trending globally** — top 5 most-liked ingredients across all users this week
+- **Most loved ingredients** — all-time top 6 ingredients for the user's allergen profile, shown with a visual score bar
+- **Trending pairings** — top 3 drink + cuisine pairings this week for the user's allergen profile
+- Section and each sub-section individually toggleable in settings; persisted to DynamoDB
+- Powered by `fable-ingredient-insights` — a fifth DynamoDB table aggregated by the Lambda on every liked feedback event
+- API route `/api/insights` cached for 1 hour (Next.js route revalidation)
 
 ---
 
@@ -206,6 +221,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
   ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
   ├── /api/extract-ingredients Claude ingredient extraction from arbitrary recipe text
+  ├── /api/insights            Ingredient insights (1h cache) — allergen-profile + global trends
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
        ├── saved-recipes       DynamoDB read/write (full recipe objects)
@@ -215,16 +231,22 @@ DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
   │                            ingredients[]{name, displayName, subtype, quantity, unit,
   │                            area, dateType, useByDate, boughtDate, addedAt},
-  │                            kitchenEquipment[], darkMode, preferenceSignals[])
+  │                            kitchenEquipment[], darkMode, preferenceSignals[],
+  │                            discoverSettings{}, visibleTabs[])
   ├── fable-saved-recipes      Saved recipes with full recipe JSON
   ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], createdAt, updatedAt)
-  └── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
-                               recipeTitle, recipeIngredients, timestamp)
-                                 │
-                                 ▼ DynamoDB Stream
-                               AWS Lambda — fable-feedback-stream-processor
-                                 │  Extracts one preferenceSignal per ingredient
-                                 └─▶ fable-users.preferenceSignals[] (list_append)
+  ├── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
+  │                            recipeTitle, recipeIngredients, allergenProfile, timestamp)
+  │                              │
+  │                              ▼ DynamoDB Stream
+  │                            AWS Lambda — fable-feedback-stream-processor
+  │                              │  1. Extracts one preferenceSignal per ingredient → fable-users
+  │                              └─ 2. Increments likeCount per ingredient in fable-ingredient-insights
+  │                                    (liked events only; non-fatal; updates week + all-time records)
+  └── fable-ingredient-insights  Aggregate trending data (allergenProfile PK + timeWindow SK)
+                                  trendingIngredients[], trendingPairings[], trendingRecipeTypes[]
+                                  Profiles: global, gluten-free, dairy-free, nut-free,
+                                            gluten-free#dairy-free, vegan, low-fodmap
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search
@@ -263,7 +285,12 @@ In-memory (loaded at server startup)
 - ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
 - ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
-- ✅ 448 passing tests across 19 test suites
+- ✅ `fable-ingredient-insights` table — aggregate trending data by allergen profile; seeded with 14 realistic records across 7 profiles × 2 time windows
+- ✅ Discover section — Trending for you, Trending globally, Most loved, Trending pairings; each sub-section individually toggleable in settings
+- ✅ Tab visibility settings — hide/show individual nav tabs; min 2 enforced; persisted to DynamoDB
+- ✅ Lambda extended — liked feedback events now also write to `fable-ingredient-insights` (non-fatal); allergenProfile stored per feedback record
+- ✅ `/api/insights` route — 1-hour cached; returns profile + global trending data
+- ✅ 473 passing tests across 21 test suites
 
 ### In Progress
 
@@ -304,8 +331,8 @@ The fix: `/api/generate-recipe` reads the user's feedback history from DynamoDB 
 #### ~~2. DynamoDB Streams + AWS Lambda — real-time preference learning~~ ✅ Done
 `fable-feedback-stream-processor` Lambda (`lambda/feedback-processor/`) fires on every write to the `fable-feedback` Stream, extracts one `preferenceSignal` per ingredient, and appends it to `fable-users.preferenceSignals[]` via `list_append`. Non-fatal on partial batch failure. 6 unit tests passing. Deployed on `nodejs24.x`.
 
-#### 3. `fable-ingredient-insights` table — aggregate analytics layer
-A fifth DynamoDB table written to by Lambda after feedback events. Tracks aggregate signals: most-liked cuisines, most-substituted ingredients, common allergen combinations. Not user-facing — exists to demonstrate scale thinking and provide data for future recommendation improvements.
+#### ~~3. `fable-ingredient-insights` table — aggregate analytics layer~~ ✅ Done
+`fable-ingredient-insights` (allergenProfile PK, timeWindow SK) is written to by the Lambda on every liked feedback event. Tracks trending ingredients, pairings, and recipe types per allergen profile. Surfaced in the new Discover section above the generation flow. Seeded with 14 records across 7 profiles.
 
 #### 4. TTL on recipe history
 Set DynamoDB Time To Live (TTL) on `fable-saved-recipes` history entries. Unsaved recipes expire after 90 days; explicitly saved recipes never expire. Keeps the table clean at scale and demonstrates awareness of data lifecycle management — a DynamoDB-native feature used deliberately.
