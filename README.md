@@ -296,6 +296,8 @@ In-memory (loaded at server startup)
 ### In Progress
 
 ### Near Term
+- [ ] Feedback reason tags — reason tags (too spicy, wrong cuisine, too complex etc) are collected in the UI but not yet persisted to `fable-feedback` or used in generation. Wire reason tags through to DynamoDB and incorporate them as weighted signals in the Claude prompt alongside ingredient preference scores.
+- [ ] Onboarding state in DynamoDB — `onboardingComplete` flag currently lives in `localStorage` only. Add `onboardingComplete: boolean` to `fable-users` schema for authenticated users, so tutorial state persists across devices. Migration path: on auth, write `onboardingComplete: false` only if the `localStorage` flag is absent.
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
