@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
+import { computeServingWarnings } from '@/lib/serving-warnings'
 import { Plus, X, Search, ChefHat, Sparkles, Layers, Calendar, ArrowLeftRight, ChevronLeft, ChevronRight, Minus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -87,62 +88,7 @@ const EQUIPMENT_OPTIONS: { value: string; label: string; defaultOn: boolean }[] 
   { value: 'instant_pot', label: '⚡ Instant Pot',    defaultOn: false },
 ]
 
-// ─── Serving size warning ─────────────────────────────────────────────────────
-
-const PROTEIN_NAMES = new Set([
-  'chicken', 'beef', 'pork', 'salmon', 'tuna', 'cod', 'tofu', 'egg',
-  'turkey', 'lamb', 'shrimp', 'prawn', 'duck', 'mackerel', 'haddock',
-  'tilapia', 'sardine', 'anchovy', 'mince', 'bacon', 'ham', 'sausage',
-  'salami', 'chorizo', 'fish', 'steak',
-])
-
-const GRAIN_NAMES = new Set([
-  'rice', 'pasta', 'oats', 'quinoa', 'noodle', 'couscous',
-  'barley', 'polenta', 'bulgur', 'cornmeal',
-])
-
-const VEGETABLE_NAMES = new Set([
-  'spinach', 'broccoli', 'carrot', 'potato', 'zucchini', 'pepper',
-  'cucumber', 'kale', 'tomato', 'onion', 'mushroom', 'cabbage',
-  'cauliflower', 'sweet_potato', 'asparagus', 'leek', 'celery',
-  'beetroot', 'parsnip', 'aubergine', 'bok_choy', 'fennel', 'pea',
-  'corn', 'artichoke', 'pumpkin', 'courgette',
-])
-
-function toGrams(quantity: string, unit: string): number | null {
-  const qty = parseFloat(quantity)
-  if (isNaN(qty)) return null
-  if (unit === 'grams') return qty
-  if (unit === 'kg') return qty * 1000
-  return null
-}
-
-function computeServingWarnings(ingredients: IngredientItem[], servings: number): string[] {
-  if (servings <= 2) return []
-  const warnings: string[] = []
-  for (const ing of ingredients) {
-    if (!ing.quantity) continue
-    const unit = ing.unit ?? 'pieces'
-    const label = ing.displayName ?? displayName(ing.name)
-
-    if (PROTEIN_NAMES.has(ing.name)) {
-      if (unit === 'pieces') {
-        const pieces = parseFloat(ing.quantity)
-        if (!isNaN(pieces) && pieces < servings) warnings.push(label)
-      } else {
-        const grams = toGrams(ing.quantity, unit)
-        if (grams !== null && grams < servings * 150) warnings.push(label)
-      }
-    } else if (GRAIN_NAMES.has(ing.name)) {
-      const grams = toGrams(ing.quantity, unit)
-      if (grams !== null && grams < servings * 80) warnings.push(label)
-    } else if (VEGETABLE_NAMES.has(ing.name)) {
-      const grams = toGrams(ing.quantity, unit)
-      if (grams !== null && grams < servings * 100) warnings.push(label)
-    }
-  }
-  return warnings
-}
+// computeServingWarnings imported from @/lib/serving-warnings
 
 // ─── Area + unit config ───────────────────────────────────────────────────────
 

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, DIET_PRESETS } from '@/lib/types'
+import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 
 interface FableContextType {
   preferences: UserPreferences
@@ -50,49 +51,7 @@ interface FableContextType {
 
 const FableContext = createContext<FableContextType | undefined>(undefined)
 
-// Convert old flat string[] format (or mixed) to IngredientItem[]
-function migrateIngredients(raw: (string | IngredientItem)[] | undefined): IngredientItem[] | undefined {
-  if (!raw) return undefined
-  return raw.map(item => {
-    if (typeof item === 'string') {
-      return {
-        id: crypto.randomUUID(),
-        name: item.trim().toLowerCase(),
-        area: 'fridge' as const,
-        addedAt: new Date().toISOString().split('T')[0],
-      }
-    }
-    return item
-  })
-}
-
-// Map a DynamoDB item back to the Collection shape
-function itemToCollection(item: Record<string, unknown>): Collection {
-  return {
-    id: String(item.collectionId ?? ''),
-    name: String(item.name ?? ''),
-    recipeIds: Array.isArray(item.recipeIds) ? (item.recipeIds as string[]) : [],
-    createdAt: String(item.createdAt ?? ''),
-    updatedAt: String(item.updatedAt ?? ''),
-  }
-}
-
-// Map a DynamoDB item back to the Recipe shape
-function itemToRecipe(item: Record<string, unknown>): Recipe {
-  return {
-    id: String(item.id ?? item.recipeId ?? ''),
-    title: String(item.title ?? ''),
-    description: String(item.description ?? ''),
-    image: String(item.image ?? ''),
-    cookTime: String(item.cookTime ?? ''),
-    servings: Number(item.servings ?? 1),
-    matchScore: Number(item.matchScore ?? 100),
-    allergens: Array.isArray(item.allergens) ? (item.allergens as string[]) : [],
-    ingredients: Array.isArray(item.ingredients) ? (item.ingredients as string[]) : [],
-    isSaved: true,
-    fullRecipe: item.fullRecipe as GeneratedRecipe | undefined,
-  }
-}
+// migrateIngredients, itemToCollection, itemToRecipe imported from @/lib/data-mappers
 
 export function FableProvider({ children }: { children: ReactNode }) {
   const [preferences, setPreferences] = useState<UserPreferences>({

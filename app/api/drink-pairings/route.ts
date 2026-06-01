@@ -6,6 +6,7 @@ import {
   ALLERGEN_CODES,
   type AllergenCode,
 } from "@/lib/epicure";
+import { resolveToEpicureKey } from "@/lib/drink-pairing-utils";
 
 // Keys verified to exist in data/epicure-core.json
 const BEVERAGE_KEYS = new Set([
@@ -38,21 +39,7 @@ const BEVERAGE_KEYS = new Set([
 // Pre-build a Set for O(1) key existence checks
 const epicureKeySet = new Set(allIngredients);
 
-/**
- * Claude recipe ingredient names ("Chicken Breast", "garlic cloves") won't
- * match Epicure keys ("chicken", "garlic") verbatim. Try a cascade of
- * normalizations before giving up.
- */
-function resolveToEpicureKey(name: string): string | null {
-  if (epicureKeySet.has(name)) return name;
-  const norm = name.toLowerCase().replace(/\s+/g, "_");
-  if (epicureKeySet.has(norm)) return norm;
-  const first = norm.split("_")[0];
-  if (first && epicureKeySet.has(first)) return first;
-  const last = norm.split("_").at(-1);
-  if (last && last !== first && epicureKeySet.has(last)) return last;
-  return null;
-}
+// resolveToEpicureKey imported from @/lib/drink-pairing-utils; pass epicureKeySet at call site
 
 export async function POST(req: NextRequest) {
   console.log("[drink-pairings] POST received");
@@ -86,7 +73,7 @@ export async function POST(req: NextRequest) {
   const inputSet = new Set(inputIngredients);
 
   for (const rawName of inputIngredients) {
-    const epicureKey = resolveToEpicureKey(rawName);
+    const epicureKey = resolveToEpicureKey(rawName, epicureKeySet);
     console.log(`[drink-pairings] resolving "${rawName}" → ${epicureKey ?? "NOT FOUND in Epicure"}`);
     if (!epicureKey) continue;
 
