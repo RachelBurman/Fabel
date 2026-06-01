@@ -1,7 +1,7 @@
 import { strict as assert } from "node:assert";
 import { describe, it, beforeEach } from "node:test";
 import { UpdateItemCommand } from "@aws-sdk/client-dynamodb";
-import { handler } from "./index.mjs";
+import { handlerWithClient } from "./index.mjs";
 
 // ---------------------------------------------------------------------------
 // Stub DynamoDB client — records every send() call
@@ -48,9 +48,8 @@ describe("fable-feedback-processor", () => {
   });
 
   it("skips REMOVE events", async () => {
-    await handler(
+    await handlerWithClient(
       { Records: [makeRecord({ eventName: "REMOVE", image: threeIngredientImage })] },
-      {},
       client
     );
     assert.equal(client.calls.length, 0);
@@ -61,18 +60,18 @@ describe("fable-feedback-processor", () => {
       liked: { BOOL: true },
       recipeIngredients: { L: [{ S: "garlic" }] },
     };
-    await handler({ Records: [makeRecord({ image })] }, {}, client);
+    await handlerWithClient({ Records: [makeRecord({ image })] }, client);
     assert.equal(client.calls.length, 0);
   });
 
   it("skips records missing recipeIngredients", async () => {
     const image = { userId: { S: "u2" }, liked: { BOOL: true } };
-    await handler({ Records: [makeRecord({ image })] }, {}, client);
+    await handlerWithClient({ Records: [makeRecord({ image })] }, client);
     assert.equal(client.calls.length, 0);
   });
 
   it("writes 3 positive signals for a liked recipe with 3 ingredients", async () => {
-    await handler({ Records: [makeRecord({ image: threeIngredientImage })] }, {}, client);
+    await handlerWithClient({ Records: [makeRecord({ image: threeIngredientImage })] }, client);
     assert.equal(client.calls.length, 1);
     assert.ok(client.calls[0] instanceof UpdateItemCommand);
     const signals = client.calls[0].input.ExpressionAttributeValues[":signals"].L;
@@ -90,7 +89,7 @@ describe("fable-feedback-processor", () => {
       liked: { BOOL: false },
       recipeIngredients: { L: [{ S: "cilantro" }, { S: "mint" }, { S: "basil" }] },
     };
-    await handler({ Records: [makeRecord({ image })] }, {}, client);
+    await handlerWithClient({ Records: [makeRecord({ image })] }, client);
     assert.equal(client.calls.length, 1);
     const signals = client.calls[0].input.ExpressionAttributeValues[":signals"].L;
     assert.equal(signals.length, 3);
@@ -105,7 +104,7 @@ describe("fable-feedback-processor", () => {
     });
     const goodRecord = makeRecord({ image: threeIngredientImage });
 
-    await handler({ Records: [badRecord, goodRecord] }, {}, client);
+    await handlerWithClient({ Records: [badRecord, goodRecord] }, client);
     assert.equal(client.calls.length, 1);
     const signals = client.calls[0].input.ExpressionAttributeValues[":signals"].L;
     assert.equal(signals.length, 3);

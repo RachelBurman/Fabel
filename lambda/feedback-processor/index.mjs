@@ -13,11 +13,13 @@ function getClient() {
   return _client;
 }
 
-export async function handler(event, _ctx, _testClient) {
-  // Lambda passes (event, context, callback) — _testClient would receive the callback
-  // function in production. Guard with a duck-type check so only real injected clients
-  // (with a .send method) override the default; Lambda's callback is ignored.
-  const client = (typeof _testClient?.send === "function") ? _testClient : getClient();
+export async function handler(event) {
+  return handlerWithClient(event, getClient());
+}
+
+// Exported for testing only — allows a stub client to be injected without
+// touching the production handler signature.
+export async function handlerWithClient(event, client) {
   console.log(`Processing batch of ${event.Records.length} record(s), client type: ${client?.constructor?.name}`);
   for (const record of event.Records) {
     console.log("Raw record:", JSON.stringify(record));
