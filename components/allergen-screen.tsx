@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, PlayCircle } from 'lucide-react'
+import { ALL_TABS } from '@/lib/types'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, PlayCircle, Compass, Layout } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -17,7 +18,7 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, isLoadingProfile } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, setDiscoverSettings, setVisibleTabs, isLoadingProfile } = useFable()
   const { theme, setTheme } = useTheme()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const isDark = theme === 'dark'
@@ -351,6 +352,88 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }:
                 )} />
               </button>
             </div>
+          </div>
+
+          {/* Discover settings */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center gap-2 mb-3">
+              <Compass className="w-5 h-5 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">Discover</p>
+            </div>
+            {([
+              { key: 'showDiscover' as const,         label: 'Show Discover section',    desc: 'Trending insights above the generation flow' },
+              { key: 'showTrendingForYou' as const,   label: 'Show Trending for you',    desc: 'Recipe types popular with your allergen profile' },
+              { key: 'showTrendingGlobally' as const, label: 'Show Trending globally',   desc: 'Most liked ingredients across all users' },
+              { key: 'showMostLoved' as const,        label: 'Show Most loved ingredients', desc: 'All-time top ingredients for your profile' },
+              { key: 'showTrendingPairings' as const, label: 'Show Trending pairings',   desc: 'Popular drink and cuisine combinations' },
+            ]).map(({ key, label, desc }) => {
+              const isOn = preferences.discoverSettings[key]
+              return (
+                <div key={key} className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-sm text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
+                  </div>
+                  <button
+                    role="switch"
+                    aria-checked={isOn}
+                    onClick={() => setDiscoverSettings({ ...preferences.discoverSettings, [key]: !isOn })}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                      isOn ? 'bg-green-500' : 'bg-secondary'
+                    )}
+                  >
+                    <span className={cn(
+                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                      isOn ? 'translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Navigation settings */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center gap-2 mb-1">
+              <Layout className="w-5 h-5 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">Navigation</p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">At least 2 tabs must remain visible.</p>
+            {ALL_TABS.map((tabId) => {
+              const labelMap: Record<string, string> = {
+                kitchen: 'Kitchen', recipe: 'Recipe', substitutes: 'Substitutes', history: 'History', saved: 'Saved',
+              }
+              const isVisible = preferences.visibleTabs.includes(tabId)
+              const wouldViolateMin = isVisible && preferences.visibleTabs.length <= 2
+              return (
+                <div key={tabId} className="flex items-center justify-between py-2">
+                  <p className="text-sm text-foreground">{labelMap[tabId]}</p>
+                  <button
+                    role="switch"
+                    aria-checked={isVisible}
+                    disabled={wouldViolateMin}
+                    onClick={() => {
+                      if (wouldViolateMin) return
+                      const next = isVisible
+                        ? preferences.visibleTabs.filter(t => t !== tabId)
+                        : [...preferences.visibleTabs, tabId]
+                      setVisibleTabs(next)
+                    }}
+                    className={cn(
+                      'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                      isVisible ? 'bg-green-500' : 'bg-secondary',
+                      wouldViolateMin && 'opacity-40 cursor-not-allowed'
+                    )}
+                  >
+                    <span className={cn(
+                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                      isVisible ? 'translate-x-5' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+              )
+            })}
           </div>
 
           {/* Tutorial */}

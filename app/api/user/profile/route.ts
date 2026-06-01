@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { type DiscoverSettings, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from "@/lib/types";
 
 interface IngredientItem {
   id: string;
@@ -36,8 +37,21 @@ export async function GET(req: NextRequest) {
 
   if (!result.Item) return NextResponse.json({});
 
-  const { allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant, lactoseMode, kitchenEquipment, darkMode } =
-    result.Item;
+  const {
+    allergens,
+    customAllergens,
+    ingredients,
+    safeIngredients,
+    safeFoodsMode,
+    showMacros,
+    activePresets,
+    lactoseIntolerant,
+    lactoseMode,
+    kitchenEquipment,
+    darkMode,
+    discoverSettings,
+    visibleTabs,
+  } = result.Item;
 
   return NextResponse.json({
     allergens,
@@ -51,6 +65,8 @@ export async function GET(req: NextRequest) {
     lactoseMode,
     kitchenEquipment,
     darkMode,
+    discoverSettings,
+    visibleTabs,
   });
 }
 
@@ -65,9 +81,11 @@ export async function PUT(req: NextRequest) {
     showMacros?: boolean;
     activePresets?: string[];
     lactoseIntolerant?: boolean;
-    lactoseMode?: 'include' | 'exclude';
+    lactoseMode?: "include" | "exclude";
     kitchenEquipment?: string[];
     darkMode?: boolean;
+    discoverSettings?: DiscoverSettings;
+    visibleTabs?: string[];
   };
   try {
     body = await req.json();
@@ -75,8 +93,22 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, allergens, customAllergens, ingredients, safeIngredients, safeFoodsMode, showMacros, activePresets, lactoseIntolerant, lactoseMode, kitchenEquipment, darkMode } =
-    body;
+  const {
+    userId,
+    allergens,
+    customAllergens,
+    ingredients,
+    safeIngredients,
+    safeFoodsMode,
+    showMacros,
+    activePresets,
+    lactoseIntolerant,
+    lactoseMode,
+    kitchenEquipment,
+    darkMode,
+    discoverSettings,
+    visibleTabs,
+  } = body;
   if (!userId)
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
 
@@ -93,9 +125,11 @@ export async function PUT(req: NextRequest) {
         showMacros: showMacros ?? false,
         activePresets: activePresets ?? [],
         lactoseIntolerant: lactoseIntolerant ?? false,
-        lactoseMode: lactoseMode ?? 'include',
-        kitchenEquipment: kitchenEquipment ?? ['hob', 'oven'],
+        lactoseMode: lactoseMode ?? "include",
+        kitchenEquipment: kitchenEquipment ?? ["hob", "oven"],
         darkMode: darkMode ?? false,
+        discoverSettings: discoverSettings ?? DEFAULT_DISCOVER_SETTINGS,
+        visibleTabs: visibleTabs ?? [...ALL_TABS],
         updatedAt: new Date().toISOString(),
       },
     })

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, DIET_PRESETS } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 
 interface FableContextType {
@@ -31,6 +31,8 @@ interface FableContextType {
   setKitchenEquipment: (equipment: string[]) => void
   toggleKitchenEquipment: (item: string) => void
   setDarkMode: (dark: boolean) => void
+  setDiscoverSettings: (settings: DiscoverSettings) => void
+  setVisibleTabs: (tabs: string[]) => void
   effectiveAllergens: string[]
   effectiveCustomAllergens: string[]
   savedRecipes: Recipe[]
@@ -67,6 +69,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     lactoseMode: 'include' as const,
     kitchenEquipment: ['hob', 'oven'],
     darkMode: false,
+    discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
+    visibleTabs: [...ALL_TABS],
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -113,6 +117,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             lactoseMode?: 'include' | 'exclude'
             kitchenEquipment?: string[]
             darkMode?: boolean
+            discoverSettings?: DiscoverSettings
+            visibleTabs?: string[]
           } = await profileRes.json()
           // Restore state if the profile has any data worth loading
           if (
@@ -134,6 +140,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
               lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
               kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
               darkMode: profile.darkMode ?? prev.darkMode,
+              discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
+              visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
             }))
             setHasCompletedOnboarding(true)
           }
@@ -192,6 +200,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             lactoseMode: preferences.lactoseMode,
             kitchenEquipment: preferences.kitchenEquipment,
             darkMode: preferences.darkMode,
+            discoverSettings: preferences.discoverSettings,
+            visibleTabs: preferences.visibleTabs,
           }),
         })
       } catch (err) {
@@ -201,7 +211,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.darkMode])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.darkMode, preferences.discoverSettings, preferences.visibleTabs])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -327,6 +337,15 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setDarkMode = useCallback((dark: boolean) => {
     setPreferences(prev => ({ ...prev, darkMode: dark }))
+  }, [])
+
+  const setDiscoverSettings = useCallback((settings: DiscoverSettings) => {
+    setPreferences(prev => ({ ...prev, discoverSettings: settings }))
+  }, [])
+
+  const setVisibleTabs = useCallback((tabs: string[]) => {
+    if (tabs.length < 2) return
+    setPreferences(prev => ({ ...prev, visibleTabs: tabs }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -499,6 +518,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
         setKitchenEquipment,
         toggleKitchenEquipment,
         setDarkMode,
+        setDiscoverSettings,
+        setVisibleTabs,
         effectiveAllergens,
         effectiveCustomAllergens,
         savedRecipes,

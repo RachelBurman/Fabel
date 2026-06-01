@@ -15,13 +15,18 @@ interface BottomNavigationProps {
 }
 
 export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigationProps) {
-  const navItems = [
-    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat        },
-    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen       },
-    { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight },
-    { id: 'history'      as const, label: 'History',     icon: Clock          },
-    { id: 'saved'        as const, label: 'Saved',       icon: Heart          },
+  const { preferences } = useFable()
+  const visibleTabs = preferences.visibleTabs
+
+  const allNavItems = [
+    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,       tabKey: 'kitchen'      },
+    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen,      tabKey: 'recipe'       },
+    { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight, tabKey: 'substitutes' },
+    { id: 'history'      as const, label: 'History',     icon: Clock,         tabKey: 'history'      },
+    { id: 'saved'        as const, label: 'Saved',       icon: Heart,         tabKey: 'saved'        },
   ]
+
+  const navItems = allNavItems.filter(item => visibleTabs.includes(item.tabKey))
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-pb">

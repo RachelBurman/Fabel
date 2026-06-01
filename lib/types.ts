@@ -82,6 +82,8 @@ export interface UserPreferences {
   lactoseMode: 'include' | 'exclude' // 'include' = dairy allowed with Lactaid reminder; 'exclude' = treat dairy as allergen
   kitchenEquipment: string[] // equipment the user has available (persisted)
   darkMode: boolean           // app-level dark mode preference (persisted)
+  discoverSettings: DiscoverSettings
+  visibleTabs: string[]       // which nav tabs are shown; min 2
 }
 
 export interface DietPreset {
@@ -168,6 +170,52 @@ export interface Collection {
   recipeIds: string[]
   createdAt: string
   updatedAt: string
+}
+
+export interface DiscoverSettings {
+  showDiscover: boolean
+  showTrendingForYou: boolean
+  showTrendingGlobally: boolean
+  showMostLoved: boolean
+  showTrendingPairings: boolean
+}
+
+export const DEFAULT_DISCOVER_SETTINGS: DiscoverSettings = {
+  showDiscover: true,
+  showTrendingForYou: true,
+  showTrendingGlobally: true,
+  showMostLoved: true,
+  showTrendingPairings: true,
+}
+
+export const ALL_TABS = ['kitchen', 'recipe', 'substitutes', 'history', 'saved'] as const
+export type TabId = typeof ALL_TABS[number]
+
+export interface InsightIngredient {
+  key: string
+  likeCount: number
+  score: number
+}
+
+export interface InsightPairing {
+  beverage: string
+  recipeType: string
+  score: number
+}
+
+export interface InsightRecipeType {
+  cuisine: string
+  occasion: string
+  score: number
+}
+
+export interface IngredientInsightsRecord {
+  allergenProfile: string
+  timeWindow: string
+  trendingIngredients: InsightIngredient[]
+  trendingPairings: InsightPairing[]
+  trendingRecipeTypes: InsightRecipeType[]
+  lastUpdated: string
 }
 
 // List of all allergens
