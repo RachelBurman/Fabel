@@ -38,6 +38,8 @@ if (exists) {
       ZipFile: zipBytes,
     })
   );
+  console.log("Waiting for function to be ready before updating config...");
+  await waitForActive();
   console.log("Updating configuration and env vars...");
   await client.send(
     new UpdateFunctionConfigurationCommand({
@@ -58,6 +60,20 @@ if (exists) {
     })
   );
 }
+
+// Wait for the function to be Active before verifying
+async function waitForActive(maxWaitMs = 60000) {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    const r = await client.send(new GetFunctionCommand({ FunctionName: FUNCTION_NAME }));
+    const { State, LastUpdateStatus } = r.Configuration;
+    if (State === "Active" && LastUpdateStatus !== "InProgress") return;
+    console.log(`  State: ${State}, LastUpdateStatus: ${LastUpdateStatus} — waiting...`);
+    await new Promise((res) => setTimeout(res, 3000));
+  }
+  throw new Error("Timed out waiting for function to become ready");
+}
+await waitForActive();
 
 // Verify
 const result = await client.send(new GetFunctionCommand({ FunctionName: FUNCTION_NAME }));
