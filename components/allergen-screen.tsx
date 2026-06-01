@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, PlayCircle } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -13,9 +13,10 @@ import { CustomAllergenSearch } from '@/components/custom-allergen-search'
 interface AllergenScreenProps {
   onDone: () => void
   onManageSafeFoods?: () => void
+  onRestartTutorial?: () => void
 }
 
-export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProps) {
+export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }: AllergenScreenProps) {
   const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, isLoadingProfile } = useFable()
   const { theme, setTheme } = useTheme()
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
@@ -349,6 +350,27 @@ export function AllergenScreen({ onDone, onManageSafeFoods }: AllergenScreenProp
                   isDark ? 'translate-x-5' : 'translate-x-0'
                 )} />
               </button>
+            </div>
+          </div>
+
+          {/* Tutorial */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <PlayCircle className="w-5 h-5 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Tutorial</p>
+                  <p className="text-xs text-muted-foreground">Revisit the intro slideshow</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRestartTutorial}
+                className="rounded-full text-xs"
+              >
+                Restart tutorial
+              </Button>
             </div>
           </div>
 

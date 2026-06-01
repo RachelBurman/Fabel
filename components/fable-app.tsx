@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem } from '@/lib/types'
+import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen, type RecipeFilters } from '@/components/ingredients-screen'
 import { AllergenScreen } from '@/components/allergen-screen'
@@ -16,6 +17,7 @@ import { SavedRecipesScreen } from '@/components/saved-recipes-screen'
 import { SafeFoodsScreen } from '@/components/safe-foods-screen'
 import { SubstitutesScreen } from '@/components/substitutes-screen'
 import { BottomNavigation, Header } from '@/components/navigation'
+import { TutorialOverlay } from '@/components/tutorial-overlay'
 
 type Screen =
   | 'onboarding'
@@ -33,6 +35,17 @@ function FableAppContent() {
   const { setTheme } = useTheme()
 
   // All hooks must be declared before any early return (Rules of Hooks)
+  const [showTutorial, setShowTutorial] = useState(false)
+
+  useEffect(() => {
+    if (shouldShowTutorial()) setShowTutorial(true)
+  }, [])
+
+  const handleRestartTutorial = useCallback(() => {
+    clearTutorialComplete()
+    setShowTutorial(true)
+  }, [])
+
   const [currentScreen, setCurrentScreen] = useState<Screen>('onboarding')
   const [prevScreen, setPrevScreen] = useState<Screen>('ingredients')
 
@@ -423,15 +436,27 @@ function FableAppContent() {
     }
   }
 
+  const tutorialOverlay = (
+    <AnimatePresence>
+      {showTutorial && (
+        <TutorialOverlay onDismiss={() => setShowTutorial(false)} />
+      )}
+    </AnimatePresence>
+  )
+
   if (isLoadingProfile) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
+      <>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        </div>
+        {tutorialOverlay}
+      </>
     )
   }
 
   return (
+    <>
     <div className="h-dvh flex flex-col bg-background">
       {showNavigation && (
         <Header onSettingsClick={() => navigate('allergens')} />
@@ -457,6 +482,7 @@ function FableAppContent() {
               <AllergenScreen
                 onDone={() => navigate(prevScreen === 'allergens' ? 'ingredients' : prevScreen)}
                 onManageSafeFoods={() => navigate('safe-foods')}
+                onRestartTutorial={handleRestartTutorial}
               />
             </motion.div>
           )}
@@ -596,6 +622,8 @@ function FableAppContent() {
         />
       )}
     </div>
+    {tutorialOverlay}
+    </>
   )
 }
 

@@ -19,7 +19,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
-| Testing | Jest 29, ts-jest, React Testing Library — 101 tests across 5 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 448 tests across 19 suites |
 
 ---
 
@@ -164,6 +164,22 @@ One-tap diet restriction setup above the EU Big 14 allergen grid.
 - Header subtitle reflects the full restriction picture: "Vegan + 3 allergens active"
 - Substitutes "From a recipe" allergen mode: ingredients below the 45% combined score threshold show `❌ [ingredient] — contains [allergen], no suitable substitute found — will be omitted` rather than the 🔄 swap format
 
+### Onboarding Tutorial
+A 5-slide introductory slideshow that appears on first launch and is re-launchable from settings.
+
+- Shown automatically on first app load by checking `fable-onboarding-complete` in `localStorage`; never shown again once dismissed
+- Full-screen overlay with a dark backdrop dimming the app behind it; slides animate left/right via Framer Motion
+- **Slide 1 — Welcome**: Fable logo, food-gradient hero, brand positioning copy
+- **Slide 2 — Allergens**: EU Big 14 allergen picker illustration with active state previews
+- **Slide 3 — Your Kitchen**: Fridge and Cupboard ingredient card mockup
+- **Slide 4 — Recipe Generation**: Generated recipe card with Claude attribution and gradient hero
+- **Slide 5 — Safe Foods Mode**: Safe Foods list with green shield and ingredient checklist
+- Skip button (top-right) dismisses at any point; "Let's go" CTA on the final slide — both set `fable-onboarding-complete: true`
+- Tapping anywhere on the slide body advances to the next slide (mobile-friendly)
+- Dot indicator (pill-shaped active dot) shows current position across all 5 slides
+- **Restart tutorial** option in Allergen Settings — clears the localStorage flag and re-shows the overlay
+- 8 unit tests covering: show-on-first-load, suppress-when-seen, skip flag, Let's go flag, restart flag, slide count, dot index range
+
 ### Navigation & History
 - Five-tab navigation — Kitchen, Recipe, Substitutes, History, Saved
 - Recipe tab persists the most recent recipe across navigation
@@ -237,13 +253,13 @@ In-memory (loaded at server startup)
 - ✅ Servings stepper — scale recipe quantities for 1–12 people (default 2)
 - ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
 - ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
-- ✅ 230 passing tests across 10 test suites
+- ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
+- ✅ 448 passing tests across 19 test suites
 
 ### In Progress
 - [ ] Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
 
 ### Near Term
-- [ ] Onboarding tutorial slideshow — 4-5 slides on first launch
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
