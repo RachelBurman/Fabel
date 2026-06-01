@@ -1,7 +1,13 @@
-import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
-import { unmarshall } from "@aws-sdk/util-dynamodb";
+import {
+  DynamoDBClient,
+  UpdateItemCommand,
+  GetItemCommand,
+  PutItemCommand,
+} from "@aws-sdk/client-dynamodb";
+import { unmarshall, marshall } from "@aws-sdk/util-dynamodb";
 
 const TABLE = process.env.FABLE_USERS_TABLE ?? "fable-users";
+const INSIGHTS_TABLE = process.env.FABLE_INSIGHTS_TABLE ?? "fable-ingredient-insights";
 
 // Lazily initialised so Lambda container env vars are fully resolved before first use
 let _client;
@@ -47,7 +53,7 @@ async function processRecord(record, client) {
   console.log("Unmarshalled item:", JSON.stringify(item));
   console.log("recipeIngredients type:", typeof item.recipeIngredients, Array.isArray(item.recipeIngredients) ? "Array" : item.recipeIngredients instanceof Set ? "Set" : "other");
 
-  const { userId, liked, recipeIngredients } = item;
+  const { userId, liked, recipeIngredients, allergenProfile } = item;
 
   if (!userId) {
     console.log(`Skipping record — missing userId (eventID: ${record.eventID})`);
@@ -93,4 +99,77 @@ async function processRecord(record, client) {
   );
 
   console.log(`Successfully wrote ${ingredientList.length} signal(s) for userId=${userId}`);
+
+  // Non-fatal: update ingredient insights for liked recipes only
+  if (likedBool) {
+    const profileKey = allergenProfile ?? "global";
+    const weekStr = getISOWeekString();
+    try {
+      await updateInsights(client, profileKey, ingredientList, weekStr);
+      // Also update all-time aggregate
+      await updateInsights(client, profileKey, ingredientList, "all-time");
+      console.log(`Updated insights for profile=${profileKey}, week=${weekStr}`);
+    } catch (err) {
+      console.error("Non-fatal: failed to update ingredient insights", err?.message ?? err);
+    }
+  }
+}
+
+async function updateInsights(client, allergenProfile, ingredientList, timeWindow) {
+  // Read existing record
+  let existing = { trendingIngredients: [], trendingPairings: [], trendingRecipeTypes: [] };
+  try {
+    const result = await client.send(
+      new GetItemCommand({
+        TableName: INSIGHTS_TABLE,
+        Key: {
+          allergenProfile: { S: allergenProfile },
+          timeWindow: { S: timeWindow },
+        },
+      })
+    );
+    if (result.Item) {
+      existing = unmarshall(result.Item);
+    }
+  } catch (err) {
+    console.warn("Could not fetch existing insights record:", err?.message ?? err);
+  }
+
+  // Merge ingredient likes into the trending list
+  const ingredientsMap = new Map(
+    (existing.trendingIngredients ?? []).map((i) => [i.key, i])
+  );
+  for (const key of ingredientList) {
+    const current = ingredientsMap.get(key) ?? { key, likeCount: 0, score: 0.6 };
+    const newLikeCount = current.likeCount + 1;
+    const newScore = Math.round(Math.min(0.95, 0.6 + (newLikeCount - 1) * 0.05) * 100) / 100;
+    ingredientsMap.set(key, { key, likeCount: newLikeCount, score: newScore });
+  }
+
+  const updatedIngredients = Array.from(ingredientsMap.values())
+    .sort((a, b) => b.likeCount - a.likeCount)
+    .slice(0, 20);
+
+  await client.send(
+    new PutItemCommand({
+      TableName: INSIGHTS_TABLE,
+      Item: marshall({
+        allergenProfile,
+        timeWindow,
+        trendingIngredients: updatedIngredients,
+        trendingPairings: existing.trendingPairings ?? [],
+        trendingRecipeTypes: existing.trendingRecipeTypes ?? [],
+        lastUpdated: new Date().toISOString(),
+      }),
+    })
+  );
+}
+
+function getISOWeekString(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
 }

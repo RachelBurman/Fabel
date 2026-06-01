@@ -1,18 +1,24 @@
 import { strict as assert } from "node:assert";
 import { describe, it, beforeEach } from "node:test";
-import { UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { UpdateItemCommand, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { handlerWithClient } from "./index.mjs";
 
 // ---------------------------------------------------------------------------
 // Stub DynamoDB client — records every send() call
 // ---------------------------------------------------------------------------
 
-function makeStubClient() {
+function makeStubClient({ getItemResult = null, failInsights = false } = {}) {
   const calls = [];
   return {
     calls,
     send(cmd) {
       calls.push(cmd);
+      if (failInsights && (cmd instanceof GetItemCommand || cmd instanceof PutItemCommand)) {
+        return Promise.reject(new Error("Simulated insights failure"));
+      }
+      if (cmd instanceof GetItemCommand) {
+        return Promise.resolve(getItemResult ?? {});
+      }
       return Promise.resolve({});
     },
   };
@@ -34,6 +40,12 @@ const threeIngredientImage = {
   userId: { S: "u1" },
   liked: { BOOL: true },
   recipeIngredients: { L: [{ S: "garlic" }, { S: "lemon" }, { S: "thyme" }] },
+};
+
+const dislikedImage = {
+  userId: { S: "u4" },
+  liked: { BOOL: false },
+  recipeIngredients: { L: [{ S: "cilantro" }] },
 };
 
 // ---------------------------------------------------------------------------
@@ -72,9 +84,9 @@ describe("fable-feedback-processor", () => {
 
   it("writes 3 positive signals for a liked recipe with 3 ingredients", async () => {
     await handlerWithClient({ Records: [makeRecord({ image: threeIngredientImage })] }, client);
-    assert.equal(client.calls.length, 1);
-    assert.ok(client.calls[0] instanceof UpdateItemCommand);
-    const signals = client.calls[0].input.ExpressionAttributeValues[":signals"].L;
+    const updateCalls = client.calls.filter((c) => c instanceof UpdateItemCommand);
+    assert.equal(updateCalls.length, 1);
+    const signals = updateCalls[0].input.ExpressionAttributeValues[":signals"].L;
     assert.equal(signals.length, 3);
     for (const s of signals) {
       assert.equal(s.M.liked.BOOL, true);
@@ -90,8 +102,9 @@ describe("fable-feedback-processor", () => {
       recipeIngredients: { L: [{ S: "cilantro" }, { S: "mint" }, { S: "basil" }] },
     };
     await handlerWithClient({ Records: [makeRecord({ image })] }, client);
-    assert.equal(client.calls.length, 1);
-    const signals = client.calls[0].input.ExpressionAttributeValues[":signals"].L;
+    const updateCalls = client.calls.filter((c) => c instanceof UpdateItemCommand);
+    assert.equal(updateCalls.length, 1);
+    const signals = updateCalls[0].input.ExpressionAttributeValues[":signals"].L;
     assert.equal(signals.length, 3);
     for (const s of signals) {
       assert.equal(s.M.liked.BOOL, false);
@@ -105,8 +118,58 @@ describe("fable-feedback-processor", () => {
     const goodRecord = makeRecord({ image: threeIngredientImage });
 
     await handlerWithClient({ Records: [badRecord, goodRecord] }, client);
-    assert.equal(client.calls.length, 1);
-    const signals = client.calls[0].input.ExpressionAttributeValues[":signals"].L;
+    const updateCalls = client.calls.filter((c) => c instanceof UpdateItemCommand);
+    assert.equal(updateCalls.length, 1);
+    const signals = updateCalls[0].input.ExpressionAttributeValues[":signals"].L;
     assert.equal(signals.length, 3);
+  });
+
+  // ── Insights extension ──────────────────────────────────────────────────────
+
+  it("writes to insights table for a liked recipe (GetItem + PutItem per time window)", async () => {
+    await handlerWithClient({ Records: [makeRecord({ image: threeIngredientImage })] }, client);
+    const getCalls = client.calls.filter((c) => c instanceof GetItemCommand);
+    const putCalls = client.calls.filter((c) => c instanceof PutItemCommand);
+    // Two time windows: current week + all-time
+    assert.equal(getCalls.length, 2);
+    assert.equal(putCalls.length, 2);
+  });
+
+  it("does NOT write to insights for a disliked recipe", async () => {
+    await handlerWithClient({ Records: [makeRecord({ image: dislikedImage })] }, client);
+    const getCalls = client.calls.filter((c) => c instanceof GetItemCommand);
+    const putCalls = client.calls.filter((c) => c instanceof PutItemCommand);
+    assert.equal(getCalls.length, 0);
+    assert.equal(putCalls.length, 0);
+  });
+
+  it("uses allergenProfile from the feedback record when present", async () => {
+    const image = {
+      userId: { S: "u5" },
+      liked: { BOOL: true },
+      recipeIngredients: { L: [{ S: "rice noodles" }] },
+      allergenProfile: { S: "gluten-free" },
+    };
+    await handlerWithClient({ Records: [makeRecord({ image })] }, client);
+    const putCalls = client.calls.filter((c) => c instanceof PutItemCommand);
+    assert.ok(putCalls.length > 0);
+    const key = putCalls[0].input.Item.allergenProfile;
+    assert.equal(key.S, "gluten-free");
+  });
+
+  it("falls back to 'global' allergenProfile when not present in record", async () => {
+    await handlerWithClient({ Records: [makeRecord({ image: threeIngredientImage })] }, client);
+    const putCalls = client.calls.filter((c) => c instanceof PutItemCommand);
+    assert.ok(putCalls.length > 0);
+    const key = putCalls[0].input.Item.allergenProfile;
+    assert.equal(key.S, "global");
+  });
+
+  it("is non-fatal when insights write fails — preferenceSignals still written", async () => {
+    const failClient = makeStubClient({ failInsights: true });
+    // Should not throw even though GetItem/PutItem fail
+    await handlerWithClient({ Records: [makeRecord({ image: threeIngredientImage })] }, failClient);
+    const updateCalls = failClient.calls.filter((c) => c instanceof UpdateItemCommand);
+    assert.equal(updateCalls.length, 1);
   });
 });
