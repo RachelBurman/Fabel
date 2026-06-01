@@ -186,14 +186,14 @@ A 5-slide introductory slideshow that appears on first launch and is re-launchab
 - 8 unit tests covering: show-on-first-load, suppress-when-seen, skip flag, Let's go flag, restart flag, slide count, dot index range
 
 ### Navigation & History
-- Five-tab navigation — Kitchen, Recipe, Substitutes, History, Saved
+- Six-tab navigation — Kitchen, Recipe, Discover, Substitutes, History, Saved
 - Recipe tab persists the most recent recipe across navigation
 - History tab — all recipes generated this session, newest first
 - Saved tab — hearted recipes persisted in DynamoDB; deletable
 - **Tab visibility** — Navigation settings let users hide individual tabs; at least 2 must remain visible; persisted to DynamoDB
 
-### Discover Section
-Trending ingredient insights surfaced above the recipe generation flow.
+### Discover Tab
+Trending ingredient insights as a dedicated tab (Compass icon), between Recipe and Substitutes.
 
 - **Trending for you** — top 3 recipe types (cuisine + occasion) trending for the user's allergen profile this week; tapping pre-fills the cuisine and occasion filters
 - **Trending globally** — top 5 most-liked ingredients across all users this week
@@ -286,8 +286,8 @@ In-memory (loaded at server startup)
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
 - ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
 - ✅ `fable-ingredient-insights` table — aggregate trending data by allergen profile; seeded with 14 realistic records across 7 profiles × 2 time windows
-- ✅ Discover section — Trending for you, Trending globally, Most loved, Trending pairings; each sub-section individually toggleable in settings
-- ✅ Tab visibility settings — hide/show individual nav tabs; min 2 enforced; persisted to DynamoDB
+- ✅ Discover tab — dedicated nav tab (Compass icon) between Recipe and Substitutes; Trending for you, Trending globally, Most loved, Trending pairings; each sub-section individually toggleable in settings
+- ✅ Tab visibility settings — hide/show individual nav tabs (incl. Discover); min 2 enforced; persisted to DynamoDB
 - ✅ Lambda extended — liked feedback events now also write to `fable-ingredient-insights` (non-fatal); allergenProfile stored per feedback record
 - ✅ `/api/insights` route — 1-hour cached; returns profile + global trending data
 - ✅ 473 passing tests across 21 test suites
