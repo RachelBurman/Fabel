@@ -247,11 +247,8 @@ export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
       aria-modal="true"
       aria-label="Fable introduction"
     >
-      {/* Backdrop — dims the app behind */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-
       {/* Tutorial content */}
-      <div className="relative h-full bg-background flex flex-col max-w-lg mx-auto">
+      <div className="h-full bg-background flex flex-col">
 
         {/* Skip button */}
         <div className="flex justify-end px-4 pt-4 pb-1 shrink-0">
