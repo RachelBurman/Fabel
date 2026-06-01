@@ -30,7 +30,7 @@ export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigation
   const navItems = allNavItems.filter(item => visibleTabs.includes(item.tabKey))
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-pb">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-pb md:hidden">
       <div className="flex items-center justify-around h-16">
         {navItems.map(item => {
           const isActive = currentScreen === item.id
@@ -57,6 +57,60 @@ export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigation
         })}
       </div>
     </nav>
+  )
+}
+
+export function SidebarNavigation({ currentScreen, onNavigate }: BottomNavigationProps) {
+  const { preferences } = useFable()
+  const visibleTabs = preferences.visibleTabs
+
+  const allNavItems = [
+    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,        tabKey: 'kitchen'     },
+    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen,       tabKey: 'recipe'      },
+    { id: 'discover'     as const, label: 'Discover',    icon: Compass,        tabKey: 'discover'    },
+    { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight, tabKey: 'substitutes' },
+    { id: 'history'      as const, label: 'History',     icon: Clock,          tabKey: 'history'     },
+    { id: 'saved'        as const, label: 'Saved',       icon: Heart,          tabKey: 'saved'       },
+  ]
+
+  const navItems = allNavItems.filter(item => visibleTabs.includes(item.tabKey))
+
+  return (
+    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-[220px] flex-col bg-card/95 backdrop-blur-md border-r border-border z-50">
+      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border shrink-0">
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <Leaf className="w-4 h-4 text-primary" />
+        </div>
+        <span className="text-lg font-semibold text-foreground">Fable</span>
+      </div>
+      <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
+        {navItems.map(item => {
+          const isActive = currentScreen === item.id
+          return (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              className={cn(
+                'relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors w-full',
+                isActive
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+              )}
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="sidebar-nav-indicator"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-r-full"
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              )}
+              <item.icon className="w-5 h-5 shrink-0" />
+              <span>{item.label}</span>
+            </button>
+          )
+        })}
+      </nav>
+    </aside>
   )
 }
 
@@ -93,10 +147,10 @@ export function Header({ onSettingsClick }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border">
-      <div className="flex items-center justify-between h-16 px-6">
+      <div className="flex items-center justify-between h-16 px-6 md:justify-end">
 
-        {/* Left: logo + Safe Foods badge */}
-        <div className="flex items-center gap-2">
+        {/* Left: logo + Safe Foods badge — hidden on desktop (sidebar shows the logo) */}
+        <div className="flex items-center gap-2 md:hidden">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Leaf className="w-4 h-4 text-primary" />
           </div>

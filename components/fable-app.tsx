@@ -18,7 +18,7 @@ import { SavedRecipesScreen } from '@/components/saved-recipes-screen'
 import { SafeFoodsScreen } from '@/components/safe-foods-screen'
 import { SubstitutesScreen } from '@/components/substitutes-screen'
 import { DiscoverSection } from '@/components/discover-section'
-import { BottomNavigation, Header } from '@/components/navigation'
+import { BottomNavigation, SidebarNavigation, Header } from '@/components/navigation'
 import { TutorialOverlay } from '@/components/tutorial-overlay'
 
 type Screen =
@@ -463,12 +463,18 @@ function FableAppContent() {
 
   return (
     <>
-    <div className="h-dvh flex flex-col bg-background">
+    <div className={`h-dvh flex flex-col bg-background${showNavigation ? ' md:ml-[220px]' : ''}`}>
+      {showNavigation && (
+        <SidebarNavigation
+          currentScreen={navScreenMap[currentScreen]}
+          onNavigate={handleNavigate}
+        />
+      )}
       {showNavigation && (
         <Header onSettingsClick={() => navigate('allergens')} />
       )}
 
-      <main className={`flex-1 min-h-0 overflow-y-auto${showNavigation ? ' pb-16' : ''}`}>
+      <main className={`flex-1 min-h-0 overflow-y-auto${showNavigation ? ' pb-16 md:pb-0' : ''}`}>
         <AnimatePresence mode="wait">
 
           {currentScreen === 'onboarding' && (

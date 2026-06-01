@@ -187,6 +187,7 @@ A 5-slide introductory slideshow that appears on first launch and is re-launchab
 
 ### Navigation & History
 - Six-tab navigation — Kitchen, Recipe, Discover, Substitutes, History, Saved
+- **Responsive layout** — bottom tab bar on mobile (< 768 px); fixed left sidebar (220 px) on desktop (≥ 768 px) with Fable logo/wordmark at the top and stacked icon + label items; main content area shifts right on desktop; same green active-state highlight and `bg-card/95` theming at both breakpoints
 - Recipe tab persists the most recent recipe across navigation
 - History tab — all recipes generated this session, newest first
 - Saved tab — hearted recipes persisted in DynamoDB; deletable
