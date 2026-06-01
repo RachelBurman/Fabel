@@ -7,7 +7,7 @@ import {
 } from "@aws-sdk/client-lambda";
 import { readFileSync } from "node:fs";
 
-const FUNCTION_NAME = "fable-feedback-processor";
+const FUNCTION_NAME = "fable-feedback-stream-processor";
 const REGION = "eu-west-2";
 const ROLE_ARN = "arn:aws:iam::546518615025:role/fable-feedback-stream-processor";
 const HANDLER = "index.handler";

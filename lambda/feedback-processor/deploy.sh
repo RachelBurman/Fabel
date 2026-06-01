@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FUNCTION_NAME="fable-feedback-processor"
+FUNCTION_NAME="fable-feedback-stream-processor"
 ROLE_ARN="arn:aws:iam::546518615025:role/fable-feedback-stream-processor"
 REGION="eu-west-2"
 HANDLER="index.handler"

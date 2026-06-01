@@ -5,7 +5,7 @@ import {
 } from "@aws-sdk/client-cloudwatch-logs";
 
 const client = new CloudWatchLogsClient({ region: "eu-west-2" });
-const LOG_GROUP = "/aws/lambda/fable-feedback-processor";
+const LOG_GROUP = "/aws/lambda/fable-feedback-stream-processor";
 
 const streams = await client.send(
   new DescribeLogStreamsCommand({

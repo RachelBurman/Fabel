@@ -6,8 +6,8 @@ import {
 } from "@aws-sdk/client-cloudwatch-logs";
 
 const REGION = "eu-west-2";
-const FUNCTION_NAME = "fable-feedback-processor";
-const LOG_GROUP = "/aws/lambda/fable-feedback-processor";
+const FUNCTION_NAME = "fable-feedback-stream-processor";
+const LOG_GROUP = "/aws/lambda/fable-feedback-stream-processor";
 
 // Test event shaped exactly like a real DynamoDB Stream record from fable-feedback
 const testEvent = {

@@ -1,4 +1,4 @@
-# fable-feedback-processor
+# fable-feedback-stream-processor
 
 Lambda function that listens to the `fable-feedback` DynamoDB Stream and updates user preference profiles in `fable-users`.
 
