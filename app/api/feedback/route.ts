@@ -11,6 +11,7 @@ export async function POST(req: NextRequest) {
     notes?: string;
     recipeTitle?: string;
     recipeIngredients?: string[];
+    allergenProfile?: string;
   };
   try {
     body = await req.json();
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, recipeId, liked, reasons, notes, recipeTitle, recipeIngredients } = body;
+  const { userId, recipeId, liked, reasons, notes, recipeTitle, recipeIngredients, allergenProfile } = body;
   if (!userId || !recipeId) {
     return NextResponse.json({ error: "Missing userId or recipeId" }, { status: 400 });
   }
@@ -34,6 +35,7 @@ export async function POST(req: NextRequest) {
         notes: notes ?? "",
         recipeTitle: recipeTitle ?? "",
         recipeIngredients: recipeIngredients ?? [],
+        allergenProfile: allergenProfile ?? "global",
         timestamp: new Date().toISOString(),
       },
     })
