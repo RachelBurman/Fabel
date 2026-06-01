@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { FableProvider, useFable } from '@/lib/fable-context'
+import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
 import { OnboardingScreen } from '@/components/onboarding-screen'
@@ -388,6 +389,7 @@ function FableAppContent() {
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     if (!uid || !generatedRecipeId || !generatedRecipe) return
 
+    const allergenProfile = getInsightProfileKey(effectiveAllergens, preferences.activePresets)
     fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -399,6 +401,7 @@ function FableAppContent() {
         notes,
         recipeTitle: generatedRecipe.title,
         recipeIngredients: generatedRecipe.ingredients.map(i => i.name),
+        allergenProfile,
       }),
     }).catch(err => console.error('Failed to submit feedback:', err))
 

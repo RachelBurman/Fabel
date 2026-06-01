@@ -11,6 +11,7 @@ import { Plus, X, Search, ChefHat, Sparkles, Layers, Calendar, ArrowLeftRight, C
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { DiscoverSection } from '@/components/discover-section'
 import allergenMapData from '@/data/allergen-map.json'
 
 const allergenMap = allergenMapData as Record<string, string[]>
@@ -648,7 +649,12 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   Back to Kitchen
                 </button>
 
-                <h2 className="text-xl font-semibold text-foreground mb-6">Recipe Preferences</h2>
+                <h2 className="text-xl font-semibold text-foreground mb-4">Recipe Preferences</h2>
+
+                <DiscoverSection
+                  onSelectCuisine={c => setCuisine(c.toLowerCase())}
+                  onSelectOccasion={o => setOccasion(o)}
+                />
 
                 {/* ── Filters ── */}
                 <div className="space-y-4">
