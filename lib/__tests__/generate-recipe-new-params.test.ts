@@ -19,6 +19,29 @@ jest.mock('@anthropic-ai/sdk', () => ({
   })),
 }))
 
+// ─── Mock DynamoDB (feedback query — returns empty, no userId in test bodies) ─
+
+jest.mock('@/lib/dynamo', () => ({
+  dynamo: { send: jest.fn().mockResolvedValue({ Items: [] }) },
+}))
+
+// ─── Mock Epicure (auto-swap — not exercised when feedback is empty) ──────────
+
+jest.mock('@/lib/epicure', () => ({
+  allIngredients: [],
+  findSimilarIngredients: jest.fn().mockReturnValue([]),
+  cosineSimilarityBetween: jest.fn().mockReturnValue(0),
+  toEpicureKey: jest.fn((s: string) => s),
+  getCategoryForIngredient: jest.fn().mockReturnValue(null),
+  rankSimilar: jest.fn().mockReturnValue([]),
+  getAllergensForIngredient: jest.fn().mockReturnValue([]),
+  allergenIngredients: {},
+  ALLERGEN_CODES: [],
+  COMMON_ALLERGENS: [],
+  INGREDIENT_CATEGORIES: {},
+  findSafeIngredients: jest.fn().mockReturnValue([]),
+}))
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeRecipeJson(overrides: Record<string, unknown> = {}): string {

@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { dynamo } from "@/lib/dynamo";
 import { getShelfLifeDays, addDays } from "@/lib/shelf-life";
+import {
+  computePreferenceProfile,
+  buildTasteProfileClause,
+  type FeedbackRecord,
+} from "@/lib/feedback-preferences";
+import { findSimilarIngredients } from "@/lib/epicure";
 
 const client = new Anthropic();
 
@@ -194,6 +202,7 @@ export async function POST(req: NextRequest) {
     occasion?: unknown;
     servings?: unknown;
     kitchenEquipment?: unknown;
+    userId?: unknown;
   };
   try {
     body = await req.json();
@@ -261,6 +270,72 @@ export async function POST(req: NextRequest) {
           return ae.localeCompare(be);
         })
     : [];
+
+  const userId =
+    typeof body.userId === "string" && body.userId.trim()
+      ? body.userId.trim()
+      : null;
+
+  // ── Feedback-informed preference profile ────────────────────────────────────
+  let tasteProfileClause = "";
+  let adjustedItems = sortedItems;
+
+  if (userId) {
+    try {
+      const feedbackResult = await dynamo.send(
+        new QueryCommand({
+          TableName: "fable-feedback",
+          KeyConditionExpression: "userId = :uid",
+          ExpressionAttributeValues: { ":uid": userId },
+        })
+      );
+
+      const allRecords = (feedbackResult.Items ?? []) as FeedbackRecord[];
+      // Sort descending by timestamp and take the 20 most recent
+      const recent = allRecords
+        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+        .slice(0, 20);
+
+      const profile = computePreferenceProfile(recent);
+      tasteProfileClause = buildTasteProfileClause(profile);
+
+      // Auto-swap: silently replace any kitchen ingredient with a preference score
+      // below -0.3 with its nearest Epicure neighbour that has a neutral/positive score
+      if (Object.keys(profile.scores).length > 0) {
+        const swapNotes: string[] = [];
+        adjustedItems = sortedItems.map((item) => {
+          const displayKey = item.name.replace(/_/g, " ").toLowerCase();
+          if ((profile.scores[displayKey] ?? 0) >= -0.3) return item;
+
+          const candidates = findSimilarIngredients(item.name, 20);
+          const substitute = candidates.find(
+            (c) => (profile.scores[c.replace(/_/g, " ").toLowerCase()] ?? 0) >= -0.3
+          );
+          if (!substitute) return item;
+
+          const subDisplay = substitute.replace(/_/g, " ");
+          swapNotes.push(
+            `${item.displayName ?? item.name.replace(/_/g, " ")} → ${subDisplay}`
+          );
+          return {
+            ...item,
+            name: substitute,
+            displayName:
+              subDisplay.charAt(0).toUpperCase() + subDisplay.slice(1),
+            subtype: undefined,
+          };
+        });
+
+        if (swapNotes.length > 0) {
+          tasteProfileClause +=
+            `Ingredient adjustments based on taste history: ${swapNotes.join("; ")}.\n\n`;
+        }
+      }
+    } catch (err) {
+      // Non-fatal — preference history is best-effort
+      console.warn("[feedback-preferences] Failed to compute taste profile:", err);
+    }
+  }
 
   const suggestions = Array.isArray(body.suggestions)
     ? body.suggestions.filter((s): s is string => typeof s === "string")
@@ -330,7 +405,7 @@ export async function POST(req: NextRequest) {
 
 // Human-readable forms for the prompt
   const humanSafe = safeIngredients.map((s) => s.replace(/_/g, " ")).join(", ");
-  const humanAvailable = sortedItems.map(buildIngredientDescription).join(", ");
+  const humanAvailable = adjustedItems.map(buildIngredientDescription).join(", ");
 
   // ── Safe-foods liquid and salt detection ────────────────────────────────────
   // Build the safe set early so we can inspect it for the prompt.
@@ -393,7 +468,7 @@ export async function POST(req: NextRequest) {
 
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -410,7 +485,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : dislikedPrefix + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + dislikedPrefix + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +

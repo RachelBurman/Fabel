@@ -160,6 +160,7 @@ function FableAppContent() {
       }
 
       setLoadingStep('recipe')
+      const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
       const recipeRes = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -179,6 +180,7 @@ function FableAppContent() {
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
+          ...(uid ? { userId: uid } : {}),
           ...sfPayload,
         }),
       })
@@ -209,6 +211,7 @@ function FableAppContent() {
       : {}
 
     try {
+      const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
       const recipeRes = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,6 +231,7 @@ function FableAppContent() {
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
+          ...(uid ? { userId: uid } : {}),
           ...sfPayload,
         }),
       })
