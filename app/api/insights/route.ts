@@ -44,6 +44,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     profileKey,
     weekStr,
+    allergens,
+    customAllergens: (profile.customAllergens ?? []) as string[],
     profileWeek: (profileWeekRes.Item ?? null) as IngredientInsightsRecord | null,
     profileAllTime: (profileAllTimeRes.Item ?? null) as IngredientInsightsRecord | null,
     globalWeek: profileKey === "global"

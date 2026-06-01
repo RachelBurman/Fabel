@@ -5,9 +5,22 @@ import { TrendingUp, Globe, Heart, Wine } from 'lucide-react'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientInsightsRecord } from '@/lib/types'
 
+const ALLERGEN_LABELS: Record<string, string> = {
+  milk: 'Milk', eggs: 'Eggs', gluten: 'Gluten', peanuts: 'Peanuts',
+  tree_nuts: 'Tree Nuts', fish: 'Fish', crustaceans: 'Crustaceans',
+  molluscs: 'Molluscs', soy: 'Soy', sesame: 'Sesame', mustard: 'Mustard',
+  celery: 'Celery', sulphites: 'Sulphites', lupin: 'Lupin',
+}
+
+function formatCustomAllergen(name: string): string {
+  return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
 interface InsightsData {
   profileKey: string
   weekStr: string
+  allergens: string[]
+  customAllergens: string[]
   profileWeek: IngredientInsightsRecord | null
   profileAllTime: IngredientInsightsRecord | null
   globalWeek: IngredientInsightsRecord | null
@@ -45,7 +58,19 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion }: DiscoverS
         <div>
           <h1 className="text-2xl font-semibold text-foreground mb-1">Discover</h1>
           <p className="text-sm text-muted-foreground">
-            {isLoading ? 'Loading trends…' : data ? `Trending this week · ${data.profileKey}` : 'Trends load after your first recipe feedback.'}
+            {isLoading ? 'Loading trends…' : data ? (
+              data.allergens.length === 0 && data.customAllergens.length === 0
+                ? 'Trending this week · global'
+                : <>
+                    Trending this week · safe for you
+                    <span className="block text-xs mt-0.5">
+                      Excluding {[
+                        ...data.allergens.map(a => ALLERGEN_LABELS[a] ?? formatCustomAllergen(a)),
+                        ...data.customAllergens.map(formatCustomAllergen),
+                      ].join(', ')}
+                    </span>
+                  </>
+            ) : 'Trends load after your first recipe feedback.'}
           </p>
         </div>
 

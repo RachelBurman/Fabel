@@ -202,6 +202,7 @@ Trending ingredient insights as a dedicated tab (Compass icon), between Recipe a
 - Section and each sub-section individually toggleable in settings; persisted to DynamoDB
 - Powered by `fable-ingredient-insights` — a fifth DynamoDB table aggregated by the Lambda on every liked feedback event
 - API route `/api/insights` cached for 1 hour (Next.js route revalidation)
+- Subtitle shows "Trending this week · global" when the user has no restrictions; "Trending this week · safe for you" with an "Excluding [allergen list]" secondary line when any EU 14 or custom allergens are set — driven by the user's actual restrictions, not by whether their profile matched a seeded data key
 
 ---
 
