@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { ttlFromNow } from "@/lib/ttl";
 
 export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId")?.trim();
@@ -12,7 +13,11 @@ export async function GET(req: NextRequest) {
     ExpressionAttributeValues: { ":uid": userId },
   }));
 
-  return NextResponse.json({ recipes: result.Items ?? [] });
+  // Filter out history entries (isSaved === false) so they don't appear in the
+  // saved screen.  Old records without an isSaved field are treated as saved.
+  const items = (result.Items ?? []).filter((item) => item.isSaved !== false);
+
+  return NextResponse.json({ recipes: items });
 }
 
 export async function POST(req: NextRequest) {
@@ -29,9 +34,25 @@ export async function POST(req: NextRequest) {
   // Use the recipe's existing id as the sort key so we can delete by it later
   const recipeId = String(recipe.id ?? crypto.randomUUID());
 
+  // Explicitly saved recipes (isSaved: true) never expire.
+  // History entries (isSaved: false / absent) get a 90-day TTL so they are
+  // automatically purged from DynamoDB if the user never saves them.
+  // When a history entry is later saved, the PUT overwrites the same recipeId
+  // with isSaved: true and no ttl, clearing the expiry.
+  const item: Record<string, unknown> = {
+    userId,
+    recipeId,
+    ...recipe,
+    savedAt: new Date().toISOString(),
+  };
+
+  if (recipe.isSaved !== true) {
+    item.ttl = ttlFromNow();
+  }
+
   await dynamo.send(new PutCommand({
     TableName: "fable-saved-recipes",
-    Item: { userId, recipeId, ...recipe, savedAt: new Date().toISOString() },
+    Item: item,
   }));
 
   return NextResponse.json({ recipeId });

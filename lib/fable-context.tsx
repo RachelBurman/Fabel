@@ -342,12 +342,12 @@ export function FableProvider({ children }: { children: ReactNode }) {
         ? prev.savedRecipes
         : [...prev.savedRecipes, recipe.id],
     }))
-    // Persist to DynamoDB (fire and forget)
+    // Persist to DynamoDB — isSaved: true so the route omits TTL (never expires)
     if (userIdRef.current) {
       fetch('/api/user/saved-recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userIdRef.current, recipe }),
+        body: JSON.stringify({ userId: userIdRef.current, recipe: { ...recipe, isSaved: true } }),
       }).catch(err => console.error('Failed to persist saved recipe:', err))
     }
   }, [])
@@ -433,6 +433,31 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const addToHistory = useCallback((entry: HistoryEntry) => {
     setRecipeHistory(prev => [entry, ...prev])
+    // Persist to DynamoDB with isSaved: false so the route attaches a 90-day TTL.
+    // If the user later saves the recipe, the PUT with the same recipeId and
+    // isSaved: true will overwrite this record and clear the TTL.
+    if (userIdRef.current) {
+      fetch('/api/user/saved-recipes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: userIdRef.current,
+          recipe: {
+            id: entry.id,
+            title: entry.recipe.title,
+            description: entry.recipe.description,
+            image: '',
+            cookTime: entry.recipe.cookTime,
+            servings: entry.recipe.servings,
+            matchScore: 100,
+            allergens: [],
+            ingredients: entry.recipe.ingredients.map(i => i.name),
+            isSaved: false,
+            fullRecipe: entry.recipe,
+          },
+        }),
+      }).catch(err => console.error('Failed to persist history entry:', err))
+    }
   }, [])
 
   // ── Computed effective restriction sets ─────────────────────────────────────

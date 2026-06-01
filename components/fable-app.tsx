@@ -252,8 +252,11 @@ function FableAppContent() {
   // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {
     if (!generatedRecipe) return
+    // Use generatedRecipeId (same as the history entry's id) so the DynamoDB PUT
+    // overwrites the history record — replacing isSaved: false + ttl with
+    // isSaved: true and no ttl, which clears the expiry.
     saveRecipe({
-      id: `gen-${Date.now()}`,
+      id: generatedRecipeId,
       title: generatedRecipe.title,
       description: generatedRecipe.description,
       image: '',
