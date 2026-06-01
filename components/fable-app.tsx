@@ -17,6 +17,7 @@ import { HistoryScreen } from '@/components/history-screen'
 import { SavedRecipesScreen } from '@/components/saved-recipes-screen'
 import { SafeFoodsScreen } from '@/components/safe-foods-screen'
 import { SubstitutesScreen } from '@/components/substitutes-screen'
+import { DiscoverSection } from '@/components/discover-section'
 import { BottomNavigation, Header } from '@/components/navigation'
 import { TutorialOverlay } from '@/components/tutorial-overlay'
 
@@ -30,6 +31,7 @@ type Screen =
   | 'history'
   | 'saved'
   | 'substitutes'
+  | 'discover'
 
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
@@ -417,7 +419,7 @@ function FableAppContent() {
 
   const showNavigation = currentScreen !== 'onboarding' && currentScreen !== 'allergens' && currentScreen !== 'safe-foods'
 
-  const navScreenMap: Record<Screen, 'ingredients' | 'recipe' | 'substitutes' | 'saved' | 'history'> = {
+  const navScreenMap: Record<Screen, 'ingredients' | 'recipe' | 'discover' | 'substitutes' | 'saved' | 'history'> = {
     onboarding:    'ingredients',
     allergens:     'ingredients',
     'safe-foods':  'ingredients',
@@ -427,9 +429,10 @@ function FableAppContent() {
     history:       'history',
     saved:         'saved',
     substitutes:   'substitutes',
+    discover:      'discover',
   }
 
-  const handleNavigate = (screen: 'ingredients' | 'recipe' | 'substitutes' | 'saved' | 'history') => {
+  const handleNavigate = (screen: 'ingredients' | 'recipe' | 'discover' | 'substitutes' | 'saved' | 'history') => {
     if (screen === 'recipe') {
       navigate('generated')
     } else if (screen === 'substitutes') {
@@ -595,6 +598,18 @@ function FableAppContent() {
                 onBack={() => navigate('ingredients')}
                 onViewRecipe={handleViewSavedRecipe}
               />
+            </motion.div>
+          )}
+
+          {currentScreen === 'discover' && (
+            <motion.div
+              key="discover"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DiscoverSection />
             </motion.div>
           )}
 

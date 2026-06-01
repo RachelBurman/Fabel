@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, User, X } from 'lucide-react'
+import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, User, X, Compass } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { cn } from '@/lib/utils'
 import { useFable } from '@/lib/fable-context'
 
-type NavScreen = 'ingredients' | 'recipe' | 'substitutes' | 'saved' | 'history'
+type NavScreen = 'ingredients' | 'recipe' | 'discover' | 'substitutes' | 'saved' | 'history'
 
 interface BottomNavigationProps {
   currentScreen: NavScreen
@@ -19,11 +19,12 @@ export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigation
   const visibleTabs = preferences.visibleTabs
 
   const allNavItems = [
-    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,       tabKey: 'kitchen'      },
-    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen,      tabKey: 'recipe'       },
+    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,       tabKey: 'kitchen'     },
+    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen,      tabKey: 'recipe'      },
+    { id: 'discover'     as const, label: 'Discover',    icon: Compass,       tabKey: 'discover'    },
     { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight, tabKey: 'substitutes' },
-    { id: 'history'      as const, label: 'History',     icon: Clock,         tabKey: 'history'      },
-    { id: 'saved'        as const, label: 'Saved',       icon: Heart,         tabKey: 'saved'        },
+    { id: 'history'      as const, label: 'History',     icon: Clock,         tabKey: 'history'     },
+    { id: 'saved'        as const, label: 'Saved',       icon: Heart,         tabKey: 'saved'       },
   ]
 
   const navItems = allNavItems.filter(item => visibleTabs.includes(item.tabKey))

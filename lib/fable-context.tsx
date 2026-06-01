@@ -70,7 +70,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     kitchenEquipment: ['hob', 'oven'],
     darkMode: false,
     discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
-    visibleTabs: [...ALL_TABS],
+    visibleTabs: [...ALL_TABS], // includes 'discover' by default
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])

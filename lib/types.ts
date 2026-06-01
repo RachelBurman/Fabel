@@ -188,7 +188,7 @@ export const DEFAULT_DISCOVER_SETTINGS: DiscoverSettings = {
   showTrendingPairings: true,
 }
 
-export const ALL_TABS = ['kitchen', 'recipe', 'substitutes', 'history', 'saved'] as const
+export const ALL_TABS = ['kitchen', 'recipe', 'discover', 'substitutes', 'history', 'saved'] as const
 export type TabId = typeof ALL_TABS[number]
 
 export interface InsightIngredient {

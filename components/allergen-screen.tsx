@@ -402,7 +402,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }:
             <p className="text-xs text-muted-foreground mb-3">At least 2 tabs must remain visible.</p>
             {ALL_TABS.map((tabId) => {
               const labelMap: Record<string, string> = {
-                kitchen: 'Kitchen', recipe: 'Recipe', substitutes: 'Substitutes', history: 'History', saved: 'Saved',
+                kitchen: 'Kitchen', recipe: 'Recipe', discover: 'Discover', substitutes: 'Substitutes', history: 'History', saved: 'Saved',
               }
               const isVisible = preferences.visibleTabs.includes(tabId)
               const wouldViolateMin = isVisible && preferences.visibleTabs.length <= 2

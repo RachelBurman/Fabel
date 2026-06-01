@@ -76,11 +76,11 @@ describe('PUT /api/user/profile — visibleTabs', () => {
     expect(item.visibleTabs).toEqual(['kitchen', 'recipe'])
   })
 
-  it('defaults visibleTabs to all 5 tabs when not provided', async () => {
+  it('defaults visibleTabs to all 6 tabs (including discover) when not provided', async () => {
     mockSend.mockResolvedValue({})
     await PUT(makePutRequest({ ...baseBody, discoverSettings: defaultDiscoverSettings }))
     const item = mockSend.mock.calls[0][0].input.Item
-    expect(item.visibleTabs).toEqual(['kitchen', 'recipe', 'substitutes', 'history', 'saved'])
+    expect(item.visibleTabs).toEqual(['kitchen', 'recipe', 'discover', 'substitutes', 'history', 'saved'])
   })
 
   it('persists visibleTabs with exactly 2 tabs (min allowed)', async () => {
@@ -170,6 +170,44 @@ describe('GET /api/user/profile — discoverSettings', () => {
     const res = await GET(makeGetRequest('test-user'))
     const body = await res.json()
     expect(body.discoverSettings.showTrendingForYou).toBe(false)
+  })
+})
+
+// ─── Discover tab in ALL_TABS ─────────────────────────────────────────────────
+
+describe('ALL_TABS includes discover', () => {
+  it('discover is present in ALL_TABS', async () => {
+    const { ALL_TABS } = await import('@/lib/types')
+    expect(ALL_TABS).toContain('discover')
+  })
+
+  it('discover appears between recipe and substitutes', async () => {
+    const { ALL_TABS } = await import('@/lib/types')
+    const arr = [...ALL_TABS]
+    const recipeIdx = arr.indexOf('recipe')
+    const discoverIdx = arr.indexOf('discover')
+    const substitutesIdx = arr.indexOf('substitutes')
+    expect(discoverIdx).toBeGreaterThan(recipeIdx)
+    expect(discoverIdx).toBeLessThan(substitutesIdx)
+  })
+
+  it('default visibleTabs includes discover', async () => {
+    mockSend.mockResolvedValue({})
+    await PUT(makePutRequest({ ...baseBody, discoverSettings: defaultDiscoverSettings }))
+    const item = mockSend.mock.calls[0][0].input.Item
+    expect(item.visibleTabs).toContain('discover')
+  })
+
+  it('discover tab can be toggled off — leaving 5 visible tabs', async () => {
+    mockSend.mockResolvedValue({})
+    await PUT(makePutRequest({
+      ...baseBody,
+      visibleTabs: ['kitchen', 'recipe', 'substitutes', 'history', 'saved'],
+      discoverSettings: defaultDiscoverSettings,
+    }))
+    const item = mockSend.mock.calls[0][0].input.Item
+    expect(item.visibleTabs).not.toContain('discover')
+    expect(item.visibleTabs).toHaveLength(5)
   })
 })
 
