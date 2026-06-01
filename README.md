@@ -102,7 +102,7 @@ pnpm dev
 - Dislike opens a compact feedback panel: five reason checkboxes ("Too many ingredients", "Didn't like the ingredients", "Wrong cuisine style", "Too complex", "Wrong meal size") plus a free-text field
 - Feedback stored in DynamoDB (`fable-feedback` table): `userId`, `recipeId`, `liked`, `reasons`, `notes`, `recipeTitle`, `recipeIngredients`, `timestamp`
 - Recent disliked patterns and ingredients loaded at session start and injected into the Claude prompt — future recipes actively avoid them
-- **Real-time preference signals** — DynamoDB Stream on `fable-feedback` triggers `fable-feedback-processor` Lambda on every write; one `preferenceSignals` entry per ingredient is appended to `fable-users` automatically (event-driven, no polling)
+- **Real-time preference signals** — DynamoDB Stream on `fable-feedback` triggers `fable-feedback-stream-processor` Lambda on every write; one `preferenceSignals` entry per ingredient is appended to `fable-users` automatically (event-driven, no polling)
 
 ### Safe Foods Mode
 For users with MCAS, severe allergies, or highly restricted therapeutic diets.
@@ -222,7 +222,7 @@ DynamoDB tables
                                recipeTitle, recipeIngredients, timestamp)
                                  │
                                  ▼ DynamoDB Stream
-                               AWS Lambda — fable-feedback-processor
+                               AWS Lambda — fable-feedback-stream-processor
                                  │  Extracts one preferenceSignal per ingredient
                                  └─▶ fable-users.preferenceSignals[] (list_append)
 
@@ -261,7 +261,7 @@ In-memory (loaded at server startup)
 - ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
 - ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
 - ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
-- ✅ DynamoDB Streams + Lambda feedback processor — real-time `preferenceSignals` written to `fable-users` on every feedback write; 6 unit tests
+- ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
 - ✅ 448 passing tests across 19 test suites
 
 ### In Progress
@@ -302,7 +302,7 @@ In-memory (loaded at server startup)
 The fix: `/api/generate-recipe` reads the user's feedback history from DynamoDB before building the Claude prompt, extracts preference patterns (disliked cuisines, flagged ingredients, preferred cook times), and injects them as weighted constraints. DynamoDB becomes a personalisation engine, not just a log.
 
 #### ~~2. DynamoDB Streams + AWS Lambda — real-time preference learning~~ ✅ Done
-`fable-feedback-processor` Lambda (`lambda/feedback-processor/`) fires on every write to the `fable-feedback` Stream, extracts one `preferenceSignal` per ingredient, and appends it to `fable-users.preferenceSignals[]` via `list_append`. Non-fatal on partial batch failure. 6 unit tests passing.
+`fable-feedback-stream-processor` Lambda (`lambda/feedback-processor/`) fires on every write to the `fable-feedback` Stream, extracts one `preferenceSignal` per ingredient, and appends it to `fable-users.preferenceSignals[]` via `list_append`. Non-fatal on partial batch failure. 6 unit tests passing. Deployed on `nodejs24.x`.
 
 #### 3. `fable-ingredient-insights` table — aggregate analytics layer
 A fifth DynamoDB table written to by Lambda after feedback events. Tracks aggregate signals: most-liked cuisines, most-substituted ingredients, common allergen combinations. Not user-facing — exists to demonstrate scale thinking and provide data for future recommendation improvements.
