@@ -262,10 +262,10 @@ In-memory (loaded at server startup)
 - ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
 - ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
+- ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
 - ✅ 448 passing tests across 19 test suites
 
 ### In Progress
-- [ ] Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
 
 ### Near Term
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
