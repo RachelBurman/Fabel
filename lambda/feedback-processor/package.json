@@ -1,0 +1,12 @@
+{
+  "name": "fable-feedback-processor",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3",
+    "@aws-sdk/util-dynamodb": "^3"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-lambda": "^3.1057.0"
+  }
+}

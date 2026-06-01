@@ -15,3 +15,6 @@ node_modules
 .DS_Store
 .vercel
 package-lock.json
+
+# Lambda build artefacts
+lambda/**/*.zip
