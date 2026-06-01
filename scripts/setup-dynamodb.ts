@@ -72,6 +72,19 @@ async function main() {
     ],
     BillingMode: "PAY_PER_REQUEST",
   });
+
+  await createTable({
+    TableName: "fable-ingredient-insights",
+    KeySchema: [
+      { AttributeName: "allergenProfile", KeyType: "HASH" },
+      { AttributeName: "timeWindow", KeyType: "RANGE" },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: "allergenProfile", AttributeType: "S" },
+      { AttributeName: "timeWindow", AttributeType: "S" },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  });
 }
 
 main();

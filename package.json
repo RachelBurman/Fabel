@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "setup:dynamodb": "dotenv -e .env.local -- tsx scripts/setup-dynamodb.ts",
+    "seed:insights": "dotenv -e .env.local -- node scripts/seed-insights.mjs",
     "test": "jest",
     "test:watch": "jest --watch"
   },
