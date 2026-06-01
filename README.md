@@ -20,7 +20,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs22.x`) — DynamoDB Streams feedback processor + ingredient insights writer |
-| Testing | Jest 29, ts-jest, React Testing Library — 473 tests across 21 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 477 tests across 21 suites |
 
 ---
 
@@ -292,7 +292,8 @@ In-memory (loaded at server startup)
 - ✅ Tab visibility settings — hide/show individual nav tabs (incl. Discover); min 2 enforced; persisted to DynamoDB
 - ✅ Lambda extended — liked feedback events now also write to `fable-ingredient-insights` (non-fatal); allergenProfile stored per feedback record
 - ✅ `/api/insights` route — 1-hour cached; returns profile + global trending data
-- ✅ 473 passing tests across 21 test suites
+- ✅ 477 passing tests across 21 test suites
+- ✅ Responsive navigation — fixed 220 px left sidebar on desktop (≥ 768 px) with Fable wordmark; bottom tab bar on mobile; same active-state and theming at both breakpoints
 
 ### In Progress
 
@@ -328,9 +329,8 @@ In-memory (loaded at server startup)
 
 ### AWS & Database Enhancements
 
-#### 1. Close the feedback loop *(next up)*
-`fable-feedback` currently stores like/dislike + reason tags but does not influence generation.
-The fix: `/api/generate-recipe` reads the user's feedback history from DynamoDB before building the Claude prompt, extracts preference patterns (disliked cuisines, flagged ingredients, preferred cook times), and injects them as weighted constraints. DynamoDB becomes a personalisation engine, not just a log.
+#### ~~1. Close the feedback loop~~ ✅ Done
+`/api/generate-recipe` reads the last 20 feedback records, computes ingredient preference scores, injects top 5 preferred and top 5 avoided into the Claude prompt. Auto-swap replaces avoided ingredients (score < −0.3) with the nearest Epicure cosine neighbour.
 
 #### ~~2. DynamoDB Streams + AWS Lambda — real-time preference learning~~ ✅ Done
 `fable-feedback-stream-processor` Lambda (`lambda/feedback-processor/`) fires on every write to the `fable-feedback` Stream, extracts one `preferenceSignal` per ingredient, and appends it to `fable-users.preferenceSignals[]` via `list_append`. Non-fatal on partial batch failure. 6 unit tests passing. Deployed on `nodejs24.x`.
@@ -338,8 +338,8 @@ The fix: `/api/generate-recipe` reads the user's feedback history from DynamoDB 
 #### ~~3. `fable-ingredient-insights` table — aggregate analytics layer~~ ✅ Done
 `fable-ingredient-insights` (allergenProfile PK, timeWindow SK) is written to by the Lambda on every liked feedback event. Tracks trending ingredients, pairings, and recipe types per allergen profile. Surfaced in the new Discover section above the generation flow. Seeded with 14 records across 7 profiles.
 
-#### 4. TTL on recipe history
-Set DynamoDB Time To Live (TTL) on `fable-saved-recipes` history entries. Unsaved recipes expire after 90 days; explicitly saved recipes never expire. Keeps the table clean at scale and demonstrates awareness of data lifecycle management — a DynamoDB-native feature used deliberately.
+#### ~~4. TTL on recipe history~~ ✅ Done
+TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire after 90 days (7,776,000 seconds). Saved recipes never expire. Backwards-compatible — old records without the field are treated as saved.
 
 #### 5. AWS Lambda — Claude Vision ingredient recognition
 A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera at fridge or cupboard, image is sent to Claude Vision, recognised ingredients are matched against the 1,790 Epicure keys, and the kitchen is auto-populated. Lambda here keeps the heavy Vision call isolated from the Next.js serverless functions and gives the architecture a clean compute separation story.
@@ -360,7 +360,7 @@ A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **230** passing automated tests across 10 suites ensuring allergen safety and filter accuracy
+- **477** passing automated tests across 21 suites ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
