@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
 
 export async function POST(req: NextRequest) {
@@ -76,4 +76,67 @@ export async function GET(req: NextRequest) {
   const ingredients = [...new Set(dislikes.flatMap((d) => d.recipeIngredients ?? []))];
 
   return NextResponse.json({ patterns, ingredients, count: dislikes.length });
+}
+
+export async function PATCH(req: NextRequest) {
+  let body: {
+    recipeId?: string;
+    userId?: string;
+    surveyResponse?: {
+      ingredientsHighlighted?: string[];
+      ingredientsSkipped?: string[];
+      recipePositives?: string[];
+      recipeNegatives?: string[];
+    };
+  };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const { userId, recipeId, surveyResponse } = body;
+  if (!userId || !recipeId) {
+    return NextResponse.json({ error: "Missing userId or recipeId" }, { status: 400 });
+  }
+  if (!surveyResponse) {
+    return NextResponse.json({ error: "Missing surveyResponse" }, { status: 400 });
+  }
+
+  // Defensive: if an ingredient appears in both highlighted and skipped, remove from skipped
+  const highlighted = surveyResponse.ingredientsHighlighted ?? [];
+  const highlightedKeys = new Set(highlighted.map((i) => i.toLowerCase().trim()));
+  const sanitized = {
+    ingredientsHighlighted: highlighted,
+    ingredientsSkipped: (surveyResponse.ingredientsSkipped ?? []).filter(
+      (i) => !highlightedKeys.has(i.toLowerCase().trim())
+    ),
+    recipePositives: surveyResponse.recipePositives ?? [],
+    recipeNegatives: surveyResponse.recipeNegatives ?? [],
+  };
+
+  try {
+    await dynamo.send(
+      new UpdateCommand({
+        TableName: "fable-feedback",
+        Key: { userId, recipeId },
+        UpdateExpression: "SET surveyResponse = :sr",
+        ExpressionAttributeValues: { ":sr": sanitized },
+        ConditionExpression: "attribute_exists(userId)",
+      })
+    );
+  } catch (err: unknown) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "name" in err &&
+      (err as { name: string }).name === "ConditionalCheckFailedException"
+    ) {
+      console.warn("[feedback-survey] Record not found for survey patch:", userId, recipeId);
+      return NextResponse.json({ error: "Feedback record not found" }, { status: 404 });
+    }
+    throw err;
+  }
+
+  return NextResponse.json({ ok: true });
 }

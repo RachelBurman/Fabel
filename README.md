@@ -20,7 +20,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs22.x`) — DynamoDB Streams feedback processor + ingredient insights writer |
-| Testing | Jest 29, ts-jest, React Testing Library — 477 tests across 21 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 495 tests across 22 suites |
 
 ---
 
@@ -101,10 +101,19 @@ pnpm dev
 - Context-aware emoji per drink type: 🍵 tea · ☕ coffee · 🥛 milk · 🍺 beer/cider · 🍷 wine · 🧃 juice · 🍸 spirits
 
 ### Recipe Feedback
-- 👍 / 👎 buttons on every generated recipe
-- Dislike opens a compact feedback panel: five reason checkboxes ("Too many ingredients", "Didn't like the ingredients", "Wrong cuisine style", "Too complex", "Wrong meal size") plus a free-text field
-- Feedback stored in DynamoDB (`fable-feedback` table): `userId`, `recipeId`, `liked`, `reasons`, `notes`, `recipeTitle`, `recipeIngredients`, `timestamp`
+- 👍 / 👎 buttons on every generated recipe — feedback saved immediately to DynamoDB, then an optional survey panel appears
+- **Feedback survey** — four-section panel of tappable multi-select chips:
+  - ✨ **Highlight of the dish** — select ingredients you loved (chips from the generated recipe)
+  - 🚫 **Would leave out** — select ingredients you'd skip (same list; mutual exclusion with Section 1)
+  - 👌 **What worked** — Perfect complexity · Great cuisine choice · Right amount of ingredients · Quick to make
+  - 😬 **What didn't** — Too complex · Too simple · Wrong cuisine vibe · Too many ingredients · Took too long
+  - Skip dismisses without any API call; Done with nothing selected is treated as Skip
+- Feedback stored in DynamoDB (`fable-feedback` table): `userId`, `recipeId`, `liked`, `reasons`, `notes`, `recipeTitle`, `recipeIngredients`, `allergenProfile`, `timestamp`, `surveyResponse` (optional)
+- Survey responses persisted via `PATCH /api/feedback` — updates the existing record, never overwrites base feedback
 - Recent disliked patterns and ingredients loaded at session start and injected into the Claude prompt — future recipes actively avoid them
+- **Survey-informed generation** — `/api/generate-recipe` reads survey signals from the last 20 feedback records and injects them into the Claude prompt (threshold-gated at 3+ records):
+  - `ingredientsHighlighted` boosts ingredient preference score by 1.5×; `ingredientsSkipped` reduces by 1.5× (additive on top of base like/dislike scores)
+  - Recipe format signals (`recipePositives`, `recipeNegatives`) injected when a signal appears in 2+ records (noise suppression)
 - **Real-time preference signals** — DynamoDB Stream on `fable-feedback` triggers `fable-feedback-stream-processor` Lambda on every write; one `preferenceSignals` entry per ingredient is appended to `fable-users` automatically (event-driven, no polling)
 
 ### Safe Foods Mode
@@ -238,7 +247,9 @@ DynamoDB tables
   ├── fable-saved-recipes      Saved recipes with full recipe JSON
   ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], createdAt, updatedAt)
   ├── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
-  │                            recipeTitle, recipeIngredients, allergenProfile, timestamp)
+  │                            recipeTitle, recipeIngredients, allergenProfile, timestamp,
+  │                            surveyResponse?{ingredientsHighlighted, ingredientsSkipped,
+  │                              recipePositives, recipeNegatives})
   │                              │
   │                              ▼ DynamoDB Stream
   │                            AWS Lambda — fable-feedback-stream-processor
@@ -294,12 +305,13 @@ In-memory (loaded at server startup)
 - ✅ `/api/insights` route — 1-hour cached; returns profile + global trending data
 - ✅ 477 passing tests across 21 test suites
 - ✅ Responsive navigation — fixed 220 px left sidebar on desktop (≥ 768 px) with Fable wordmark; bottom tab bar on mobile; same active-state and theming at both breakpoints
+- ✅ **Feedback survey** — optional 4-section chip panel after every thumbs up/down; PATCH `/api/feedback` persists `surveyResponse`; ingredient signals weighted 1.5×; recipe format signals threshold-gated at 2+ appearances; 18 new tests (495 total across 22 suites)
 
 ### In Progress
 
 ### Near Term
-- [ ] Feedback reason tags — reason tags (too spicy, wrong cuisine, too complex etc) are collected in the UI but not yet persisted to `fable-feedback` or used in generation. Wire reason tags through to DynamoDB and incorporate them as weighted signals in the Claude prompt alongside ingredient preference scores.
 - [ ] Onboarding state in DynamoDB — `onboardingComplete` flag currently lives in `localStorage` only. Add `onboardingComplete: boolean` to `fable-users` schema for authenticated users, so tutorial state persists across devices. Migration path: on auth, write `onboardingComplete: false` only if the `localStorage` flag is absent.
+- [ ] **Agentic taste profile evolution** — currently Fable computes ingredient preference scores fresh on each `/api/generate-recipe` call from raw feedback history. The next step is a background Lambda function that periodically reviews a user's full feedback history, identifies drift and emerging patterns in their taste profile, rewrites a structured `tasteProfile` object on `fable-users`, and proactively surfaces recipe direction suggestions in the Discover tab. The data layer (DynamoDB Streams, Lambda, `preferenceSignals`, `fable-ingredient-insights`) is already in place. This is the natural evolution from personalised inference pipeline to a genuinely agentic personalisation loop.
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
@@ -360,7 +372,7 @@ A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **477** passing automated tests across 21 suites ensuring allergen safety and filter accuracy
+- **495** passing automated tests across 22 suites ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders

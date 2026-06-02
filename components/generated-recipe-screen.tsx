@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
 import { useFable } from '@/lib/fable-context'
+import { type SurveyResponse } from '@/lib/survey-signals'
 
 export type LoadingStep = 'pairings' | 'recipe'
 
@@ -50,6 +51,7 @@ interface GeneratedRecipeScreenProps {
   onGoToIngredients?: () => void
   allergens?: string[]
   onFeedback?: (liked: boolean, reasons: string[], notes: string) => void
+  onSurveySubmit?: (surveyResponse: SurveyResponse) => void
   showMacros?: boolean
   onFindSubstitute?: (ingredient: string, context: string[]) => void
   lactoseIntolerant?: boolean
@@ -61,12 +63,19 @@ const STEPS: { key: LoadingStep; label: string }[] = [
   { key: 'recipe', label: 'Crafting your recipe' },
 ]
 
-const FEEDBACK_REASONS = [
-  "Too many ingredients",
-  "Didn't like the ingredients",
-  "Wrong cuisine style",
-  "Too complex",
-  "Wrong meal size",
+const RECIPE_POSITIVES = [
+  'Perfect complexity',
+  'Great cuisine choice',
+  'Right amount of ingredients',
+  'Quick to make',
+]
+
+const RECIPE_NEGATIVES = [
+  'Too complex',
+  'Too simple',
+  'Wrong cuisine vibe',
+  'Too many ingredients',
+  'Took too long',
 ]
 
 // Countable items that must always be displayed as whole numbers
@@ -116,6 +125,7 @@ export function GeneratedRecipeScreen({
   onGoToIngredients,
   allergens = [],
   onFeedback,
+  onSurveySubmit,
   showMacros = false,
   onFindSubstitute,
   lactoseIntolerant = false,
@@ -130,15 +140,19 @@ export function GeneratedRecipeScreen({
   const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
 
   const [feedbackGiven, setFeedbackGiven] = useState<'liked' | 'disliked' | null>(null)
-  const [showFeedbackPanel, setShowFeedbackPanel] = useState(false)
-  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
-  const [feedbackNotes, setFeedbackNotes] = useState('')
+  const [showSurveyPanel, setShowSurveyPanel] = useState(false)
+  const [highlightedIngredients, setHighlightedIngredients] = useState<string[]>([])
+  const [skippedIngredients, setSkippedIngredients] = useState<string[]>([])
+  const [recipePositives, setRecipePositives] = useState<string[]>([])
+  const [recipeNegatives, setRecipeNegatives] = useState<string[]>([])
 
   useEffect(() => {
     setFeedbackGiven(null)
-    setShowFeedbackPanel(false)
-    setSelectedReasons([])
-    setFeedbackNotes('')
+    setShowSurveyPanel(false)
+    setHighlightedIngredients([])
+    setSkippedIngredients([])
+    setRecipePositives([])
+    setRecipeNegatives([])
 
     if (!recipe) {
       setDrinkPairings([])
@@ -171,22 +185,59 @@ export function GeneratedRecipeScreen({
   const handleLike = () => {
     setFeedbackGiven('liked')
     onFeedback?.(true, [], '')
+    setShowSurveyPanel(true)
   }
 
   const handleDislike = () => {
     setFeedbackGiven('disliked')
-    setShowFeedbackPanel(true)
+    onFeedback?.(false, [], '')
+    setShowSurveyPanel(true)
   }
 
-  const toggleReason = (reason: string) => {
-    setSelectedReasons(prev =>
-      prev.includes(reason) ? prev.filter(r => r !== reason) : [...prev, reason]
+  const toggleHighlighted = (name: string) => {
+    setHighlightedIngredients(prev =>
+      prev.includes(name) ? prev.filter(i => i !== name) : [...prev, name]
+    )
+    setSkippedIngredients(prev => prev.filter(i => i !== name))
+  }
+
+  const toggleSkipped = (name: string) => {
+    setSkippedIngredients(prev =>
+      prev.includes(name) ? prev.filter(i => i !== name) : [...prev, name]
+    )
+    setHighlightedIngredients(prev => prev.filter(i => i !== name))
+  }
+
+  const toggleRecipePositive = (chip: string) => {
+    setRecipePositives(prev =>
+      prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]
     )
   }
 
-  const handleSubmitFeedback = () => {
-    setShowFeedbackPanel(false)
-    onFeedback?.(false, selectedReasons, feedbackNotes)
+  const toggleRecipeNegative = (chip: string) => {
+    setRecipeNegatives(prev =>
+      prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]
+    )
+  }
+
+  const handleSurveySkip = () => setShowSurveyPanel(false)
+
+  const handleSurveyDone = () => {
+    const hasSelections =
+      highlightedIngredients.length > 0 ||
+      skippedIngredients.length > 0 ||
+      recipePositives.length > 0 ||
+      recipeNegatives.length > 0
+
+    if (hasSelections) {
+      onSurveySubmit?.({
+        ingredientsHighlighted: highlightedIngredients,
+        ingredientsSkipped: skippedIngredients,
+        recipePositives,
+        recipeNegatives,
+      })
+    }
+    setShowSurveyPanel(false)
   }
 
   return (
@@ -383,9 +434,9 @@ export function GeneratedRecipeScreen({
                 )}
               </div>
 
-              {/* Dislike feedback panel */}
+              {/* Survey panel — appears after thumbs up or down */}
               <AnimatePresence>
-                {showFeedbackPanel && (
+                {showSurveyPanel && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -393,37 +444,107 @@ export function GeneratedRecipeScreen({
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden -mt-4"
                   >
-                    <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
-                      <p className="text-sm font-medium text-foreground">What didn&apos;t you like?</p>
-                      <div className="space-y-2.5">
-                        {FEEDBACK_REASONS.map(reason => (
-                          <label key={reason} className="flex items-center gap-3 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={selectedReasons.includes(reason)}
-                              onChange={() => toggleReason(reason)}
-                              className="w-4 h-4 rounded accent-primary shrink-0"
-                            />
-                            <span className="text-sm text-foreground">{reason}</span>
-                          </label>
-                        ))}
+                    <div className="rounded-2xl border border-border bg-card p-4 space-y-5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-foreground">Tell us more (optional)</p>
+                        <button
+                          onClick={handleSurveySkip}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          Skip
+                        </button>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs text-muted-foreground">Anything else?</label>
-                        <textarea
-                          value={feedbackNotes}
-                          onChange={e => setFeedbackNotes(e.target.value)}
-                          placeholder="Optional…"
-                          className="w-full text-sm rounded-xl border border-border bg-background px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                          rows={2}
-                        />
+
+                      {/* Section 1: Highlight */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">✨ Highlight of the dish</p>
+                        <div className="flex flex-wrap gap-2">
+                          {recipe?.ingredients.map(ing => (
+                            <button
+                              key={ing.name}
+                              onClick={() => toggleHighlighted(ing.name)}
+                              className={cn(
+                                'px-3 py-1.5 rounded-full text-sm transition-colors',
+                                highlightedIngredients.includes(ing.name)
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                              )}
+                            >
+                              {ing.name}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Section 2: Would leave out */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">🚫 Would leave out</p>
+                        <div className="flex flex-wrap gap-2">
+                          {recipe?.ingredients.map(ing => (
+                            <button
+                              key={ing.name}
+                              onClick={() => toggleSkipped(ing.name)}
+                              className={cn(
+                                'px-3 py-1.5 rounded-full text-sm transition-colors',
+                                skippedIngredients.includes(ing.name)
+                                  ? 'bg-destructive/20 text-destructive'
+                                  : 'bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                              )}
+                            >
+                              {ing.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Section 3: What worked */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">👌 What worked</p>
+                        <div className="flex flex-wrap gap-2">
+                          {RECIPE_POSITIVES.map(chip => (
+                            <button
+                              key={chip}
+                              onClick={() => toggleRecipePositive(chip)}
+                              className={cn(
+                                'px-3 py-1.5 rounded-full text-sm transition-colors',
+                                recipePositives.includes(chip)
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary'
+                              )}
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Section 4: What didn't */}
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">😬 What didn&apos;t</p>
+                        <div className="flex flex-wrap gap-2">
+                          {RECIPE_NEGATIVES.map(chip => (
+                            <button
+                              key={chip}
+                              onClick={() => toggleRecipeNegative(chip)}
+                              className={cn(
+                                'px-3 py-1.5 rounded-full text-sm transition-colors',
+                                recipeNegatives.includes(chip)
+                                  ? 'bg-destructive/20 text-destructive'
+                                  : 'bg-secondary text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                              )}
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <Button
-                        onClick={handleSubmitFeedback}
+                        onClick={handleSurveyDone}
                         className="rounded-full w-full"
                         size="sm"
                       >
-                        Submit Feedback
+                        Done
                       </Button>
                     </div>
                   </motion.div>

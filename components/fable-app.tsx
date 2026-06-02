@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { getInsightProfileKey } from '@/lib/insight-profile'
+import { type SurveyResponse } from '@/lib/survey-signals'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
 import { OnboardingScreen } from '@/components/onboarding-screen'
@@ -377,6 +378,16 @@ function FableAppContent() {
   }, [navigate])
 
   // â”€â”€ View a saved recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const handleSurveySubmit = useCallback((surveyResponse: SurveyResponse) => {
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+    if (!uid || !generatedRecipeId) return
+    fetch('/api/feedback', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: uid, recipeId: generatedRecipeId, surveyResponse }),
+    }).catch(err => console.error('Failed to submit survey:', err))
+  }, [generatedRecipeId])
+
   const handleViewSavedRecipe = useCallback((recipe: import('@/lib/types').Recipe) => {
     if (!recipe.fullRecipe) return
     setGeneratedRecipe(recipe.fullRecipe)
@@ -568,6 +579,7 @@ function FableAppContent() {
                 onGoToIngredients={() => navigate('ingredients')}
                 allergens={effectiveAllergens}
                 onFeedback={handleFeedback}
+                onSurveySubmit={handleSurveySubmit}
                 showMacros={preferences.showMacros}
                 onFindSubstitute={handleFindSubstitute}
                 lactoseIntolerant={preferences.lactoseIntolerant}

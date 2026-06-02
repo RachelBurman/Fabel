@@ -8,6 +8,11 @@ import {
   buildTasteProfileClause,
   type FeedbackRecord,
 } from "@/lib/feedback-preferences";
+import {
+  computeSurveyIngredientAdjustments,
+  buildRecipeFormatClauses,
+  type SurveyResponse,
+} from "@/lib/survey-signals";
 import { findSimilarIngredients } from "@/lib/epicure";
 import {
   buildSafeSet,
@@ -131,14 +136,35 @@ export async function POST(req: NextRequest) {
         })
       );
 
-      const allRecords = (feedbackResult.Items ?? []) as FeedbackRecord[];
+      const allRecords = (feedbackResult.Items ?? []) as Array<FeedbackRecord & { surveyResponse?: SurveyResponse }>;
       // Sort descending by timestamp and take the 20 most recent
       const recent = allRecords
         .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
         .slice(0, 20);
 
       const profile = computePreferenceProfile(recent);
+
+      // ── Survey ingredient signal adjustments (additive on base scores) ─────
+      if (profile.strength !== 'none') {
+        const surveyAdjustments = computeSurveyIngredientAdjustments(recent);
+        for (const [key, adj] of Object.entries(surveyAdjustments)) {
+          profile.scores[key] = (profile.scores[key] ?? 0) + adj;
+        }
+        // Rebuild preferred/avoided from adjusted scores
+        const sorted = Object.entries(profile.scores).sort((a, b) => b[1] - a[1]);
+        profile.preferred = sorted.filter(([, s]) => s > 0).slice(0, 5).map(([k]) => k);
+        profile.avoided = [...sorted].reverse().filter(([, s]) => s < 0).slice(0, 5).map(([k]) => k);
+      }
+
       tasteProfileClause = buildTasteProfileClause(profile);
+
+      // ── Survey recipe format clauses ───────────────────────────────────────
+      if (profile.strength !== 'none') {
+        const formatClauses = buildRecipeFormatClauses(recent);
+        if (formatClauses.length > 0) {
+          tasteProfileClause += `Recipe format preferences from feedback: ${formatClauses.join(' ')}\n\n`;
+        }
+      }
 
       // Auto-swap: silently replace any kitchen ingredient with a preference score
       // below -0.3 with its nearest Epicure neighbour that has a neutral/positive score
