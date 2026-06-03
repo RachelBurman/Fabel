@@ -308,13 +308,13 @@ In-memory (loaded at server startup)
 - ✅ **Feedback survey** — optional 4-section chip panel after every thumbs up/down; PATCH `/api/feedback` persists `surveyResponse`; ingredient signals weighted 1.5×; recipe format signals threshold-gated at 2+ appearances; 18 new tests (495 total across 22 suites)
 
 ### In Progress
+- [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
 
 ### Near Term
 - [ ] Onboarding state in DynamoDB — `onboardingComplete` flag currently lives in `localStorage` only. Add `onboardingComplete: boolean` to `fable-users` schema for authenticated users, so tutorial state persists across devices. Migration path: on auth, write `onboardingComplete: false` only if the `localStorage` flag is absent.
 - [ ] **Agentic taste profile evolution** — currently Fable computes ingredient preference scores fresh on each `/api/generate-recipe` call from raw feedback history. The next step is a background Lambda function that periodically reviews a user's full feedback history, identifies drift and emerging patterns in their taste profile, rewrites a structured `tasteProfile` object on `fable-users`, and proactively surfaces recipe direction suggestions in the Discover tab. The data layer (DynamoDB Streams, Lambda, `preferenceSignals`, `fable-ingredient-insights`) is already in place. This is the natural evolution from personalised inference pipeline to a genuinely agentic personalisation loop.
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
-- [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
 - [ ] Ingredient substitutes improvements — better functional category matching
 - [ ] Equipment-aware ingredient substitution — when a recipe step requires equipment the user doesn't have, use Epicure similarity search to suggest alternative ingredients that achieve the same result with available equipment (e.g. slow cooker → hob-friendly cuts)
 
