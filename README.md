@@ -371,8 +371,8 @@ In-memory (loaded at server startup)
 #### ~~4. TTL on recipe history~~ ✅ Done
 TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire after 90 days (7,776,000 seconds). Saved recipes never expire. Backwards-compatible — old records without the field are treated as saved.
 
-#### 5. AWS Lambda — Claude Vision ingredient recognition
-A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera at fridge or cupboard, image is sent to Claude Vision, recognised ingredients are matched against the 1,790 Epicure keys, and the kitchen is auto-populated. Lambda here keeps the heavy Vision call isolated from the Next.js serverless functions and gives the architecture a clean compute separation story.
+#### ~~5. AWS Lambda — Claude Vision ingredient recognition~~ ✅ Done
+`fable-vision-ingredient-scanner` Lambda (`lambda/vision-scanner/`) accepts a base64 image via API Gateway HTTP POST, calls Claude Vision (Haiku 4.5) to identify ingredients and infer storage area, fuzzy-matches results against all 1,790 Epicure keys, and returns a structured ingredient list with confidence flags. Full review screen in the app before anything lands in the kitchen. Deployed on `nodejs24.x` in `eu-west-2`.
 
 ### Key Architecture Decisions
 
