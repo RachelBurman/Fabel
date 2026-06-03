@@ -1,5 +1,5 @@
 import { strict as assert } from "assert";
-import { matchToEpicureKey, handlerWithClient } from "./index.mjs";
+import { matchToEpicureKey, handlerWithClient } from "./index.js";
 
 // Small representative key list for unit tests
 const TEST_KEYS = [

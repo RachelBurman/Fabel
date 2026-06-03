@@ -1,8 +1,7 @@
 {
   "name": "fable-vision-scanner",
   "version": "1.0.0",
-  "type": "module",
-  "dependencies": {
+"dependencies": {
     "@anthropic-ai/sdk": "^0.99.0"
   },
   "devDependencies": {

@@ -1,7 +1,6 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { createRequire } from "module";
+'use strict';
 
-const require = createRequire(import.meta.url);
+const Anthropic = require("@anthropic-ai/sdk");
 const allIngredientKeys = require("./ingredients.json");
 
 const VISION_PROMPT = `You are analysing a photo of food or a kitchen to identify ingredients for a recipe app.
@@ -36,11 +35,11 @@ function getClient() {
   return _client;
 }
 
-export async function handler(event) {
+async function handler(event) {
   return handlerWithClient(event, getClient());
 }
 
-export async function handlerWithClient(event, client) {
+async function handlerWithClient(event, client) {
   let body;
   try {
     body = JSON.parse(event.body ?? "{}");
@@ -122,11 +121,7 @@ export async function handlerWithClient(event, client) {
   });
 }
 
-/**
- * Match a Claude ingredient name to the closest Epicure key.
- * Returns null when no adequate match is found.
- */
-export function matchToEpicureKey(name, uncertain, keys) {
+function matchToEpicureKey(name, uncertain, keys) {
   const normalized = name.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
   const asKey = normalized.replace(/\s+/g, "_");
 
@@ -193,3 +188,5 @@ function response(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
+
+module.exports = { handler, handlerWithClient, matchToEpicureKey };
