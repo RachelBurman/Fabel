@@ -28,6 +28,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
 
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
+    --timeout 30 \
     --environment "Variables={ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY}}" \
     --region "$REGION"
 else
@@ -37,6 +38,7 @@ else
     --runtime "$RUNTIME" \
     --handler "$HANDLER" \
     --role "$ROLE_ARN" \
+    --timeout 30 \
     --zip-file "fileb://$ZIPFILE" \
     --environment "Variables={ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY}}" \
     --region "$REGION"
