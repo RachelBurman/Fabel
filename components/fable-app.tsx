@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -68,6 +68,8 @@ function FableAppContent() {
 
   const [substituteIngredient, setSubstituteIngredient] = useState<string | undefined>(undefined)
   const [substituteContext, setSubstituteContext] = useState<string[] | undefined>(undefined)
+
+  const discoverSeedIngredientsRef = useRef<string[]>([])
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -178,6 +180,8 @@ function FableAppContent() {
 
       setLoadingStep('recipe')
       const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+      const seeds = discoverSeedIngredientsRef.current
+      discoverSeedIngredientsRef.current = []
       const recipeRes = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -198,6 +202,7 @@ function FableAppContent() {
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...(uid ? { userId: uid } : {}),
+          ...(seeds.length > 0 ? { seedIngredients: seeds } : {}),
           ...sfPayload,
         }),
       })
@@ -627,7 +632,14 @@ function FableAppContent() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <DiscoverSection />
+              <DiscoverSection
+                onSelectCuisine={(c) => setRecipeFilters((prev) => ({ ...prev, cuisine: c }))}
+                onSelectOccasion={(o) => {
+                  setRecipeFilters((prev) => ({ ...prev, occasion: o }))
+                  navigate('ingredients')
+                }}
+                onSeedIngredients={(seeds) => { discoverSeedIngredientsRef.current = seeds }}
+              />
             </motion.div>
           )}
 

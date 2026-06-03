@@ -27,6 +27,10 @@ function getAllergenMap(): AllergenMap {
 
 export const allIngredients: string[] = Object.keys(getEmbeddings());
 
+export function getEpicureVectors(): Record<string, number[]> {
+  return getEmbeddings();
+}
+
 // ─── Allergens ────────────────────────────────────────────────────────────────
 
 /** EU Big 14 allergen codes used in allergen-map.json. */

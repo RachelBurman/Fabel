@@ -1,18 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { dynamo } from "@/lib/dynamo";
 import { getShelfLifeDays, addDays } from "@/lib/shelf-life";
-import {
-  computePreferenceProfile,
-  buildTasteProfileClause,
-  type FeedbackRecord,
-} from "@/lib/feedback-preferences";
-import {
-  computeSurveyIngredientAdjustments,
-  buildRecipeFormatClauses,
-  type SurveyResponse,
-} from "@/lib/survey-signals";
+import { buildTasteProfileClause } from "@/lib/feedback-preferences";
+import { buildPreferenceProfile } from "@/lib/preference-profile";
 import { findSimilarIngredients } from "@/lib/epicure";
 import {
   buildSafeSet,
@@ -49,6 +39,7 @@ export async function POST(req: NextRequest) {
     servings?: unknown;
     kitchenEquipment?: unknown;
     userId?: unknown;
+    seedIngredients?: unknown;
   };
   try {
     body = await req.json();
@@ -128,74 +119,48 @@ export async function POST(req: NextRequest) {
 
   if (userId) {
     try {
-      const feedbackResult = await dynamo.send(
-        new QueryCommand({
-          TableName: "fable-feedback",
-          KeyConditionExpression: "userId = :uid",
-          ExpressionAttributeValues: { ":uid": userId },
-        })
-      );
+      const profileResult = await buildPreferenceProfile(userId);
 
-      const allRecords = (feedbackResult.Items ?? []) as Array<FeedbackRecord & { surveyResponse?: SurveyResponse }>;
-      // Sort descending by timestamp and take the 20 most recent
-      const recent = allRecords
-        .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
-        .slice(0, 20);
+      if (profileResult) {
+        const { scores, preferred: _preferred, avoided: _avoided, strength, formatClauses } = profileResult;
 
-      const profile = computePreferenceProfile(recent);
+        tasteProfileClause = buildTasteProfileClause({ scores, preferred: _preferred, avoided: _avoided, strength });
 
-      // ── Survey ingredient signal adjustments (additive on base scores) ─────
-      if (profile.strength !== 'none') {
-        const surveyAdjustments = computeSurveyIngredientAdjustments(recent);
-        for (const [key, adj] of Object.entries(surveyAdjustments)) {
-          profile.scores[key] = (profile.scores[key] ?? 0) + adj;
-        }
-        // Rebuild preferred/avoided from adjusted scores
-        const sorted = Object.entries(profile.scores).sort((a, b) => b[1] - a[1]);
-        profile.preferred = sorted.filter(([, s]) => s > 0).slice(0, 5).map(([k]) => k);
-        profile.avoided = [...sorted].reverse().filter(([, s]) => s < 0).slice(0, 5).map(([k]) => k);
-      }
-
-      tasteProfileClause = buildTasteProfileClause(profile);
-
-      // ── Survey recipe format clauses ───────────────────────────────────────
-      if (profile.strength !== 'none') {
-        const formatClauses = buildRecipeFormatClauses(recent);
         if (formatClauses.length > 0) {
           tasteProfileClause += `Recipe format preferences from feedback: ${formatClauses.join(' ')}\n\n`;
         }
-      }
 
-      // Auto-swap: silently replace any kitchen ingredient with a preference score
-      // below -0.3 with its nearest Epicure neighbour that has a neutral/positive score
-      if (Object.keys(profile.scores).length > 0) {
-        const swapNotes: string[] = [];
-        adjustedItems = sortedItems.map((item) => {
-          const displayKey = item.name.replace(/_/g, " ").toLowerCase();
-          if ((profile.scores[displayKey] ?? 0) >= -0.3) return item;
+        // Auto-swap: silently replace any kitchen ingredient with a preference score
+        // below -0.3 with its nearest Epicure neighbour that has a neutral/positive score
+        if (Object.keys(scores).length > 0) {
+          const swapNotes: string[] = [];
+          adjustedItems = sortedItems.map((item) => {
+            const displayKey = item.name.replace(/_/g, " ").toLowerCase();
+            if ((scores[displayKey] ?? 0) >= -0.3) return item;
 
-          const candidates = findSimilarIngredients(item.name, 20);
-          const substitute = candidates.find(
-            (c) => (profile.scores[c.replace(/_/g, " ").toLowerCase()] ?? 0) >= -0.3
-          );
-          if (!substitute) return item;
+            const candidates = findSimilarIngredients(item.name, 20);
+            const substitute = candidates.find(
+              (c) => (scores[c.replace(/_/g, " ").toLowerCase()] ?? 0) >= -0.3
+            );
+            if (!substitute) return item;
 
-          const subDisplay = substitute.replace(/_/g, " ");
-          swapNotes.push(
-            `${item.displayName ?? item.name.replace(/_/g, " ")} → ${subDisplay}`
-          );
-          return {
-            ...item,
-            name: substitute,
-            displayName:
-              subDisplay.charAt(0).toUpperCase() + subDisplay.slice(1),
-            subtype: undefined,
-          };
-        });
+            const subDisplay = substitute.replace(/_/g, " ");
+            swapNotes.push(
+              `${item.displayName ?? item.name.replace(/_/g, " ")} → ${subDisplay}`
+            );
+            return {
+              ...item,
+              name: substitute,
+              displayName:
+                subDisplay.charAt(0).toUpperCase() + subDisplay.slice(1),
+              subtype: undefined,
+            };
+          });
 
-        if (swapNotes.length > 0) {
-          tasteProfileClause +=
-            `Ingredient adjustments based on taste history: ${swapNotes.join("; ")}.\n\n`;
+          if (swapNotes.length > 0) {
+            tasteProfileClause +=
+              `Ingredient adjustments based on taste history: ${swapNotes.join("; ")}.\n\n`;
+          }
         }
       }
     } catch (err) {
@@ -245,6 +210,9 @@ export async function POST(req: NextRequest) {
       : 2;
   const kitchenEquipment = Array.isArray(body.kitchenEquipment)
     ? (body.kitchenEquipment as unknown[]).filter((e): e is string => typeof e === "string")
+    : [];
+  const seedIngredients = Array.isArray(body.seedIngredients)
+    ? (body.seedIngredients as unknown[]).filter((s): s is string => typeof s === "string")
     : [];
 
   const mealType =
@@ -301,6 +269,11 @@ export async function POST(req: NextRequest) {
 
   const occasionClause = occasion ? `This is for ${occasion}. ` : "";
 
+  const seedIngredientsClause =
+    seedIngredients.length > 0
+      ? `Ingredient seeds from user's taste profile: [${seedIngredients.map((s) => s.replace(/_/g, " ")).join(", ")}]. Incorporate at least one if it suits the cuisine and occasion. Do not force it if it would be inappropriate.\n\n`
+      : "";
+
   const servingsClause = `Recipe should serve ${servings} ${servings === 1 ? "person" : "people"}, scale quantities accordingly. `;
 
   const equipmentClause =
@@ -335,7 +308,7 @@ export async function POST(req: NextRequest) {
 
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? tasteProfileClause + dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + seedIngredientsClause + dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -352,7 +325,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : tasteProfileClause + dislikedPrefix + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + seedIngredientsClause + dislikedPrefix + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +

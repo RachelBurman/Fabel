@@ -20,7 +20,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 512 tests across 23 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 532 tests across 25 suites |
 
 ---
 
@@ -218,7 +218,8 @@ A 5-slide introductory slideshow that appears on first launch and is re-launchab
 ### Discover Tab
 Trending ingredient insights as a dedicated tab (Compass icon), between Recipe and Substitutes.
 
-- **Trending for you** — top 3 recipe types (cuisine + occasion) trending for the user's allergen profile this week; tapping pre-fills the cuisine and occasion filters
+- **Your taste profile** — personalised card rendered once the user has 5+ feedback signals, showing: ingredients they love, ingredients they avoid, and a flavour territory (2–4 ingredients from the intersection of their liked ingredients' embedding-space neighbours). Computed from `buildPreferenceProfile` + `deriveFlavourTerritory`
+- **Trending for you** — top 3 recipe types (cuisine + occasion) trending for the user's allergen profile this week; tapping pre-fills the cuisine and occasion filters and navigates to the ingredient screen. When a user has ≥ 5 signals, each chip also injects their top 3 personally loved ingredient keys as a soft hint into recipe generation
 - **Trending globally** — top 5 most-liked ingredients across all users this week
 - **Most loved ingredients** — all-time top 6 ingredients for the user's allergen profile, shown with a visual score bar
 - **Trending pairings** — top 3 drink + cuisine pairings this week for the user's allergen profile
@@ -246,7 +247,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
   ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
   ├── /api/extract-ingredients Claude ingredient extraction from arbitrary recipe text
-  ├── /api/insights            Ingredient insights (1h cache) — allergen-profile + global trends
+  ├── /api/insights            Ingredient insights (1h cache) — allergen-profile + global trends + taste profile
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
        ├── saved-recipes       DynamoDB read/write (full recipe objects)
@@ -280,6 +281,12 @@ AWS Lambda
   └── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients → Claude Vision (Haiku 4.5)
                                          → fuzzy Epicure key matching → structured ingredient list
                                          (CJS · nodejs24.x · 30s timeout)
+
+Shared server-side libs
+  ├── lib/preference-profile.ts  buildPreferenceProfile — DynamoDB query + computePreferenceProfile
+  │                              + survey merge; called by /api/generate-recipe and /api/insights
+  └── lib/flavour-territory.ts   deriveFlavourTerritory — cosine-similarity neighbour overlap
+                                  for taste-space anchor ingredients; called by /api/insights
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search
@@ -327,6 +334,7 @@ In-memory (loaded at server startup)
 - ✅ Responsive navigation — fixed 220 px left sidebar on desktop (≥ 768 px) with Fable wordmark; bottom tab bar on mobile; same active-state and theming at both breakpoints
 - ✅ **Feedback survey** — optional 4-section chip panel after every thumbs up/down; PATCH `/api/feedback` persists `surveyResponse`; ingredient signals weighted 1.5×; recipe format signals threshold-gated at 2+ appearances; 18 new tests (495 total across 22 suites)
 - ✅ **Photo ingredient recognition** — camera icon in kitchen tab; Claude Vision (Haiku 4.5) via `fable-vision-ingredient-scanner` Lambda identifies ingredients and infers storage area; fuzzy Epicure key matching with confidence flagging; full review screen with area editing, uncertain badges, and duplicate deselection; Sonner toast notifications; 17 new tests (512 total across 23 suites)
+- ✅ **Personal taste profile + personalised discover chips** — `buildPreferenceProfile` shared utility (DynamoDB query + preference scoring + survey merge in one call); `deriveFlavourTerritory` for embedding-space flavour neighbours; taste profile card on Discover (loved · avoided · flavour territory) shown at ≥ 5 signals; Trending for you chips carry `seedIngredients` (top 3 liked ingredient keys) injected as a soft prompt hint into recipe generation; 20 new tests (532 total across 25 suites)
 
 ### In Progress
 

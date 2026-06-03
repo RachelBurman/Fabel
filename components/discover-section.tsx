@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, Globe, Heart, Wine } from 'lucide-react'
+import { TrendingUp, Globe, Heart, Wine, Sparkles } from 'lucide-react'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientInsightsRecord } from '@/lib/types'
 
@@ -16,6 +16,19 @@ function formatCustomAllergen(name: string): string {
   return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
+interface TasteProfile {
+  preferred: string[]
+  avoided: string[]
+  flavourTerritory: string[]
+  signalCount: number
+}
+
+interface TrendingForYouItem {
+  cuisine: string
+  occasion: string
+  seedIngredients: string[]
+}
+
 interface InsightsData {
   profileKey: string
   weekStr: string
@@ -24,14 +37,17 @@ interface InsightsData {
   profileWeek: IngredientInsightsRecord | null
   profileAllTime: IngredientInsightsRecord | null
   globalWeek: IngredientInsightsRecord | null
+  tasteProfile: TasteProfile | null
+  trendingForYou: TrendingForYouItem[]
 }
 
 interface DiscoverSectionProps {
   onSelectCuisine?: (cuisine: string) => void
   onSelectOccasion?: (occasion: string) => void
+  onSeedIngredients?: (ingredients: string[]) => void
 }
 
-export function DiscoverSection({ onSelectCuisine, onSelectOccasion }: DiscoverSectionProps) {
+export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngredients }: DiscoverSectionProps) {
   const { preferences } = useFable()
   const { discoverSettings } = preferences
 
@@ -74,6 +90,55 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion }: DiscoverS
           </p>
         </div>
 
+        {/* Your taste profile */}
+        {data?.tasteProfile && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <h2 className="text-sm font-semibold text-foreground">Your taste profile</h2>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              {data.tasteProfile.preferred.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">You love</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {data.tasteProfile.preferred.map((ing, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {data.tasteProfile.avoided.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">You avoid</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {data.tasteProfile.avoided.map((ing, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-foreground">
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {data.tasteProfile.flavourTerritory.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">Flavour territory</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {data.tasteProfile.flavourTerritory.map((ing, i) => (
+                      <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                        {ing}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground pt-1">Based on your last {data.tasteProfile.signalCount} recipes</p>
+            </div>
+          </div>
+        )}
+
         {/* Trending for you */}
         {discoverSettings.showTrendingForYou && (
           <div>
@@ -81,14 +146,17 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion }: DiscoverS
               <TrendingUp className="w-4 h-4 text-primary" />
               <h2 className="text-sm font-semibold text-foreground">Trending for you</h2>
             </div>
-            {data?.profileWeek?.trendingRecipeTypes && data.profileWeek.trendingRecipeTypes.length > 0 ? (
+            {data?.trendingForYou && data.trendingForYou.length > 0 ? (
               <div className="flex flex-wrap gap-2">
-                {data.profileWeek.trendingRecipeTypes.slice(0, 3).map((rt, i) => (
+                {data.trendingForYou.map((rt, i) => (
                   <button
                     key={i}
                     onClick={() => {
                       onSelectCuisine?.(rt.cuisine)
                       onSelectOccasion?.(rt.occasion)
+                      if (rt.seedIngredients.length > 0) {
+                        onSeedIngredients?.(rt.seedIngredients)
+                      }
                     }}
                     className="px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                   >
