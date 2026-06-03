@@ -91,9 +91,18 @@ export async function handlerWithClient(event, client) {
   const validAreas = ["fridge", "freezer", "cupboard", "pantry"];
   const inferredArea = validAreas.includes(visionData.area) ? visionData.area : "unknown";
 
+  console.log("[vision-debug] Claude returned", JSON.stringify({
+    area: visionData.area,
+    areaConfident: visionData.areaConfident,
+    ingredients: (visionData.ingredients ?? []).map(i => ({ name: i?.name, uncertain: i?.uncertain })),
+  }));
+
   const matched = (visionData.ingredients ?? [])
     .map((ing) => {
-      if (!ing?.name || typeof ing.name !== "string") return null;
+      if (!ing?.name || typeof ing.name !== "string") {
+        console.log("[vision-debug] Dropped — invalid name:", JSON.stringify(ing));
+        return null;
+      }
       const result = matchToEpicureKey(ing.name, !!ing.uncertain, allIngredientKeys);
       if (!result) return null;
       return {
@@ -103,6 +112,8 @@ export async function handlerWithClient(event, client) {
       };
     })
     .filter(Boolean);
+
+  console.log("[vision-debug] Matched", matched.length, "of", (visionData.ingredients ?? []).length, "ingredients:", matched.map(m => m.epicureKey).join(", "));
 
   return response(200, {
     inferredArea,
@@ -160,6 +171,15 @@ export function matchToEpicureKey(name, uncertain, keys) {
     return { epicureKey: bestKey, confident: !uncertain && bestScore >= 0.8 };
   }
 
+  console.log("[vision-drop]", JSON.stringify({
+    claudeName: name,
+    normalized,
+    bestKey: bestKey ?? "(none)",
+    bestScore: bestScore ? +bestScore.toFixed(3) : 0,
+    reason: bestKey
+      ? `score ${bestScore.toFixed(3)} below 0.4 threshold`
+      : "no token overlap found",
+  }));
   return null;
 }
 
