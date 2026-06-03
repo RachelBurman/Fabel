@@ -241,7 +241,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
   ├── /api/generate-recipe     Anthropic Claude recipe generation + validation
   ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
-  ├── /api/scan-ingredients    Thin proxy → fable-vision-ingredient-scanner Lambda
+  ├── /api/scan-ingredients    Thin proxy → fable-vision-ingredient-scanner Lambda (image compressed to JPEG ≤1200px client-side before upload)
   ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
   ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
   ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
@@ -277,8 +277,9 @@ DynamoDB tables
 
 AWS Lambda
   ├── fable-feedback-stream-processor   DynamoDB Stream → preference signals + ingredient insights
-  └── fable-vision-ingredient-scanner   API Gateway HTTP POST → Claude Vision (Haiku 4.5)
+  └── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients → Claude Vision (Haiku 4.5)
                                          → fuzzy Epicure key matching → structured ingredient list
+                                         (CJS · nodejs24.x · 30s timeout)
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search
