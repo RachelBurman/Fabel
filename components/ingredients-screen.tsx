@@ -3,14 +3,17 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'sonner'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
+import { type VisionResult } from '@/lib/vision-scanner'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
 import { computeServingWarnings } from '@/lib/serving-warnings'
-import { Plus, X, Search, ChefHat, Sparkles, Layers, Calendar, ArrowLeftRight, ChevronLeft, ChevronRight, Minus } from 'lucide-react'
+import { Plus, X, Search, Camera, ChefHat, Sparkles, Layers, Calendar, ArrowLeftRight, ChevronLeft, ChevronRight, Minus, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { VisionReviewScreen } from '@/components/vision-review-screen'
 import allergenMapData from '@/data/allergen-map.json'
 
 const allergenMap = allergenMapData as Record<string, string[]>
@@ -200,7 +203,7 @@ interface IngredientsScreenProps {
 }
 
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
-  const { preferences, addIngredient, removeIngredient, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
+  const { preferences, addIngredient, removeIngredient, setIngredients, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
   const showLactoseTag = preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
@@ -229,6 +232,11 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const [occasion, setOccasion] = useState('')
   const [servings, setServings] = useState(2)
   const [cuisineExpanded, setCuisineExpanded] = useState(false)
+
+  // Vision scanner state
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+  const [visionLoading, setVisionLoading] = useState(false)
+  const [visionResult, setVisionResult] = useState<VisionResult | null>(null)
 
   // Portal dropdown positioning
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -279,6 +287,52 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     setPendingDate('')
     setPendingBoughtDate('')
   }, [])
+
+  const handleCameraInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Reset so the same file can be re-selected if needed
+    e.target.value = ''
+
+    setVisionLoading(true)
+    try {
+      const arrayBuffer = await file.arrayBuffer()
+      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+
+      const res = await fetch('/api/scan-ingredients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64, mediaType: file.type }),
+      })
+
+      if (!res.ok) {
+        const err: { error?: string } = await res.json().catch(() => ({}))
+        if (err.error === 'Vision Lambda not configured') {
+          toast.error("Photo recognition isn't set up yet")
+        } else {
+          toast.error("Couldn't read that photo — try better lighting or a closer shot")
+        }
+        return
+      }
+
+      const data: VisionResult = await res.json()
+      if (!data.ingredients || data.ingredients.length === 0) {
+        toast.error("No ingredients found — try a clearer photo")
+        return
+      }
+      setVisionResult(data)
+    } catch {
+      toast.error("Something went wrong — please try again")
+    } finally {
+      setVisionLoading(false)
+    }
+  }, [])
+
+  const handleVisionConfirm = useCallback((newItems: IngredientItem[]) => {
+    setIngredients([...preferences.ingredients, ...newItems])
+    setVisionResult(null)
+    toast.success(`Added ${newItems.length} ingredient${newItems.length !== 1 ? 's' : ''} to your kitchen`)
+  }, [preferences.ingredients, setIngredients])
 
   const handleSelectFromSearch = useCallback((name: string) => {
     setPendingName(name)
@@ -379,9 +433,32 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                       onKeyDown={handleInputKeyDown}
                       onFocus={() => { if (inputValue.length > 0) setShowDropdown(true); recomputeCoords() }}
                       onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                      className="pl-12 pr-4 py-6 text-base rounded-xl bg-card border-border"
+                      className="pl-12 pr-12 py-6 text-base rounded-xl bg-card border-border"
+                    />
+                    <button
+                      onClick={() => cameraInputRef.current?.click()}
+                      disabled={visionLoading}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
+                      aria-label="Scan ingredients from photo"
+                    >
+                      {visionLoading
+                        ? <Loader2 className="w-5 h-5 animate-spin" />
+                        : <Camera className="w-5 h-5" />}
+                    </button>
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleCameraInput}
                     />
                   </div>
+                  {visionLoading && (
+                    <p className="text-xs text-muted-foreground mt-1.5 text-center animate-pulse">
+                      Analysing your kitchen…
+                    </p>
+                  )}
                 </div>
 
                 {/* ── Staging panel ── */}
@@ -884,6 +961,18 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
         </div>
       </div>
+
+      {/* Vision review screen */}
+      <AnimatePresence>
+        {visionResult && (
+          <VisionReviewScreen
+            result={visionResult}
+            existingKitchenKeys={preferences.ingredients.map(i => i.name)}
+            onConfirm={handleVisionConfirm}
+            onCancel={() => setVisionResult(null)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Autocomplete dropdown — portal to body for z-index */}
       {isMounted && createPortal(

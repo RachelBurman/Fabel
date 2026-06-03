@@ -19,8 +19,8 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
-| Lambda | AWS Lambda (`nodejs22.x`) — DynamoDB Streams feedback processor + ingredient insights writer |
-| Testing | Jest 29, ts-jest, React Testing Library — 495 tests across 22 suites |
+| Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
+| Testing | Jest 29, ts-jest, React Testing Library — 512 tests across 23 suites |
 
 ---
 
@@ -51,6 +51,7 @@ pnpm dev
 | `AWS_ACCESS_KEY_ID` | AWS access key |
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `ANTHROPIC_API_KEY` | Anthropic API key for recipe generation |
+| `VISION_LAMBDA_URL` | API Gateway URL for the `fable-vision-ingredient-scanner` Lambda |
 
 > **Note:** the project uses `pnpm`. Running `npm install` will create a `package-lock.json` that conflicts with `pnpm-lock.yaml` and break the Vercel build.
 
@@ -82,6 +83,18 @@ pnpm dev
 - **Kitchen equipment** — collapsible "What equipment do you have?" section with checkboxes for Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue/Grill, Instant Pot; Hob and Oven on by default; preference persisted permanently to DynamoDB
 - **Use my kitchen only** toggle — constrains recipe generation to exactly the ingredients added; skips Epicure pairings and adds a hard prompt constraint so Claude adds nothing extra
 - Ingredient list persisted in DynamoDB with debounced auto-save; old string-array profiles migrated automatically
+
+### Photo Ingredient Recognition
+- Camera icon alongside the kitchen search bar — taps open the device camera or photo library
+- Photo is base64-encoded and sent to `POST /api/scan-ingredients` (Next.js proxy → `fable-vision-ingredient-scanner` Lambda)
+- Lambda calls Claude Vision (Haiku 4.5) with a structured prompt to identify ingredients and infer storage area from visual cues (fridge, freezer, cupboard, pantry)
+- Claude's ingredient names are fuzzy-matched against all 1,790 Epicure keys: exact match, prefix match, then token-overlap scoring; anything below threshold is excluded
+- `confident: false` flagged when Claude expressed uncertainty or when the fuzzy match score is below the 0.8 high-confidence threshold
+- Full review screen before anything lands in the kitchen: inferred storage area shown as a badge with one-tap editing; changing area applies to all ingredients at once
+- Each ingredient row shows the display name, Epicure key beneath, an **Uncertain** badge when confidence is low, and an **In kitchen** badge when already present — pre-deselected to prevent duplicates
+- Confirmed ingredients written via `setIngredients` (triggers the existing debounced DynamoDB auto-save — no new endpoint)
+- Done with nothing selected = Cancel; no write made
+- Error toasts for Lambda timeout, no ingredients found, and network failure (Sonner, now mounted in root layout)
 
 ### Recipe Generation
 - **Show Pairings** — Epicure similarity search surfaces safe, flavour-matched ingredients
@@ -228,6 +241,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
   ├── /api/generate-recipe     Anthropic Claude recipe generation + validation
   ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
+  ├── /api/scan-ingredients    Thin proxy → fable-vision-ingredient-scanner Lambda
   ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
   ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
   ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
@@ -260,6 +274,11 @@ DynamoDB tables
                                   trendingIngredients[], trendingPairings[], trendingRecipeTypes[]
                                   Profiles: global, gluten-free, dairy-free, nut-free,
                                             gluten-free#dairy-free, vegan, low-fodmap
+
+AWS Lambda
+  ├── fable-feedback-stream-processor   DynamoDB Stream → preference signals + ingredient insights
+  └── fable-vision-ingredient-scanner   API Gateway HTTP POST → Claude Vision (Haiku 4.5)
+                                         → fuzzy Epicure key matching → structured ingredient list
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search
@@ -306,9 +325,9 @@ In-memory (loaded at server startup)
 - ✅ 477 passing tests across 21 test suites
 - ✅ Responsive navigation — fixed 220 px left sidebar on desktop (≥ 768 px) with Fable wordmark; bottom tab bar on mobile; same active-state and theming at both breakpoints
 - ✅ **Feedback survey** — optional 4-section chip panel after every thumbs up/down; PATCH `/api/feedback` persists `surveyResponse`; ingredient signals weighted 1.5×; recipe format signals threshold-gated at 2+ appearances; 18 new tests (495 total across 22 suites)
+- ✅ **Photo ingredient recognition** — camera icon in kitchen tab; Claude Vision (Haiku 4.5) via `fable-vision-ingredient-scanner` Lambda identifies ingredients and infers storage area; fuzzy Epicure key matching with confidence flagging; full review screen with area editing, uncertain badges, and duplicate deselection; Sonner toast notifications; 17 new tests (512 total across 23 suites)
 
 ### In Progress
-- [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
 
 ### Near Term
 - [ ] Onboarding state in DynamoDB — `onboardingComplete` flag currently lives in `localStorage` only. Add `onboardingComplete: boolean` to `fable-users` schema for authenticated users, so tutorial state persists across devices. Migration path: on auth, write `onboardingComplete: false` only if the `localStorage` flag is absent.
@@ -363,7 +382,7 @@ A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera
 
 **TTL for data lifecycle hygiene** — unsaved recipe history entries carry a TTL. Deliberate data expiry is not an afterthought; it is part of the table design.
 
-**Lambda as compute boundary** — Claude Vision calls and stream processors run in Lambda, not in Next.js API routes. Keeps serverless functions lean and gives each concern its own scaling profile.
+**Lambda as compute boundary** — Claude Vision calls and stream processors run in Lambda, not in Next.js API routes. `fable-vision-ingredient-scanner` handles the heavy Vision call in isolation; `fable-feedback-stream-processor` handles the stream. Keeps serverless functions lean and gives each concern its own scaling profile. The Next.js proxy route (`/api/scan-ingredients`) keeps the Lambda URL server-side so it can be rotated without a frontend deploy.
 
 ---
 
@@ -371,7 +390,7 @@ A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **495** passing automated tests across 22 suites ensuring allergen safety and filter accuracy
+- **512** passing automated tests across 23 suites ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
