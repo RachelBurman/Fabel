@@ -20,7 +20,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 532 tests across 25 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 538 tests across 25 suites |
 
 ---
 
@@ -126,7 +126,8 @@ pnpm dev
 - Recent disliked patterns and ingredients loaded at session start and injected into the Claude prompt — future recipes actively avoid them
 - **Survey-informed generation** — `/api/generate-recipe` reads survey signals from the last 20 feedback records and injects them into the Claude prompt (threshold-gated at 3+ records):
   - `ingredientsHighlighted` boosts ingredient preference score by 1.5×; `ingredientsSkipped` reduces by 1.5× (additive on top of base like/dislike scores)
-  - Recipe format signals (`recipePositives`, `recipeNegatives`) injected when a signal appears in 2+ records (noise suppression)
+  - `recipePositives` and `recipeNegatives` aggregated by `buildPreferenceProfile`; signal strings appearing 2+ times converted to prompt clauses via `formatSignalsToClauses` → `RECIPE_SIGNAL_MAP` and injected as soft guidance (e.g. "Keep the method simple", "Keep cook time short")
+  - Format signals also surfaced in the taste profile card as "Your preferences" chips with neutral display labels (e.g. `'Too complex'` → `'simpler recipes'`)
 - **Real-time preference signals** — DynamoDB Stream on `fable-feedback` triggers `fable-feedback-stream-processor` Lambda on every write; one `preferenceSignals` entry per ingredient is appended to `fable-users` automatically (event-driven, no polling)
 
 ### Safe Foods Mode
@@ -218,7 +219,7 @@ A 5-slide introductory slideshow that appears on first launch and is re-launchab
 ### Discover Tab
 Trending ingredient insights as a dedicated tab (Compass icon), between Recipe and Substitutes.
 
-- **Your taste profile** — personalised card rendered once the user has 5+ feedback signals, showing: ingredients they love, ingredients they avoid, and a flavour territory (2–4 ingredients from the intersection of their liked ingredients' embedding-space neighbours). Computed from `buildPreferenceProfile` + `deriveFlavourTerritory`
+- **Your taste profile** — personalised card rendered once the user has 5+ feedback signals, showing: ingredients they love, ingredients they avoid, a flavour territory (2–4 ingredients from the intersection of their liked ingredients' embedding-space neighbours), and a "Your preferences" row of format signals that appear 2+ times (e.g. "simpler recipes", "shorter cook time"). Computed from `buildPreferenceProfile` + `deriveFlavourTerritory`
 - **Trending for you** — top 3 recipe types (cuisine + occasion) trending for the user's allergen profile this week; tapping pre-fills the cuisine and occasion filters and navigates to the ingredient screen. When a user has ≥ 5 signals, each chip also injects their top 3 personally loved ingredient keys as a soft hint into recipe generation
 - **Trending globally** — top 5 most-liked ingredients across all users this week
 - **Most loved ingredients** — all-time top 6 ingredients for the user's allergen profile, shown with a visual score bar
@@ -284,9 +285,12 @@ AWS Lambda
 
 Shared server-side libs
   ├── lib/preference-profile.ts  buildPreferenceProfile — DynamoDB query + computePreferenceProfile
-  │                              + survey merge; called by /api/generate-recipe and /api/insights
-  └── lib/flavour-territory.ts   deriveFlavourTerritory — cosine-similarity neighbour overlap
-                                  for taste-space anchor ingredients; called by /api/insights
+  │                              + survey merge + aggregateFormatSignals; called by /api/generate-recipe
+  │                              and /api/insights. Returns scores, preferred, avoided, formatSignals.
+  ├── lib/flavour-territory.ts   deriveFlavourTerritory — cosine-similarity neighbour overlap
+  │                              for taste-space anchor ingredients; called by /api/insights
+  └── lib/survey-signals.ts      formatSignalsToClauses — maps aggregated signal keys to Claude
+                                  prompt clauses via RECIPE_SIGNAL_MAP
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search
@@ -332,9 +336,10 @@ In-memory (loaded at server startup)
 - ✅ `/api/insights` route — 1-hour cached; returns profile + global trending data
 - ✅ 477 passing tests across 21 test suites
 - ✅ Responsive navigation — fixed 220 px left sidebar on desktop (≥ 768 px) with Fable wordmark; bottom tab bar on mobile; same active-state and theming at both breakpoints
-- ✅ **Feedback survey** — optional 4-section chip panel after every thumbs up/down; PATCH `/api/feedback` persists `surveyResponse`; ingredient signals weighted 1.5×; recipe format signals threshold-gated at 2+ appearances; 18 new tests (495 total across 22 suites)
+- ✅ **Feedback survey** — optional 4-section chip panel after every thumbs up/down; PATCH `/api/feedback` persists `surveyResponse` (all four fields: `ingredientsHighlighted`, `ingredientsSkipped`, `recipePositives`, `recipeNegatives`); ingredient signals weighted 1.5×; recipe format signals threshold-gated at 2+ appearances; 18 new tests (495 total across 22 suites)
 - ✅ **Photo ingredient recognition** — camera icon in kitchen tab; Claude Vision (Haiku 4.5) via `fable-vision-ingredient-scanner` Lambda identifies ingredients and infers storage area; fuzzy Epicure key matching with confidence flagging; full review screen with area editing, uncertain badges, and duplicate deselection; Sonner toast notifications; 17 new tests (512 total across 23 suites)
-- ✅ **Personal taste profile + personalised discover chips** — `buildPreferenceProfile` shared utility (DynamoDB query + preference scoring + survey merge in one call); `deriveFlavourTerritory` for embedding-space flavour neighbours; taste profile card on Discover (loved · avoided · flavour territory) shown at ≥ 5 signals; Trending for you chips carry `seedIngredients` (top 3 liked ingredient keys) injected as a soft prompt hint into recipe generation; 20 new tests (532 total across 25 suites)
+- ✅ **Personal taste profile + personalised discover chips** — `buildPreferenceProfile` shared utility (DynamoDB query + preference scoring + survey merge in one call); `deriveFlavourTerritory` for embedding-space flavour neighbours; taste profile card on Discover (loved · avoided · flavour territory · your preferences) shown at ≥ 5 signals; Trending for you chips carry `seedIngredients` (top 3 liked ingredient keys) injected as a soft prompt hint into recipe generation; 20 new tests (532 total across 25 suites)
+- ✅ **Format signal injection** — `recipePositives` + `recipeNegatives` from survey now flow through `buildPreferenceProfile` → `aggregateFormatSignals` (2+ appearance threshold) → `formatSignalsToClauses` → Claude prompt; same signals surface in the taste profile card as "Your preferences" chips with neutral display labels via `SIGNAL_DISPLAY_LABELS`; 5 new tests (538 total across 25 suites)
 
 ### In Progress
 
@@ -401,7 +406,7 @@ TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire afte
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **512** passing automated tests across 23 suites ensuring allergen safety and filter accuracy
+- **538** passing automated tests across 25 suites ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
