@@ -10,6 +10,26 @@ import { getEpicureVectors } from "@/lib/epicure";
 // Cache responses for 1 hour — insights don't need to be real-time
 export const revalidate = 3600;
 
+// Map a Claude-generated ingredient name to the nearest Epicure key.
+// Claude writes verbose descriptions ("lamb shoulder or leg, cut into 2cm cubes");
+// the Epicure vector map uses simple keys ("lamb", "soy_sauce").
+// Strategy: (1) normalize spaces to underscores and try direct lookup,
+// (2) strip punctuation and try each token left-to-right.
+function resolveToEpicureKey(
+  name: string,
+  vectors: Record<string, number[]>
+): string | null {
+  const normalized = name.replace(/\s+/g, "_");
+  if (normalized in vectors) return normalized;
+  const tokens = name
+    .replace(/[^a-z0-9\s]/gi, " ")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  return tokens.find((t) => t in vectors) ?? null;
+}
+
 export async function GET(req: NextRequest) {
   const userId = req.nextUrl.searchParams.get("userId")?.trim();
   if (!userId) {
@@ -47,18 +67,32 @@ export async function GET(req: NextRequest) {
 
   const hasEnoughSignals = preferenceProfile !== null && preferenceProfile.signalCount >= 5;
 
+  const epicureVectors = getEpicureVectors();
+
+  // Resolve Claude's verbose ingredient names to clean Epicure keys.
+  // Drops anything that can't be matched (e.g. "grapes" not in 1790-ingredient set).
+  const resolvedPreferred = hasEnoughSignals
+    ? preferenceProfile!.preferred
+        .map((k) => resolveToEpicureKey(k, epicureVectors))
+        .filter((k): k is string => k !== null)
+    : [];
+  const resolvedAvoided = hasEnoughSignals
+    ? preferenceProfile!.avoided
+        .map((k) => resolveToEpicureKey(k, epicureVectors))
+        .filter((k): k is string => k !== null)
+    : [];
+
   const tasteProfile = hasEnoughSignals
     ? {
-        preferred: preferenceProfile!.preferred.slice(0, 3).map((k) => k.replace(/_/g, " ")),
-        avoided: preferenceProfile!.avoided.slice(0, 3).map((k) => k.replace(/_/g, " ")),
-        flavourTerritory: deriveFlavourTerritory(preferenceProfile!.preferred, getEpicureVectors()),
+        preferred: resolvedPreferred.slice(0, 3).map((k) => k.replace(/_/g, " ")),
+        avoided: resolvedAvoided.slice(0, 3).map((k) => k.replace(/_/g, " ")),
+        flavourTerritory: deriveFlavourTerritory(resolvedPreferred, epicureVectors),
         signalCount: preferenceProfile!.signalCount,
       }
     : null;
 
-  const seedIngredients = hasEnoughSignals
-    ? preferenceProfile!.preferred.slice(0, 3)
-    : [];
+  // seedIngredients uses resolved Epicure keys so /api/generate-recipe can look them up
+  const seedIngredients = resolvedPreferred.slice(0, 3);
 
   const profileWeekRecord = (profileWeekRes.Item ?? null) as IngredientInsightsRecord | null;
   const trendingForYou = (profileWeekRecord?.trendingRecipeTypes ?? []).slice(0, 3).map((rt) => ({
