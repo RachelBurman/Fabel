@@ -140,7 +140,11 @@ function compressImageToBase64(file: File, maxDim: number, quality: number): Pro
       const dataUrl = canvas.toDataURL('image/jpeg', quality)
       resolve(dataUrl.split(',')[1])
     }
-    img.onerror = reject
+    img.onerror = () => {
+      const isHeic = file.type === 'image/heic' || file.type === 'image/heif' ||
+        file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+      reject(new Error(isHeic ? 'heic-unsupported' : 'load-failed'))
+    }
     img.src = url
   })
 }
@@ -343,8 +347,12 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
         return
       }
       setVisionResult(data)
-    } catch {
-      toast.error("Something went wrong — please try again")
+    } catch (err) {
+      if (err instanceof Error && err.message === 'heic-unsupported') {
+        toast.error("HEIC photos aren't supported on desktop — use your phone camera or convert to JPEG first")
+      } else {
+        toast.error("Something went wrong — please try again")
+      }
     } finally {
       setVisionLoading(false)
     }

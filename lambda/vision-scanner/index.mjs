@@ -4,16 +4,18 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const allIngredientKeys = require("./ingredients.json");
 
-const VISION_PROMPT = `You are analysing a photo of food storage to identify ingredients for a recipe app.
+const VISION_PROMPT = `You are analysing a photo of food or a kitchen to identify ingredients for a recipe app.
 
-First, identify what type of storage this is. Look for visual cues:
+First, identify where the food is located. Look for visual cues:
 - Fridge: shelves, interior lighting, fresh produce, dairy, meat
 - Freezer: frost, frozen packaging, ice
 - Cupboard: dry goods, tins, packets, wooden shelves
 - Pantry: similar to cupboard but larger, more variety
+- If food is on a counter, table, or the context is unclear, use "unknown"
 
 Then list every food ingredient you can see. For each ingredient:
-- Give it a clear, simple name (e.g. "chicken thighs", "cheddar cheese", "olive oil")
+- Use the singular form of the name (e.g. "egg" not "eggs", "apple" not "apples")
+- Keep names simple and generic (e.g. "egg", "cheddar cheese", "olive oil")
 - Note if you are uncertain about what it is
 
 Return ONLY valid JSON in this exact format:
@@ -21,7 +23,7 @@ Return ONLY valid JSON in this exact format:
   "area": "fridge" | "freezer" | "cupboard" | "pantry" | "unknown",
   "areaConfident": true | false,
   "ingredients": [
-    { "name": "chicken thighs", "uncertain": false },
+    { "name": "egg", "uncertain": false },
     { "name": "something yellow, possibly butter or cheese", "uncertain": true }
   ]
 }`;
@@ -119,6 +121,14 @@ export function matchToEpicureKey(name, uncertain, keys) {
 
   if (keys.includes(asKey)) {
     return { epicureKey: asKey, confident: !uncertain };
+  }
+
+  // Try stripping a trailing 's' (e.g. "eggs" → "egg", "carrots" → "carrot")
+  if (asKey.endsWith("s")) {
+    const singular = asKey.slice(0, -1);
+    if (keys.includes(singular)) {
+      return { epicureKey: singular, confident: !uncertain };
+    }
   }
 
   const tokens = normalized.split(/\s+/).filter(Boolean);
