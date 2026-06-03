@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
-import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem } from '@/lib/types'
+import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen, type RecipeFilters } from '@/components/ingredients-screen'
@@ -60,6 +60,7 @@ function FableAppContent() {
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [generatedRecipeId, setGeneratedRecipeId] = useState('')
   const [loadingStep, setLoadingStep] = useState<LoadingStep | null>(null)
+  const [brief, setBrief] = useState<RecipeBrief | null>(null)
   const [generatedRecipeSaved, setGeneratedRecipeSaved] = useState(false)
   const [recipeAttempted, setRecipeAttempted] = useState(false)
 
@@ -146,6 +147,7 @@ function FableAppContent() {
   const handleGenerateRecipe = useCallback(async (filters: RecipeFilters) => {
     setRecipeFilters(filters)
     setGeneratedRecipe(null)
+    setBrief(null)
     setGeneratedRecipeSaved(false)
     setRecipeAttempted(true)
     setLoadingStep('pairings')
@@ -156,32 +158,62 @@ function FableAppContent() {
       ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
       : {}
 
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+    const seeds = discoverSeedIngredientsRef.current
+    discoverSeedIngredientsRef.current = []
+
+    const kitchenDisplayNames = preferences.ingredients
+      .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
+
     try {
-      // When kitchen-only, skip Epicure pairings â€” Claude will work within the listed ingredients
-      let suggestionNames: string[] = []
-      if (!filters.kitchenOnly) {
-        const pairingsRes = await fetch('/api/recipes', {
+      // Run brief fetch + Epicure pairings in parallel (brief feeds into generate-recipe)
+      const [briefResult, pairingsResult] = await Promise.allSettled([
+        fetch('/api/recipe-brief', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ingredients: preferences.ingredients,
-            allergens: effectiveAllergens,
-            customAllergens: effectiveCustomAllergens,
-            mode: 'avoid',
-            mealType: filters.mealType,
-            cookTime: filters.cookTime,
-            ...sfPayload,
+            userId: uid,
+            preferences: {
+              mealType: filters.mealType,
+              cookTime: filters.cookTime,
+              cuisine: filters.cuisine,
+              occasion: filters.occasion,
+              servings: filters.servings,
+              equipment: preferences.kitchenEquipment,
+              useKitchenOnly: filters.kitchenOnly,
+            },
+            kitchenIngredients: kitchenDisplayNames,
           }),
-        })
-        if (!pairingsRes.ok) throw new Error(`Pairings error: ${pairingsRes.status}`)
-        const pairingsData: { suggestions: PairingSuggestion[] } = await pairingsRes.json()
-        suggestionNames = pairingsData.suggestions.map(s => s.ingredient)
-      }
+        }).then(res => res.json() as Promise<{ brief: RecipeBrief }>),
 
+        !filters.kitchenOnly
+          ? fetch('/api/recipes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ingredients: preferences.ingredients,
+                allergens: effectiveAllergens,
+                customAllergens: effectiveCustomAllergens,
+                mode: 'avoid',
+                mealType: filters.mealType,
+                cookTime: filters.cookTime,
+                ...sfPayload,
+              }),
+            }).then(res => {
+              if (!res.ok) throw new Error(`Pairings error: ${res.status}`)
+              return res.json() as Promise<{ suggestions: PairingSuggestion[] }>
+            })
+          : Promise.resolve({ suggestions: [] } as { suggestions: PairingSuggestion[] }),
+      ])
+
+      const fetchedBrief = briefResult.status === 'fulfilled' ? briefResult.value.brief : null
+      const suggestionNames = pairingsResult.status === 'fulfilled'
+        ? pairingsResult.value.suggestions.map(s => s.ingredient)
+        : []
+
+      setBrief(fetchedBrief)
       setLoadingStep('recipe')
-      const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
-      const seeds = discoverSeedIngredientsRef.current
-      discoverSeedIngredientsRef.current = []
+
       const recipeRes = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,6 +236,12 @@ function FableAppContent() {
           ...(uid ? { userId: uid } : {}),
           ...(seeds.length > 0 ? { seedIngredients: seeds } : {}),
           ...sfPayload,
+          ...(fetchedBrief?.direction ? {
+            recipeBrief: {
+              direction: fetchedBrief.direction,
+              keyIngredients: fetchedBrief.keyIngredients,
+            },
+          } : {}),
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
@@ -223,17 +261,46 @@ function FableAppContent() {
   // â”€â”€ Generate Recipe from existing pairings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGenerateFromPairings = useCallback(async () => {
     setGeneratedRecipe(null)
+    setBrief(null)
     setGeneratedRecipeSaved(false)
     setRecipeAttempted(true)
-    setLoadingStep('recipe')
+    setLoadingStep('pairings')
     navigate('generated')
 
     const sfPayload = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
       ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
       : {}
 
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+    const kitchenDisplayNames = preferences.ingredients
+      .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
+
     try {
-      const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+      // Fetch brief then generate — pairings are already loaded
+      const briefRes = await fetch('/api/recipe-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: uid,
+          preferences: {
+            mealType: recipeFilters.mealType,
+            cookTime: recipeFilters.cookTime,
+            cuisine: recipeFilters.cuisine,
+            occasion: recipeFilters.occasion,
+            servings: recipeFilters.servings,
+            equipment: preferences.kitchenEquipment,
+            useKitchenOnly: recipeFilters.kitchenOnly,
+          },
+          kitchenIngredients: kitchenDisplayNames,
+        }),
+      })
+      const fetchedBrief: RecipeBrief | null = briefRes.ok
+        ? ((await briefRes.json()) as { brief: RecipeBrief }).brief
+        : null
+
+      setBrief(fetchedBrief)
+      setLoadingStep('recipe')
+
       const recipeRes = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -255,6 +322,12 @@ function FableAppContent() {
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...(uid ? { userId: uid } : {}),
           ...sfPayload,
+          ...(fetchedBrief?.direction ? {
+            recipeBrief: {
+              direction: fetchedBrief.direction,
+              keyIngredients: fetchedBrief.keyIngredients,
+            },
+          } : {}),
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
@@ -577,6 +650,7 @@ function FableAppContent() {
               <GeneratedRecipeScreen
                 recipe={generatedRecipe}
                 loadingStep={loadingStep}
+                brief={brief}
                 onBack={() => navigate(prevScreen)}
                 onSave={handleSaveGeneratedRecipe}
                 isSaved={generatedRecipeSaved}

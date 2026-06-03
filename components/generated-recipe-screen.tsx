@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { type GeneratedRecipe, type GeneratedRecipeIngredient } from '@/lib/types'
+import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief } from '@/lib/types'
 import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -44,6 +44,7 @@ interface DrinkPairing {
 interface GeneratedRecipeScreenProps {
   recipe: GeneratedRecipe | null
   loadingStep: LoadingStep | null
+  brief?: RecipeBrief | null
   onBack: () => void
   onSave?: () => void
   isSaved?: boolean
@@ -115,9 +116,86 @@ function getDrinkEmoji(key: string): string {
   return '🥤'
 }
 
+// ─── Recipe Brief Card ────────────────────────────────────────────────────────
+
+function RecipeBriefCard({ brief }: { brief: RecipeBrief }) {
+  const hints = brief.loadingHints.length > 0 ? brief.loadingHints : [
+    "Safe ingredients. Bold flavours. Food for everyone.",
+    "Fable uses Epicure — the largest multilingual food embedding model ever built.",
+    "The more you cook with Fable, the better it knows your taste.",
+  ]
+  const [hintIndex, setHintIndex] = useState(0)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setHintIndex(i => (i + 1) % hints.length)
+    }, 3000)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [hints.length])
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl overflow-hidden border border-border shadow-sm"
+    >
+      {/* Gradient header */}
+      <div
+        className="relative px-5 py-4"
+        style={{ background: 'linear-gradient(135deg, #78350f 0%, #c2410c 45%, #9f1239 100%)' }}
+      >
+        <div className="absolute top-0 right-0 w-36 h-36 rounded-full opacity-30" style={{ background: 'rgba(251,191,36,0.32)', filter: 'blur(40px)', transform: 'translate(24px,-24px)' }} />
+        <p className="relative text-white/70 text-xs font-medium uppercase tracking-widest mb-1">
+          I&apos;m thinking…
+        </p>
+        {brief.direction ? (
+          <p className="relative text-white text-base font-semibold leading-snug drop-shadow">
+            {brief.direction}
+          </p>
+        ) : (
+          <Loader2 className="relative w-5 h-5 text-white/60 animate-spin mt-1" />
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="bg-card px-5 py-4 space-y-4">
+        {brief.direction && (
+          <>
+            {brief.reasoning && (
+              <p className="text-sm text-foreground leading-relaxed">{brief.reasoning}</p>
+            )}
+            {brief.noveltyNote && (
+              <p className="text-xs text-muted-foreground">··· {brief.noveltyNote}</p>
+            )}
+            <div className="border-t border-border" />
+          </>
+        )}
+
+        {/* Rotating hint */}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={hintIndex}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.3 }}
+            className="text-xs text-muted-foreground leading-relaxed"
+          >
+            <span className="mr-1.5">💡</span>{hints[hintIndex]}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  )
+}
+
 export function GeneratedRecipeScreen({
   recipe,
   loadingStep,
+  brief,
   onBack,
   onSave,
   isSaved,
@@ -285,40 +363,47 @@ export function GeneratedRecipeScreen({
 
           {/* Loading */}
           {isLoading && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center py-16"
-            >
-              <Loader2 className="w-10 h-10 text-primary animate-spin mb-10" />
-              <div className="w-full max-w-xs space-y-5">
-                {STEPS.map(({ key, label }, i) => {
-                  const isDone = i < activeIndex
-                  const isActive = i === activeIndex
-                  return (
-                    <div key={key} className="flex items-center gap-3">
-                      <div className={cn(
-                        'w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300',
-                        isDone   ? 'bg-primary text-primary-foreground' :
-                        isActive ? 'bg-primary/20 text-primary' :
-                                   'bg-secondary text-muted-foreground'
-                      )}>
-                        {isDone
-                          ? <Check className="w-3.5 h-3.5" />
-                          : <span className="text-xs font-semibold">{i + 1}</span>
-                        }
-                      </div>
-                      <span className={cn(
-                        'text-sm transition-colors duration-300',
-                        isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
-                      )}>
-                        {label}{isActive && '…'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </motion.div>
+            <>
+              {/* Brief card during recipe generation step */}
+              {loadingStep === 'recipe' && brief ? (
+                <RecipeBriefCard brief={brief} />
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center py-16"
+                >
+                  <Loader2 className="w-10 h-10 text-primary animate-spin mb-10" />
+                  <div className="w-full max-w-xs space-y-5">
+                    {STEPS.map(({ key, label }, i) => {
+                      const isDone = i < activeIndex
+                      const isActive = i === activeIndex
+                      return (
+                        <div key={key} className="flex items-center gap-3">
+                          <div className={cn(
+                            'w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300',
+                            isDone   ? 'bg-primary text-primary-foreground' :
+                            isActive ? 'bg-primary/20 text-primary' :
+                                       'bg-secondary text-muted-foreground'
+                          )}>
+                            {isDone
+                              ? <Check className="w-3.5 h-3.5" />
+                              : <span className="text-xs font-semibold">{i + 1}</span>
+                            }
+                          </div>
+                          <span className={cn(
+                            'text-sm transition-colors duration-300',
+                            isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
+                          )}>
+                            {label}{isActive && '…'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </>
           )}
 
           {/* Recipe */}

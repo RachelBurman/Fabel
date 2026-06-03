@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     kitchenEquipment?: unknown;
     userId?: unknown;
     seedIngredients?: unknown;
+    recipeBrief?: unknown;
   };
   try {
     body = await req.json();
@@ -278,6 +279,27 @@ export async function POST(req: NextRequest) {
       ? `Ingredient seeds from user's taste profile: [${seedIngredients.map((s) => s.replace(/_/g, " ")).join(", ")}]. Incorporate at least one if it suits the cuisine and occasion. Do not force it if it would be inappropriate.\n\n`
       : "";
 
+  const rawBrief =
+    typeof body.recipeBrief === "object" && body.recipeBrief !== null
+      ? (body.recipeBrief as Record<string, unknown>)
+      : null;
+  const briefDirection =
+    rawBrief && typeof rawBrief.direction === "string" && rawBrief.direction.trim()
+      ? rawBrief.direction.trim()
+      : null;
+  const briefKeyIngredients = Array.isArray(rawBrief?.keyIngredients)
+    ? (rawBrief!.keyIngredients as unknown[]).filter(
+        (k): k is string => typeof k === "string"
+      )
+    : [];
+  const recipeBriefClause = briefDirection
+    ? `Recipe direction from taste analysis: ${briefDirection}\n` +
+      (briefKeyIngredients.length > 0
+        ? `Key ingredients to incorporate if they suit the dish: ${briefKeyIngredients.join(", ")}\n`
+        : "") +
+      `This direction was chosen because it's novel territory for this user while aligning with their taste profile. Follow it unless it conflicts with allergen constraints or the user's kitchen.\n\n`
+    : "";
+
   const servingsClause = `Recipe should serve ${servings} ${servings === 1 ? "person" : "people"}, scale quantities accordingly. `;
 
   const equipmentClause =
@@ -312,7 +334,7 @@ export async function POST(req: NextRequest) {
 
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? tasteProfileClause + seedIngredientsClause + dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -329,7 +351,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : tasteProfileClause + seedIngredientsClause + dislikedPrefix + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +

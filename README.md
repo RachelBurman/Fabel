@@ -16,11 +16,11 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Deployment | Vercel |
 | Database | AWS DynamoDB |
 | Embeddings | Epicure Core (1,790 ingredients × 300 dimensions, cosine similarity) |
-| Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching |
+| Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching; `claude-haiku-4-5` for recipe brief |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 538 tests across 25 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 564 tests across 27 suites |
 
 ---
 
@@ -98,7 +98,8 @@ pnpm dev
 
 ### Recipe Generation
 - **Show Pairings** — Epicure similarity search surfaces safe, flavour-matched ingredients
-- **Generate Recipe** — Claude generates novel, restaurant-quality recipes
+- **Generate Recipe** — Two-step agentic flow: Claude Haiku reasons about taste history and writes a `RecipeBrief` (step 1), then Claude Sonnet generates the recipe guided by the brief (step 2)
+- **Recipe Brief Card** — Shown during recipe generation: displays the dish direction, reasoning, novelty note, and rotating cooking hints. For guests or users with insufficient history, shows the default Fable loading hints
 - Ingredients sorted by expiry date (ascending) before being passed to Claude — expiring items get used first
 - Claude receives rich descriptions (e.g. `"2 pieces Chicken Breast (Epicure: chicken)"`) for cut-accurate recipes
 - Ingredient quantities displayed rounded — whole-unit items (pieces, cloves, fillets) always shown as integers
@@ -241,7 +242,8 @@ Vercel — Next.js 16 (App Router)
   │
   ├── /api/ingredients         Epicure ingredient search (fuzzy, 1,790 items)
   ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
-  ├── /api/generate-recipe     Anthropic Claude recipe generation + validation
+  ├── /api/recipe-brief        Anthropic Claude Haiku taste-history reasoning → RecipeBrief (step 1)
+  ├── /api/generate-recipe     Anthropic Claude recipe generation + validation (step 2)
   ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
   ├── /api/scan-ingredients    Thin proxy → fable-vision-ingredient-scanner Lambda (image compressed to JPEG ≤1200px client-side before upload)
   ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
@@ -285,10 +287,12 @@ AWS Lambda
 
 Shared server-side libs
   ├── lib/preference-profile.ts  buildPreferenceProfile — DynamoDB query + computePreferenceProfile
-  │                              + survey merge + aggregateFormatSignals; called by /api/generate-recipe
-  │                              and /api/insights. Returns scores, preferred, avoided, formatSignals.
+  │                              + survey merge + aggregateFormatSignals; called by /api/generate-recipe,
+  │                              /api/recipe-brief, and /api/insights. Returns scores, preferred,
+  │                              avoided, formatSignals.
   ├── lib/flavour-territory.ts   deriveFlavourTerritory — cosine-similarity neighbour overlap
   │                              for taste-space anchor ingredients; called by /api/insights
+  │                              and /api/recipe-brief
   └── lib/survey-signals.ts      formatSignalsToClauses — maps aggregated signal keys to Claude
                                   prompt clauses via RECIPE_SIGNAL_MAP
 
@@ -340,6 +344,7 @@ In-memory (loaded at server startup)
 - ✅ **Photo ingredient recognition** — camera icon in kitchen tab; Claude Vision (Haiku 4.5) via `fable-vision-ingredient-scanner` Lambda identifies ingredients and infers storage area; fuzzy Epicure key matching with confidence flagging; full review screen with area editing, uncertain badges, and duplicate deselection; Sonner toast notifications; 17 new tests (512 total across 23 suites)
 - ✅ **Personal taste profile + personalised discover chips** — `buildPreferenceProfile` shared utility (DynamoDB query + preference scoring + survey merge in one call); `deriveFlavourTerritory` for embedding-space flavour neighbours; taste profile card on Discover (loved · avoided · flavour territory · your preferences) shown at ≥ 5 signals; Trending for you chips carry `seedIngredients` (top 3 liked ingredient keys) injected as a soft prompt hint into recipe generation; 20 new tests (532 total across 25 suites)
 - ✅ **Format signal injection** — `recipePositives` + `recipeNegatives` from survey now flow through `buildPreferenceProfile` → `aggregateFormatSignals` (2+ appearance threshold) → `formatSignalsToClauses` → Claude prompt; same signals surface in the taste profile card as "Your preferences" chips with neutral display labels via `SIGNAL_DISPLAY_LABELS`; 5 new tests (538 total across 25 suites)
+- ✅ **Agentic two-step recipe generation** — `/api/recipe-brief` (Claude Haiku 4.5) reasons over taste history and returns a `RecipeBrief` (dish direction, reasoning, novelty note, loading hints); `/api/generate-recipe` (Claude Sonnet) receives the brief as creative direction; brief fetch and Epicure pairings run in parallel; brief card replaces the loading spinner during recipe generation; falls back gracefully to guest hints on error or insufficient history; 26 new tests (564 total across 27 suites)
 
 ### In Progress
 
@@ -361,7 +366,9 @@ In-memory (loaded at server startup)
 ### Research & Future
 - [ ] User authentication — Clerk or NextAuth for cross-device persistence, replacing anonymous UUID system. Guest mode remains fully functional.
 - [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
-- [ ] On-device AI — Liquid AI LFM2.5 for private on-device allergen filtering
+- [ ] **On-device recipe brief** — migrate the `/api/recipe-brief` Haiku call to Liquid AI LFM2.5 running on-device; eliminates the brief round-trip entirely and keeps taste reasoning private
+- [ ] **Editable brief direction** — show the `direction` field as an editable text input after the brief card appears; user can nudge it ("try something spicier") before generation fires, then the brief is re-sent as the updated creative direction
+- [ ] **Multi-turn brief refinement** — "try something spicier" or "go vegetarian instead" after seeing the brief updates the direction and regenerates; brief card persists and animates to the new direction
 - [ ] Medical nutrition database — elemental formulas for severe MCAS
 - [ ] Multilingual UI — Epicure supports 7 languages
 - [ ] Garmin/Apple Health/Google Health integration for glucose-aware suggestions for diabetic users
@@ -406,7 +413,7 @@ TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire afte
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **538** passing automated tests across 25 suites ensuring allergen safety and filter accuracy
+- **564** passing automated tests across 27 suites ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
