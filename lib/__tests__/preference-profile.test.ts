@@ -83,7 +83,7 @@ describe('buildPreferenceProfile', () => {
       avoided: expect.any(Array),
       signalCount: expect.any(Number),
       strength: expect.stringMatching(/^(soft|full)$/),
-      formatClauses: expect.any(Array),
+      formatSignals: expect.any(Array),
     })
   })
 
@@ -145,5 +145,88 @@ describe('buildPreferenceProfile', () => {
     })
     const result = await buildPreferenceProfile('user-1')
     expect(result?.avoided).toContain('cream')
+  })
+})
+
+// ─── formatSignals ────────────────────────────────────────────────────────────
+
+function makeRecordWithSurvey(
+  liked: boolean,
+  ingredients: string[],
+  day: number,
+  recipePositives: string[],
+  recipeNegatives: string[]
+) {
+  return {
+    ...makeRecord(liked, ingredients, day),
+    surveyResponse: {
+      ingredientsHighlighted: [],
+      ingredientsSkipped: [],
+      recipePositives,
+      recipeNegatives,
+    },
+  }
+}
+
+describe('buildPreferenceProfile — formatSignals', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('returns empty formatSignals when no survey responses', async () => {
+    const items = Array.from({ length: 5 }, (_, i) =>
+      makeRecord(true, ['garlic', 'lemon'], i + 1)
+    )
+    mockSend.mockResolvedValueOnce({ Items: items })
+    const result = await buildPreferenceProfile('user-1')
+    expect(result?.formatSignals).toEqual([])
+  })
+
+  it('excludes a signal that appears only once (below threshold)', async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        makeRecordWithSurvey(true, ['garlic', 'lemon'], 1, ['Quick to make'], []),
+        makeRecord(true, ['garlic', 'lemon'], 2),
+        makeRecord(true, ['garlic', 'lemon'], 3),
+      ],
+    })
+    const result = await buildPreferenceProfile('user-1')
+    expect(result?.formatSignals).not.toContain('Quick to make')
+  })
+
+  it('includes a signal that appears 2+ times (meets threshold)', async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        makeRecordWithSurvey(false, ['garlic', 'lemon'], 1, [], ['Too complex']),
+        makeRecordWithSurvey(false, ['garlic', 'lemon'], 2, [], ['Too complex']),
+        makeRecord(true, ['garlic', 'lemon'], 3),
+      ],
+    })
+    const result = await buildPreferenceProfile('user-1')
+    expect(result?.formatSignals).toContain('Too complex')
+  })
+
+  it('deduplicates — each signal appears at most once in formatSignals', async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        makeRecordWithSurvey(false, ['garlic', 'lemon'], 1, [], ['Too complex']),
+        makeRecordWithSurvey(false, ['garlic', 'lemon'], 2, [], ['Too complex']),
+        makeRecordWithSurvey(false, ['garlic', 'lemon'], 3, [], ['Too complex']),
+      ],
+    })
+    const result = await buildPreferenceProfile('user-1')
+    const count = result?.formatSignals.filter(s => s === 'Too complex').length ?? 0
+    expect(count).toBe(1)
+  })
+
+  it('mixes positives and negatives across records', async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        makeRecordWithSurvey(true,  ['garlic', 'lemon'], 1, ['Quick to make'], []),
+        makeRecordWithSurvey(false, ['garlic', 'lemon'], 2, [], ['Too many ingredients']),
+        makeRecordWithSurvey(true,  ['garlic', 'lemon'], 3, ['Quick to make'], ['Too many ingredients']),
+      ],
+    })
+    const result = await buildPreferenceProfile('user-1')
+    expect(result?.formatSignals).toContain('Quick to make')
+    expect(result?.formatSignals).toContain('Too many ingredients')
   })
 })

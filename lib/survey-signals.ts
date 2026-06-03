@@ -40,6 +40,14 @@ export function computeSurveyIngredientAdjustments(
 }
 
 /**
+ * Map pre-aggregated signal strings to prompt clauses via RECIPE_SIGNAL_MAP.
+ * Signals not in the map (e.g. 'Perfect complexity') are silently dropped.
+ */
+export function formatSignalsToClauses(signals: string[]): string[] {
+  return signals.map((s) => RECIPE_SIGNAL_MAP[s]).filter(Boolean) as string[]
+}
+
+/**
  * Build recipe format injection clauses from survey responses.
  * Only injects a signal if it appears in 2+ records (noise suppression).
  */

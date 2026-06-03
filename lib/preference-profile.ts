@@ -6,7 +6,6 @@ import {
 } from "@/lib/feedback-preferences";
 import {
   computeSurveyIngredientAdjustments,
-  buildRecipeFormatClauses,
   type SurveyResponse,
 } from "@/lib/survey-signals";
 
@@ -16,7 +15,7 @@ export interface PreferenceProfileResult {
   avoided: string[]
   signalCount: number
   strength: "soft" | "full"
-  formatClauses: string[]
+  formatSignals: string[]
 }
 
 async function fetchRecentFeedback(
@@ -35,6 +34,25 @@ async function fetchRecentFeedback(
   return all
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, 20);
+}
+
+function aggregateFormatSignals(
+  records: Array<{ surveyResponse?: SurveyResponse }>
+): string[] {
+  const counts: Record<string, number> = {};
+  for (const record of records) {
+    if (!record.surveyResponse) continue;
+    const signals = [
+      ...(record.surveyResponse.recipePositives ?? []),
+      ...(record.surveyResponse.recipeNegatives ?? []),
+    ];
+    for (const signal of signals) {
+      counts[signal] = (counts[signal] ?? 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .filter(([, count]) => count >= 2)
+    .map(([signal]) => signal);
 }
 
 function mergeSurveyAdjustments(
@@ -61,7 +79,6 @@ export async function buildPreferenceProfile(
   if (profile.strength === "none") return null;
 
   const merged = mergeSurveyAdjustments(profile, recent);
-  const formatClauses = buildRecipeFormatClauses(recent);
 
   return {
     scores: merged.scores,
@@ -69,6 +86,6 @@ export async function buildPreferenceProfile(
     avoided: merged.avoided,
     signalCount: recent.length,
     strength: merged.strength as "soft" | "full",
-    formatClauses,
+    formatSignals: aggregateFormatSignals(recent),
   };
 }

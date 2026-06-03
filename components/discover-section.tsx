@@ -16,11 +16,22 @@ function formatCustomAllergen(name: string): string {
   return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
+const SIGNAL_DISPLAY_LABELS: Record<string, string> = {
+  'Too complex':          'simpler recipes',
+  'Too simple':           'more ambitious recipes',
+  'Wrong cuisine vibe':   'different cuisines',
+  'Great cuisine choice': 'similar cuisines',
+  'Too many ingredients': 'fewer ingredients',
+  'Quick to make':        'quick to make',
+  'Took too long':        'shorter cook time',
+}
+
 interface TasteProfile {
   preferred: string[]
   avoided: string[]
   flavourTerritory: string[]
   signalCount: number
+  formatSignals: string[]
 }
 
 interface TrendingForYouItem {
@@ -131,6 +142,22 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                         {ing}
                       </span>
                     ))}
+                  </div>
+                </div>
+              )}
+              {data.tasteProfile.formatSignals?.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">Your preferences</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {data.tasteProfile.formatSignals.map((signal, i) => {
+                      const label = SIGNAL_DISPLAY_LABELS[signal]
+                      if (!label) return null
+                      return (
+                        <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-foreground">
+                          {label}
+                        </span>
+                      )
+                    })}
                   </div>
                 </div>
               )}

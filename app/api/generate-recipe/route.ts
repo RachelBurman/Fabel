@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getShelfLifeDays, addDays } from "@/lib/shelf-life";
 import { buildTasteProfileClause } from "@/lib/feedback-preferences";
+import { formatSignalsToClauses } from "@/lib/survey-signals";
 import { buildPreferenceProfile } from "@/lib/preference-profile";
 import { findSimilarIngredients } from "@/lib/epicure";
 import {
@@ -122,12 +123,15 @@ export async function POST(req: NextRequest) {
       const profileResult = await buildPreferenceProfile(userId);
 
       if (profileResult) {
-        const { scores, preferred: _preferred, avoided: _avoided, strength, formatClauses } = profileResult;
+        const { scores, preferred: _preferred, avoided: _avoided, strength, formatSignals } = profileResult;
 
         tasteProfileClause = buildTasteProfileClause({ scores, preferred: _preferred, avoided: _avoided, strength });
 
-        if (formatClauses.length > 0) {
-          tasteProfileClause += `Recipe format preferences from feedback: ${formatClauses.join(' ')}\n\n`;
+        if (formatSignals.length > 0) {
+          const formatClauses = formatSignalsToClauses(formatSignals);
+          if (formatClauses.length > 0) {
+            tasteProfileClause += `Recipe format preferences from feedback: ${formatClauses.join(' ')}\n\n`;
+          }
         }
 
         // Auto-swap: silently replace any kitchen ingredient with a preference score

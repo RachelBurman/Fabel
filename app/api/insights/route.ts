@@ -91,6 +91,7 @@ export async function GET(req: NextRequest) {
         avoided: resolvedAvoided.slice(0, 3).map(toDisplayName),
         flavourTerritory: deriveFlavourTerritory(resolvedPreferred, epicureVectors),
         signalCount: preferenceProfile!.signalCount,
+        formatSignals: preferenceProfile!.formatSignals,
       }
     : null;
 
