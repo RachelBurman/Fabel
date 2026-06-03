@@ -300,7 +300,7 @@ In-memory (loaded at server startup)
 - ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
 - ✅ `fable-ingredient-insights` table — aggregate trending data by allergen profile; seeded with 14 realistic records across 7 profiles × 2 time windows
 - ✅ Discover tab — dedicated nav tab (Compass icon) between Recipe and Substitutes; Trending for you, Trending globally, Most loved, Trending pairings; each sub-section individually toggleable in settings
-- ✅ Tab visibility settings — hide/show individual nav tabs (incl. Discover); min 2 enforced; persisted to DynamoDB
+- ✅ Tab visibility settings — hide/show individual nav tabs (incl. Discover); min 2 enforced; persisted to DynamoDB. Supersedes the earlier plan to consolidate to 4 tabs: user-controlled visibility is a more flexible solution than hardcoding a merged "Explore" tab
 - ✅ Lambda extended — liked feedback events now also write to `fable-ingredient-insights` (non-fatal); allergenProfile stored per feedback record
 - ✅ `/api/insights` route — 1-hour cached; returns profile + global trending data
 - ✅ 477 passing tests across 21 test suites
@@ -317,7 +317,6 @@ In-memory (loaded at server startup)
 - [ ] Photo recognition — take a photo of fridge/cupboard, Claude Vision auto-populates ingredients
 - [ ] Ingredient substitutes improvements — better functional category matching
 - [ ] Equipment-aware ingredient substitution — when a recipe step requires equipment the user doesn't have, use Epicure similarity search to suggest alternative ingredients that achieve the same result with available equipment (e.g. slow cooker → hob-friendly cuts)
-- [ ] Navigation consolidation — reduce from 5 tabs to 4 on mobile by combining Substitutes and History into an "Explore" tab. Evaluate collapsible sidebar as an alternative navigation pattern for tablet/desktop breakpoints where bottom tabs feel less natural. Current 5-tab layout works for hackathon submission.
 
 ### Medium Term
 - [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware suggestions
