@@ -384,6 +384,8 @@ A Lambda function exposes a `/api/scan-ingredients` endpoint. User points camera
 
 **Lambda as compute boundary** — Claude Vision calls and stream processors run in Lambda, not in Next.js API routes. `fable-vision-ingredient-scanner` handles the heavy Vision call in isolation; `fable-feedback-stream-processor` handles the stream. Keeps serverless functions lean and gives each concern its own scaling profile. The Next.js proxy route (`/api/scan-ingredients`) keeps the Lambda URL server-side so it can be rotated without a frontend deploy.
 
+**API Gateway as Lambda entry point for Vision** — `fable-vision-ingredient-scanner` is invoked via an HTTP API Gateway endpoint rather than a Function URL. Keeps the invocation pattern consistent with standard AWS architecture, allows route-level configuration, and means the Lambda URL is rotatable without any frontend changes.
+
 ---
 
 ## Impact
