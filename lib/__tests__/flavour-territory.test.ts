@@ -53,6 +53,20 @@ describe('deriveFlavourTerritory', () => {
     expect(() => deriveFlavourTerritory(['garlic', 'missing_key'], sparseVectors)).not.toThrow()
   })
 
+  it('normalises space-separated keys to underscore format for vector lookup', () => {
+    // "olive oil" (with space) must resolve to "olive_oil" (with underscore) in vectors
+    const vecs: Record<string, number[]> = {
+      olive_oil: [0.9, 0.8, 0.1],
+      lemon:     [0.1, 0.2, 1],
+      garlic:    [1, 0.8, 0.2],
+      onion:     [0.9, 0.85, 0.15],
+    }
+    expect(() => deriveFlavourTerritory(['olive oil', 'lemon'], vecs)).not.toThrow()
+    const result = deriveFlavourTerritory(['olive oil', 'lemon'], vecs)
+    // Should return neighbours, not empty array, because "olive oil" → "olive_oil" is in vecs
+    expect(result.length).toBeGreaterThan(0)
+  })
+
   it('returns at most 4 results from overlap candidates', () => {
     const result = deriveFlavourTerritory(['garlic', 'lemon', 'ginger'], vectors)
     expect(result.length).toBeLessThanOrEqual(4)

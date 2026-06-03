@@ -31,15 +31,18 @@ export function deriveFlavourTerritory(
 ): string[] {
   if (preferredKeys.length === 0) return [];
 
-  const preferredSet = new Set(preferredKeys);
+  // Preference keys use lowercased display format (spaces); vectors use underscore keys.
+  // Normalize before lookup so "olive oil" → "olive_oil" finds its vector.
+  const normalizedKeys = preferredKeys.map((k) => k.replace(/\s+/g, "_"));
+  const preferredSet = new Set(normalizedKeys);
   const frequency: Record<string, number> = {};
   let firstNeighbours: string[] = [];
 
-  for (const key of preferredKeys.slice(0, 5)) {
+  for (const key of normalizedKeys.slice(0, 5)) {
     const neighbours = topKNeighbours(key, allVectors, k).filter(
       (n) => !preferredSet.has(n)
     );
-    if (key === preferredKeys[0]) firstNeighbours = neighbours;
+    if (key === normalizedKeys[0]) firstNeighbours = neighbours;
     for (const n of neighbours) {
       frequency[n] = (frequency[n] ?? 0) + 1;
     }
