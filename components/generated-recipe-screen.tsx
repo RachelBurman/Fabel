@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief } from '@/lib/types'
-import { Clock, Users, ArrowLeft, Check, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight } from 'lucide-react'
+import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
@@ -12,7 +12,7 @@ import { type SurveyResponse } from '@/lib/survey-signals'
 
 export type LoadingStep = 'pairings' | 'recipe'
 
-// ─── Equipment detection ──────────────────────────────────────────────────────
+// ─── Equipment detection ────────────────────────────────────────────────────
 
 const EQUIPMENT_RULES: { key: string; label: string; pattern: RegExp }[] = [
   { key: 'hob',         label: 'Hob',            pattern: /\b(hob|stovetop|saucepan|frying pan|boil(s|ed|ing)?)\b/i },
@@ -59,10 +59,6 @@ interface GeneratedRecipeScreenProps {
   lactoseMode?: 'include' | 'exclude'
 }
 
-const STEPS: { key: LoadingStep; label: string }[] = [
-  { key: 'pairings', label: 'Finding safe pairings' },
-  { key: 'recipe', label: 'Crafting your recipe' },
-]
 
 const RECIPE_POSITIVES = [
   'Perfect complexity',
@@ -211,7 +207,6 @@ export function GeneratedRecipeScreen({
 }: GeneratedRecipeScreenProps) {
   const { preferences } = useFable()
   const isLoading = loadingStep !== null
-  const activeIndex = loadingStep === 'pairings' ? 0 : loadingStep === 'recipe' ? 1 : -1
   const missingEquipment = recipe ? detectMissingEquipment(recipe.steps, preferences.kitchenEquipment) : []
 
   const [drinkPairings, setDrinkPairings] = useState<DrinkPairing[]>([])
@@ -363,47 +358,17 @@ export function GeneratedRecipeScreen({
 
           {/* Loading */}
           {isLoading && (
-            <>
-              {/* Brief card during recipe generation step */}
-              {loadingStep === 'recipe' && brief ? (
-                <RecipeBriefCard brief={brief} />
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center py-16"
-                >
-                  <Loader2 className="w-10 h-10 text-primary animate-spin mb-10" />
-                  <div className="w-full max-w-xs space-y-5">
-                    {STEPS.map(({ key, label }, i) => {
-                      const isDone = i < activeIndex
-                      const isActive = i === activeIndex
-                      return (
-                        <div key={key} className="flex items-center gap-3">
-                          <div className={cn(
-                            'w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300',
-                            isDone   ? 'bg-primary text-primary-foreground' :
-                            isActive ? 'bg-primary/20 text-primary' :
-                                       'bg-secondary text-muted-foreground'
-                          )}>
-                            {isDone
-                              ? <Check className="w-3.5 h-3.5" />
-                              : <span className="text-xs font-semibold">{i + 1}</span>
-                            }
-                          </div>
-                          <span className={cn(
-                            'text-sm transition-colors duration-300',
-                            isActive ? 'text-foreground font-medium' : 'text-muted-foreground'
-                          )}>
-                            {label}{isActive && '…'}
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </>
+            loadingStep === 'recipe' && brief ? (
+              <RecipeBriefCard brief={brief} />
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center py-16"
+              >
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              </motion.div>
+            )
           )}
 
           {/* Recipe */}
