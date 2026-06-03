@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 const LAMBDA_URL = process.env.VISION_LAMBDA_URL;
 
 export async function POST(req: NextRequest) {
+  console.log("[scan-ingredients] LAMBDA_URL:", LAMBDA_URL ?? "(not set)");
+
   if (!LAMBDA_URL) {
     return NextResponse.json(
       { error: "Vision Lambda not configured" },
@@ -17,6 +19,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  console.log("[scan-ingredients] Forwarding to Lambda...");
   try {
     const res = await fetch(LAMBDA_URL, {
       method: "POST",
@@ -24,6 +27,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     });
 
+    console.log("[scan-ingredients] Lambda responded:", res.status);
     const data: unknown = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (err) {
