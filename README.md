@@ -20,7 +20,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 564 tests across 27 suites |
+| Testing | Jest 29, ts-jest, React Testing Library — 575 tests across 28 suites; 12 Lambda tests (node:test) |
 
 ---
 
@@ -281,6 +281,10 @@ DynamoDB tables
 
 AWS Lambda
   ├── fable-feedback-stream-processor   DynamoDB Stream → preference signals + ingredient insights
+  │                                      + sets needsRecompute = "true" on fable-users (GSI entry point)
+  ├── fable-taste-profile-writer        EventBridge scheduled (every 6h) → GSI query → drift-aware
+  │                                      preference analysis → Claude Haiku suggestion generation →
+  │                                      writes tasteProfile to fable-users, clears needsRecompute
   └── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients → Claude Vision (Haiku 4.5)
                                          → fuzzy Epicure key matching → structured ingredient list
                                          (CJS · nodejs24.x · 30s timeout)
@@ -345,12 +349,12 @@ In-memory (loaded at server startup)
 - ✅ **Personal taste profile + personalised discover chips** — `buildPreferenceProfile` shared utility (DynamoDB query + preference scoring + survey merge in one call); `deriveFlavourTerritory` for embedding-space flavour neighbours; taste profile card on Discover (loved · avoided · flavour territory · your preferences) shown at ≥ 5 signals; Trending for you chips carry `seedIngredients` (top 3 liked ingredient keys) injected as a soft prompt hint into recipe generation; 20 new tests (532 total across 25 suites)
 - ✅ **Format signal injection** — `recipePositives` + `recipeNegatives` from survey now flow through `buildPreferenceProfile` → `aggregateFormatSignals` (2+ appearance threshold) → `formatSignalsToClauses` → Claude prompt; same signals surface in the taste profile card as "Your preferences" chips with neutral display labels via `SIGNAL_DISPLAY_LABELS`; 5 new tests (538 total across 25 suites)
 - ✅ **Agentic two-step recipe generation** — `/api/recipe-brief` (Claude Haiku 4.5) reasons over taste history and returns a `RecipeBrief` (dish direction, reasoning, novelty note, loading hints); `/api/generate-recipe` (Claude Sonnet) receives the brief as creative direction; brief fetch and Epicure pairings run in parallel; brief card replaces the loading spinner during recipe generation; falls back gracefully to guest hints on error or insufficient history; 26 new tests (564 total across 27 suites)
+- ✅ **Agentic taste profile evolution** — `fable-taste-profile-writer` Lambda (EventBridge, every 6h) queries the `needsRecompute-lastComputedAt-index` GSI for eligible users, runs `computeDriftAwareProfile` (all-time vs. recent-10 diff for emerging/fading signals), calls Claude Haiku to generate 2-3 proactive recipe direction suggestions, and writes a `StoredTasteProfile` to `fable-users`; `fable-feedback-stream-processor` now sets `needsRecompute = "true"` and initialises `lastComputedAt` on every feedback write; `/api/insights` reads the stored profile when fresh (skips live `buildPreferenceProfile` call) and returns `recipeSuggestions`; Discover tab surfaces suggestions as tappable direction cards — tapping one skips the `/api/recipe-brief` call and uses the pre-computed direction directly; 11 new Jest tests + 12 Lambda tests (575 Jest + 12 node:test)
 
 ### In Progress
 
 ### Near Term
 - [ ] Onboarding state in DynamoDB — `onboardingComplete` flag currently lives in `localStorage` only. Add `onboardingComplete: boolean` to `fable-users` schema for authenticated users, so tutorial state persists across devices. Migration path: on auth, write `onboardingComplete: false` only if the `localStorage` flag is absent.
-- [ ] **Agentic taste profile evolution** — currently Fable computes ingredient preference scores fresh on each `/api/generate-recipe` call from raw feedback history. The next step is a background Lambda function that periodically reviews a user's full feedback history, identifies drift and emerging patterns in their taste profile, rewrites a structured `tasteProfile` object on `fable-users`, and proactively surfaces recipe direction suggestions in the Discover tab. The data layer (DynamoDB Streams, Lambda, `preferenceSignals`, `fable-ingredient-insights`) is already in place. This is the natural evolution from personalised inference pipeline to a genuinely agentic personalisation loop.
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Ingredient substitutes improvements — better functional category matching
@@ -413,7 +417,7 @@ TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire afte
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **564** passing automated tests across 27 suites ensuring allergen safety and filter accuracy
+- **575** passing automated tests across 28 suites (+ 12 Lambda tests) ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders

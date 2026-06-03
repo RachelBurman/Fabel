@@ -90,10 +90,12 @@ async function processRecord(record, client) {
       TableName: TABLE,
       Key: { userId: { S: String(userId) } },
       UpdateExpression:
-        "SET preferenceSignals = list_append(if_not_exists(preferenceSignals, :empty), :signals)",
+        "SET preferenceSignals = list_append(if_not_exists(preferenceSignals, :empty), :signals), needsRecompute = :nr, lastComputedAt = if_not_exists(lastComputedAt, :epoch)",
       ExpressionAttributeValues: {
         ":signals": { L: signals },
         ":empty": { L: [] },
+        ":nr": { S: "true" },
+        ":epoch": { S: "1970-01-01T00:00:00Z" },
       },
     })
   );

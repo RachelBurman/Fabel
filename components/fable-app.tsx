@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
-import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief } from '@/lib/types'
+import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief, type RecipeSuggestion } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen, type RecipeFilters } from '@/components/ingredients-screen'
@@ -71,6 +71,7 @@ function FableAppContent() {
   const [substituteContext, setSubstituteContext] = useState<string[] | undefined>(undefined)
 
   const discoverSeedIngredientsRef = useRef<string[]>([])
+  const discoverSuggestionRef = useRef<RecipeSuggestion | null>(null)
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -161,30 +162,48 @@ function FableAppContent() {
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     const seeds = discoverSeedIngredientsRef.current
     discoverSeedIngredientsRef.current = []
+    const pendingSuggestion = discoverSuggestionRef.current
+    discoverSuggestionRef.current = null
 
     const kitchenDisplayNames = preferences.ingredients
       .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
 
     try {
-      // Run brief fetch + Epicure pairings in parallel (brief feeds into generate-recipe)
+      // Run brief fetch + Epicure pairings in parallel (brief feeds into generate-recipe).
+      // When a pre-computed suggestion is available from the Discover tab, skip the
+      // /api/recipe-brief call and resolve immediately with the stored suggestion.
       const [briefResult, pairingsResult] = await Promise.allSettled([
-        fetch('/api/recipe-brief', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: uid,
-            preferences: {
-              mealType: filters.mealType,
-              cookTime: filters.cookTime,
-              cuisine: filters.cuisine,
-              occasion: filters.occasion,
-              servings: filters.servings,
-              equipment: preferences.kitchenEquipment,
-              useKitchenOnly: filters.kitchenOnly,
-            },
-            kitchenIngredients: kitchenDisplayNames,
-          }),
-        }).then(res => res.json() as Promise<{ brief: RecipeBrief }>),
+        pendingSuggestion
+          ? Promise.resolve({
+              brief: {
+                direction: pendingSuggestion.direction,
+                reasoning: pendingSuggestion.reasoning,
+                keyIngredients: [] as string[],
+                noveltyNote: pendingSuggestion.noveltyNote,
+                loadingHints: [
+                  'Safe ingredients. Bold flavours. Food for everyone.',
+                  'Fable uses Epicure — the largest multilingual food embedding model ever built.',
+                  'The more you cook with Fable, the better it knows your taste.',
+                ],
+              } satisfies RecipeBrief,
+            })
+          : fetch('/api/recipe-brief', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: uid,
+                preferences: {
+                  mealType: filters.mealType,
+                  cookTime: filters.cookTime,
+                  cuisine: filters.cuisine,
+                  occasion: filters.occasion,
+                  servings: filters.servings,
+                  equipment: preferences.kitchenEquipment,
+                  useKitchenOnly: filters.kitchenOnly,
+                },
+                kitchenIngredients: kitchenDisplayNames,
+              }),
+            }).then(res => res.json() as Promise<{ brief: RecipeBrief }>),
 
         !filters.kitchenOnly
           ? fetch('/api/recipes', {
@@ -713,6 +732,10 @@ function FableAppContent() {
                   navigate('ingredients')
                 }}
                 onSeedIngredients={(seeds) => { discoverSeedIngredientsRef.current = seeds }}
+                onSelectSuggestion={(s) => {
+                  discoverSuggestionRef.current = s
+                  navigate('ingredients')
+                }}
               />
             </motion.div>
           )}

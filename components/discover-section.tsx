@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, Globe, Heart, Wine, Sparkles } from 'lucide-react'
+import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat } from 'lucide-react'
 import { useFable } from '@/lib/fable-context'
-import { type IngredientInsightsRecord } from '@/lib/types'
+import { type IngredientInsightsRecord, type RecipeSuggestion } from '@/lib/types'
 
 const ALLERGEN_LABELS: Record<string, string> = {
   milk: 'Milk', eggs: 'Eggs', gluten: 'Gluten', peanuts: 'Peanuts',
@@ -32,6 +32,7 @@ interface TasteProfile {
   flavourTerritory: string[]
   signalCount: number
   formatSignals: string[]
+  recipeSuggestions?: RecipeSuggestion[]
 }
 
 interface TrendingForYouItem {
@@ -56,9 +57,10 @@ interface DiscoverSectionProps {
   onSelectCuisine?: (cuisine: string) => void
   onSelectOccasion?: (occasion: string) => void
   onSeedIngredients?: (ingredients: string[]) => void
+  onSelectSuggestion?: (suggestion: RecipeSuggestion) => void
 }
 
-export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngredients }: DiscoverSectionProps) {
+export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngredients, onSelectSuggestion }: DiscoverSectionProps) {
   const { preferences } = useFable()
   const { discoverSettings } = preferences
 
@@ -162,6 +164,35 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                 </div>
               )}
               <p className="text-xs text-muted-foreground pt-1">Based on your last {data.tasteProfile.signalCount} recipes</p>
+            </div>
+          </div>
+        )}
+
+        {/* Suggested for you — pre-computed recipe directions from taste-profile-writer Lambda */}
+        {data?.tasteProfile?.recipeSuggestions && data.tasteProfile.recipeSuggestions.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <ChefHat className="w-4 h-4 text-primary" />
+              <h2 className="text-sm font-semibold text-foreground">Suggested for you</h2>
+            </div>
+            <div className="space-y-2.5">
+              {data.tasteProfile.recipeSuggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => onSelectSuggestion?.(s)}
+                  className="w-full text-left rounded-xl border border-border bg-card px-4 py-3 hover:border-primary/40 hover:bg-primary/5 transition-colors group"
+                >
+                  <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors leading-snug">
+                    {s.direction}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {s.reasoning}
+                  </p>
+                  {s.noveltyNote && (
+                    <p className="text-xs text-muted-foreground/70 mt-1.5">··· {s.noveltyNote}</p>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         )}

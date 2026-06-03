@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
 import { getInsightProfileKey, getISOWeekString } from "@/lib/insight-profile";
-import { type IngredientInsightsRecord } from "@/lib/types";
+import { type IngredientInsightsRecord, type StoredTasteProfile } from "@/lib/types";
 import { buildPreferenceProfile } from "@/lib/preference-profile";
 import { deriveFlavourTerritory } from "@/lib/flavour-territory";
 import { getEpicureVectors } from "@/lib/epicure";
 
 // Cache responses for 1 hour — insights don't need to be real-time
 export const revalidate = 3600;
+
+const FRESH_HOURS = 6;
+
+function isProfileFresh(lastComputedAt: string): boolean {
+  try {
+    const age = Date.now() - new Date(lastComputedAt).getTime();
+    return age < FRESH_HOURS * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
 
 // Map a Claude-generated ingredient name to the nearest Epicure key.
 // Claude writes verbose descriptions ("lamb shoulder or leg, cut into 2cm cubes");
@@ -47,25 +58,47 @@ export async function GET(req: NextRequest) {
   const profileKey = getInsightProfileKey(allergens, activePresets);
   const weekStr = getISOWeekString();
 
+  // Use the pre-computed tasteProfile from fable-users when it is fresh.
+  // This avoids re-querying fable-feedback and re-running preference computation
+  // on every insights request — the taste-profile-writer Lambda handles that.
+  const storedProfile = (profile.tasteProfile ?? null) as StoredTasteProfile | null;
+  const useStoredProfile = storedProfile !== null && isProfileFresh(storedProfile.lastComputedAt);
+
   const TABLE = "fable-ingredient-insights";
 
-  // Fetch profile+week, profile+all-time, global+week, and preference profile in parallel
-  const [profileWeekRes, profileAllTimeRes, globalWeekRes, preferenceProfile] = await Promise.all([
-    dynamo
-      .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: profileKey, timeWindow: weekStr } }))
-      .catch(() => ({ Item: undefined })),
-    dynamo
-      .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: profileKey, timeWindow: "all-time" } }))
-      .catch(() => ({ Item: undefined })),
-    profileKey === "global"
-      ? Promise.resolve({ Item: undefined })
-      : dynamo
-          .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: "global", timeWindow: weekStr } }))
-          .catch(() => ({ Item: undefined })),
-    buildPreferenceProfile(userId).catch(() => null),
-  ]);
+  // Fetch insights records and (conditionally) the live preference profile in parallel
+  const [profileWeekRes, profileAllTimeRes, globalWeekRes, livePreferenceProfile] =
+    await Promise.all([
+      dynamo
+        .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: profileKey, timeWindow: weekStr } }))
+        .catch(() => ({ Item: undefined })),
+      dynamo
+        .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: profileKey, timeWindow: "all-time" } }))
+        .catch(() => ({ Item: undefined })),
+      profileKey === "global"
+        ? Promise.resolve({ Item: undefined })
+        : dynamo
+            .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: "global", timeWindow: weekStr } }))
+            .catch(() => ({ Item: undefined })),
+      // Skip live computation when the stored profile is fresh
+      useStoredProfile
+        ? Promise.resolve(null)
+        : buildPreferenceProfile(userId).catch(() => null),
+    ]);
 
-  const hasEnoughSignals = preferenceProfile !== null && preferenceProfile.signalCount >= 5;
+  // Normalise to a single profile shape regardless of source
+  const preferenceProfile = useStoredProfile
+    ? {
+        preferred: storedProfile!.preferred,
+        avoided: storedProfile!.avoided,
+        formatSignals: storedProfile!.formatSignals,
+        signalCount: storedProfile!.signalCount,
+        strength: storedProfile!.strength,
+      }
+    : livePreferenceProfile;
+
+  const hasEnoughSignals =
+    preferenceProfile !== null && preferenceProfile.signalCount >= 5;
 
   const epicureVectors = getEpicureVectors();
 
@@ -85,6 +118,12 @@ export async function GET(req: NextRequest) {
   const toDisplayName = (key: string) =>
     key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
+  // recipeSuggestions are only available from the stored profile (Lambda-generated)
+  const recipeSuggestions =
+    useStoredProfile && storedProfile!.recipeSuggestions?.length > 0
+      ? storedProfile!.recipeSuggestions
+      : undefined;
+
   const tasteProfile = hasEnoughSignals
     ? {
         preferred: resolvedPreferred.slice(0, 3).map(toDisplayName),
@@ -92,6 +131,7 @@ export async function GET(req: NextRequest) {
         flavourTerritory: deriveFlavourTerritory(resolvedPreferred, epicureVectors),
         signalCount: preferenceProfile!.signalCount,
         formatSignals: preferenceProfile!.formatSignals,
+        ...(recipeSuggestions ? { recipeSuggestions } : {}),
       }
     : null;
 
@@ -112,9 +152,10 @@ export async function GET(req: NextRequest) {
     customAllergens: (profile.customAllergens ?? []) as string[],
     profileWeek: profileWeekRecord,
     profileAllTime: (profileAllTimeRes.Item ?? null) as IngredientInsightsRecord | null,
-    globalWeek: profileKey === "global"
-      ? profileWeekRecord
-      : (globalWeekRes.Item ?? null) as IngredientInsightsRecord | null,
+    globalWeek:
+      profileKey === "global"
+        ? profileWeekRecord
+        : (globalWeekRes.Item ?? null) as IngredientInsightsRecord | null,
     tasteProfile,
     trendingForYou,
   });

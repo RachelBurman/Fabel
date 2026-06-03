@@ -191,6 +191,24 @@ export const DEFAULT_DISCOVER_SETTINGS: DiscoverSettings = {
 export const ALL_TABS = ['kitchen', 'recipe', 'discover', 'substitutes', 'history', 'saved'] as const
 export type TabId = typeof ALL_TABS[number]
 
+export interface RecipeSuggestion {
+  direction: string
+  reasoning: string
+  noveltyNote: string
+}
+
+export interface StoredTasteProfile {
+  preferred: string[]
+  avoided: string[]
+  emerging: string[]
+  fading: string[]
+  formatSignals: string[]
+  strength: 'soft' | 'full'
+  signalCount: number
+  recipeSuggestions: RecipeSuggestion[]
+  lastComputedAt: string
+}
+
 export interface RecipeBrief {
   direction: string | null
   reasoning: string | null
