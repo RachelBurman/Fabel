@@ -82,10 +82,13 @@ export async function GET(req: NextRequest) {
         .filter((k): k is string => k !== null)
     : [];
 
+  const toDisplayName = (key: string) =>
+    key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
   const tasteProfile = hasEnoughSignals
     ? {
-        preferred: resolvedPreferred.slice(0, 3).map((k) => k.replace(/_/g, " ")),
-        avoided: resolvedAvoided.slice(0, 3).map((k) => k.replace(/_/g, " ")),
+        preferred: resolvedPreferred.slice(0, 3).map(toDisplayName),
+        avoided: resolvedAvoided.slice(0, 3).map(toDisplayName),
         flavourTerritory: deriveFlavourTerritory(resolvedPreferred, epicureVectors),
         signalCount: preferenceProfile!.signalCount,
       }
