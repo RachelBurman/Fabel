@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 
@@ -78,103 +79,148 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [collections, setCollections] = useState<Collection[]>([])
 
+  const { isSignedIn, isLoaded: clerkLoaded } = useUser()
+  const prevSignedInRef = useRef<boolean | undefined>(undefined)
+
   const userIdRef = useRef<string>('')
   const collectionsRef = useRef<Collection[]>([])
   useEffect(() => { collectionsRef.current = collections }, [collections])
 
-  // ── Initialise: load userId + fetch profile + saved recipes ─────────────────
+  // ── Shared profile loader — used by init and auth-state watcher ─────────────
+  const loadProfile = useCallback(async (uid: string) => {
+    setIsLoadingProfile(true)
+    try {
+      const [profileRes, savedRes, collectionsRes] = await Promise.all([
+        fetch(`/api/user/profile?userId=${uid}`),
+        fetch(`/api/user/saved-recipes?userId=${uid}`),
+        fetch(`/api/user/collections?userId=${uid}`),
+      ])
+
+      if (profileRes.ok) {
+        const profile: {
+          allergens?: string[]
+          customAllergens?: string[]
+          ingredients?: (string | IngredientItem)[]
+          safeIngredients?: string[]
+          safeFoodsMode?: boolean
+          showMacros?: boolean
+          activePresets?: string[]
+          lactoseIntolerant?: boolean
+          lactoseMode?: 'include' | 'exclude'
+          kitchenEquipment?: string[]
+          darkMode?: boolean
+          discoverSettings?: DiscoverSettings
+          visibleTabs?: string[]
+        } = await profileRes.json()
+        if (
+          profile.allergens !== undefined ||
+          profile.ingredients !== undefined ||
+          profile.activePresets !== undefined ||
+          profile.lactoseIntolerant !== undefined
+        ) {
+          setPreferences(prev => ({
+            ...prev,
+            allergens: profile.allergens ?? prev.allergens,
+            customAllergens: profile.customAllergens ?? prev.customAllergens,
+            ingredients: migrateIngredients(profile.ingredients) ?? prev.ingredients,
+            safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
+            safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
+            showMacros: profile.showMacros ?? prev.showMacros,
+            activePresets: profile.activePresets ?? prev.activePresets,
+            lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
+            lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
+            kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
+            darkMode: profile.darkMode ?? prev.darkMode,
+            discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
+            visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
+          }))
+          setHasCompletedOnboarding(true)
+        }
+      }
+
+      if (savedRes.ok) {
+        const data: { recipes: Record<string, unknown>[] } = await savedRes.json()
+        const recipes = data.recipes?.length ? data.recipes.map(itemToRecipe) : []
+        setSavedRecipes(recipes)
+        setPreferences(prev => ({
+          ...prev,
+          savedRecipes: recipes.map(r => r.id),
+        }))
+      }
+
+      if (collectionsRes.ok) {
+        const data: { collections: Record<string, unknown>[] } = await collectionsRes.json()
+        setCollections(data.collections?.length ? data.collections.map(itemToCollection) : [])
+      }
+    } catch (err) {
+      console.error('Failed to load profile from DynamoDB:', err)
+    } finally {
+      setIsLoadingProfile(false)
+    }
+  }, [])
+
+  // ── Initialise: load userId + fetch profile ──────────────────────────────────
   useEffect(() => {
-    const init = async () => {
-      let uid = localStorage.getItem('fable_user_id')
-      if (!uid) {
-        uid = crypto.randomUUID()
-        localStorage.setItem('fable_user_id', uid)
-        // New user — no profile to fetch
-        userIdRef.current = uid
-        setIsLoadingProfile(false)
-        return
-      }
-
+    let uid = localStorage.getItem('fable_user_id')
+    if (!uid) {
+      uid = crypto.randomUUID()
+      localStorage.setItem('fable_user_id', uid)
       userIdRef.current = uid
+      setIsLoadingProfile(false)
+      return
+    }
+    userIdRef.current = uid
+    void loadProfile(uid)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-      try {
-        const [profileRes, savedRes, collectionsRes] = await Promise.all([
-          fetch(`/api/user/profile?userId=${uid}`),
-          fetch(`/api/user/saved-recipes?userId=${uid}`),
-          fetch(`/api/user/collections?userId=${uid}`),
-        ])
+  // ── React to sign-in / sign-out after initial load ───────────────────────────
+  useEffect(() => {
+    if (!clerkLoaded) return
 
-        if (profileRes.ok) {
-          const profile: {
-            allergens?: string[]
-            customAllergens?: string[]
-            ingredients?: (string | IngredientItem)[]
-            safeIngredients?: string[]
-            safeFoodsMode?: boolean
-            showMacros?: boolean
-            activePresets?: string[]
-            lactoseIntolerant?: boolean
-            lactoseMode?: 'include' | 'exclude'
-            kitchenEquipment?: string[]
-            darkMode?: boolean
-            discoverSettings?: DiscoverSettings
-            visibleTabs?: string[]
-          } = await profileRes.json()
-          // Restore state if the profile has any data worth loading
-          if (
-            profile.allergens !== undefined ||
-            profile.ingredients !== undefined ||
-            profile.activePresets !== undefined ||
-            profile.lactoseIntolerant !== undefined
-          ) {
-            setPreferences(prev => ({
-              ...prev,
-              allergens: profile.allergens ?? prev.allergens,
-              customAllergens: profile.customAllergens ?? prev.customAllergens,
-              ingredients: migrateIngredients(profile.ingredients) ?? prev.ingredients,
-              safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
-              safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
-              showMacros: profile.showMacros ?? prev.showMacros,
-              activePresets: profile.activePresets ?? prev.activePresets,
-              lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
-              lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
-              kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
-              darkMode: profile.darkMode ?? prev.darkMode,
-              discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
-              visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
-            }))
-            setHasCompletedOnboarding(true)
-          }
-        }
+    const nowSignedIn = isSignedIn === true
 
-        if (savedRes.ok) {
-          const data: { recipes: Record<string, unknown>[] } = await savedRes.json()
-          if (data.recipes?.length) {
-            const recipes = data.recipes.map(itemToRecipe)
-            setSavedRecipes(recipes)
-            setPreferences(prev => ({
-              ...prev,
-              savedRecipes: recipes.map(r => r.id),
-            }))
-          }
-        }
-
-        if (collectionsRes.ok) {
-          const data: { collections: Record<string, unknown>[] } = await collectionsRes.json()
-          if (data.collections?.length) {
-            setCollections(data.collections.map(itemToCollection))
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load profile from DynamoDB:', err)
-        // Fail silently — the app works offline with local defaults
-      } finally {
-        setIsLoadingProfile(false)
-      }
+    // First time Clerk reports its state — just record it, don't react
+    if (prevSignedInRef.current === undefined) {
+      prevSignedInRef.current = nowSignedIn
+      return
     }
 
-    init()
-  }, [])
+    if (prevSignedInRef.current === nowSignedIn) return
+    prevSignedInRef.current = nowSignedIn
+
+    if (nowSignedIn) {
+      // Signed in: reload profile — server routes use Clerk session, so the
+      // correct auth profile (including migrated guest data) is returned
+      void loadProfile(userIdRef.current)
+    } else {
+      // Signed out: reset to blank guest state immediately
+      const newGuestId = localStorage.getItem('fable_user_id') ?? crypto.randomUUID()
+      if (!localStorage.getItem('fable_user_id')) {
+        localStorage.setItem('fable_user_id', newGuestId)
+      }
+      userIdRef.current = newGuestId
+      setPreferences({
+        allergens: [],
+        customAllergens: [],
+        ingredients: [],
+        savedRecipes: [],
+        safeIngredients: [],
+        safeFoodsMode: false,
+        showMacros: false,
+        activePresets: [],
+        lactoseIntolerant: false,
+        lactoseMode: 'include',
+        kitchenEquipment: ['hob', 'oven'],
+        darkMode: false,
+        discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
+        visibleTabs: [...ALL_TABS],
+      })
+      setSavedRecipes([])
+      setRecipeHistory([])
+      setCollections([])
+      setHasCompletedOnboarding(false)
+    }
+  }, [isSignedIn, clerkLoaded, loadProfile])
 
   // ── Debounced auto-save: persist the full profile whenever it changes ────────
   const syncingRef = useRef(false)
