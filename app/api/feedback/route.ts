@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { getUserId } from "@/lib/get-user-id";
 
 export async function POST(req: NextRequest) {
   let body: {
@@ -19,9 +20,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, recipeId, liked, reasons, notes, recipeTitle, recipeIngredients, allergenProfile } = body;
-  if (!userId || !recipeId) {
-    return NextResponse.json({ error: "Missing userId or recipeId" }, { status: 400 });
+  const { recipeId, liked, reasons, notes, recipeTitle, recipeIngredients, allergenProfile } = body;
+  if (!recipeId) {
+    return NextResponse.json({ error: "Missing recipeId" }, { status: 400 });
+  }
+  let userId: string;
+  try {
+    const resolved = await getUserId(typeof body.userId === "string" ? body.userId : undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
   await dynamo.send(
@@ -45,10 +53,12 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId")?.trim();
   const limit = Math.min(parseInt(req.nextUrl.searchParams.get("limit") ?? "5", 10), 20);
-
-  if (!userId) {
+  let userId: string;
+  try {
+    const resolved = await getUserId(req.nextUrl.searchParams.get("userId")?.trim() ?? undefined);
+    userId = resolved.userId;
+  } catch {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
@@ -95,9 +105,16 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, recipeId, surveyResponse } = body;
-  if (!userId || !recipeId) {
-    return NextResponse.json({ error: "Missing userId or recipeId" }, { status: 400 });
+  const { recipeId, surveyResponse } = body;
+  if (!recipeId) {
+    return NextResponse.json({ error: "Missing recipeId" }, { status: 400 });
+  }
+  let userId: string;
+  try {
+    const resolved = await getUserId(typeof body.userId === "string" ? body.userId : undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
   if (!surveyResponse) {
     return NextResponse.json({ error: "Missing surveyResponse" }, { status: 400 });

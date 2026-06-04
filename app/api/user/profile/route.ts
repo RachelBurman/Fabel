@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { getUserId } from "@/lib/get-user-id";
 import { type DiscoverSettings, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from "@/lib/types";
 
 interface IngredientItem {
@@ -27,9 +28,13 @@ function migrateIngredients(raw: unknown): IngredientItem[] {
 }
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId")?.trim();
-  if (!userId)
+  let userId: string;
+  try {
+    const resolved = await getUserId(req.nextUrl.searchParams.get("userId")?.trim() ?? undefined);
+    userId = resolved.userId;
+  } catch {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
 
   const result = await dynamo.send(
     new GetCommand({ TableName: "fable-users", Key: { userId } })
@@ -94,7 +99,6 @@ export async function PUT(req: NextRequest) {
   }
 
   const {
-    userId,
     allergens,
     customAllergens,
     ingredients,
@@ -109,8 +113,13 @@ export async function PUT(req: NextRequest) {
     discoverSettings,
     visibleTabs,
   } = body;
-  if (!userId)
+  let userId: string;
+  try {
+    const resolved = await getUserId(typeof body.userId === "string" ? body.userId : undefined);
+    userId = resolved.userId;
+  } catch {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
 
   await dynamo.send(
     new PutCommand({

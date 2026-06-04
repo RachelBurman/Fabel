@@ -13,6 +13,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Framer Motion |
+| Auth | Clerk (`@clerk/nextjs`) — email/password, Google, GitHub |
 | Deployment | Vercel |
 | Database | AWS DynamoDB |
 | Embeddings | Epicure Core (1,790 ingredients × 300 dimensions, cosine similarity) |
@@ -20,7 +21,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 617 tests across 30 suites; 12 Lambda tests (node:test) |
+| Testing | Jest 29, ts-jest, React Testing Library — 628 tests across 32 suites; 12 Lambda tests (node:test) |
 
 ---
 
@@ -52,6 +53,8 @@ pnpm dev
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `ANTHROPIC_API_KEY` | Anthropic API key for recipe generation |
 | `VISION_LAMBDA_URL` | API Gateway URL for the `fable-vision-ingredient-scanner` Lambda |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Clerk secret key |
 
 > **Note:** the project uses `pnpm`. Running `npm install` will create a `package-lock.json` that conflicts with `pnpm-lock.yaml` and break the Vercel build.
 
@@ -254,7 +257,8 @@ Vercel — Next.js 16 (App Router)
   └── /api/user/
        ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
        ├── saved-recipes       DynamoDB read/write (full recipe objects)
-       └── collections         DynamoDB CRUD (GET, POST, PUT, DELETE)
+       ├── collections         DynamoDB CRUD (GET, POST, PUT, DELETE)
+       └── migrate-guest       One-time guest-to-auth data merge (POST, auth-gated)
 
 DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
@@ -336,7 +340,7 @@ In-memory (loaded at server startup)
 - ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
 - ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
-- ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence and the coming account system
+- ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence. UUID persists in `localStorage['fable_user_id']` until the user signs in, at which point guest data is migrated to the Clerk account automatically
 - ✅ `fable-ingredient-insights` table — aggregate trending data by allergen profile; seeded with 14 realistic records across 7 profiles × 2 time windows
 - ✅ Discover tab — dedicated nav tab (Compass icon) between Recipe and Substitutes; Trending for you, Trending globally, Most loved, Trending pairings; each sub-section individually toggleable in settings
 - ✅ Tab visibility settings — hide/show individual nav tabs (incl. Discover); min 2 enforced; persisted to DynamoDB. Supersedes the earlier plan to consolidate to 4 tabs: user-controlled visibility is a more flexible solution than hardcoding a merged "Explore" tab
@@ -351,6 +355,7 @@ In-memory (loaded at server startup)
 - ✅ **Agentic two-step recipe generation** — `/api/recipe-brief` (Claude Haiku 4.5) reasons over taste history and returns a `RecipeBrief` (dish direction, reasoning, novelty note, loading hints); `/api/generate-recipe` (Claude Sonnet) receives the brief as creative direction; brief fetch and Epicure pairings run in parallel; brief card replaces the loading spinner during recipe generation; falls back gracefully to guest hints on error or insufficient history; 26 new tests (564 total across 27 suites)
 - ✅ **Agentic taste profile evolution** — `fable-taste-profile-writer` Lambda (EventBridge, every 6h) queries the `needsRecompute-lastComputedAt-index` GSI for eligible users, runs `computeDriftAwareProfile` (all-time vs. recent-10 diff for emerging/fading signals), calls Claude Haiku to generate 2-3 proactive recipe direction suggestions, and writes a `StoredTasteProfile` to `fable-users`; `fable-feedback-stream-processor` now sets `needsRecompute = "true"` and initialises `lastComputedAt` on every feedback write; `/api/insights` reads the stored profile when fresh (skips live `buildPreferenceProfile` call) and returns `recipeSuggestions`; Discover tab surfaces suggestions as tappable direction cards — tapping one skips the `/api/recipe-brief` call and uses the pre-computed direction directly; 11 new Jest tests + 12 Lambda tests (575 Jest + 12 node:test)
 - ✅ **Rate limiting with community recipe fallback** — new `fable-rate-limits` DynamoDB table (PK: userId, SK: windowKey, atomic ADD counters, TTL auto-cleanup); `lib/rate-limiter.ts` checks and increments dual-window (hour + day) counters via `TransactWriteCommand` (single atomic call, race-condition safe); fail-open on DynamoDB errors; guest limits 10/hour 30/day, auth stubs defined (50/200); `/api/generate-recipe` returns HTTP 200 with `rateLimited: true` + best-matching community recipe rather than a hard error; `lib/community-recipe-fallback.ts` scans `fable-saved-recipes` with allergen/safe-foods hard filter + preference scoring, falls back to 15 pre-seeded allergen-free community recipes; all other rate-limited routes return 429; amber banner in recipe screen, inline messages in substitutes/scan; 40 new tests (617 Jest total across 30 suites)
+- ✅ **Clerk authentication + guest migration** — Clerk auth (`@clerk/nextjs`) wired into the Guest pill in the header: signed-out users see the embedded `<SignIn />` component (email/password, Google, GitHub); signed-in users see their name, avatar initial, and a sign-out button. All API routes use `lib/get-user-id.ts` — server reads Clerk session first, falls back to guest UUID from the request if unauthenticated. Authenticated users get higher rate limits (50/hour, 200/day). On first sign-in from a device, `POST /api/user/migrate-guest` merges the guest UUID data into the Clerk account: allergens and safeIngredients are unioned (safety-critical, never discarded), kitchen ingredients deduplicated by epicureKey (auth wins on conflict), preferenceSignals appended, auth record wins for discoverSettings/visibleTabs/tasteProfile; feedback, saved recipes, and collections are copied over. Migration is non-fatal and fires once per device via `localStorage['fable-guest-migrated']`; success shows a Sonner toast. 11 new tests (628 Jest total across 32 suites)
 
 ### In Progress
 
@@ -369,7 +374,7 @@ In-memory (loaded at server startup)
 - [ ] Native mobile app — iOS and Android for camera/barcode features
 
 ### Research & Future
-- [ ] User authentication — Clerk or NextAuth for cross-device persistence, replacing anonymous UUID system. Guest mode remains fully functional.
+- ✅ User authentication — Clerk for cross-device persistence; guest mode remains fully functional via UUID fallback; guest data migrated to auth account on first sign-in.
 - [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
 - [ ] **On-device recipe brief** — migrate the `/api/recipe-brief` Haiku call to Liquid AI LFM2.5 running on-device; eliminates the brief round-trip entirely and keeps taste reasoning private
 - [ ] **Editable brief direction** — show the `direction` field as an editable text input after the brief card appears; user can nudge it ("try something spicier") before generation fires, then the brief is re-sent as the updated creative direction

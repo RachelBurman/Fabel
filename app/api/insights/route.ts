@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { getUserId } from "@/lib/get-user-id";
 import { getInsightProfileKey, getISOWeekString } from "@/lib/insight-profile";
 import { type IngredientInsightsRecord, type StoredTasteProfile } from "@/lib/types";
 import { buildPreferenceProfile } from "@/lib/preference-profile";
@@ -44,8 +45,11 @@ function resolveToEpicureKey(
 }
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId")?.trim();
-  if (!userId) {
+  let userId: string;
+  try {
+    const resolved = await getUserId(req.nextUrl.searchParams.get("userId")?.trim() ?? undefined);
+    userId = resolved.userId;
+  } catch {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 

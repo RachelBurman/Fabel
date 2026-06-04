@@ -14,6 +14,7 @@ import {
 } from "@/lib/safe-foods";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
 import { findFallbackRecipe } from "@/lib/community-recipe-fallback";
+import { getUserId } from "@/lib/get-user-id";
 
 const client = new Anthropic();
 
@@ -112,14 +113,21 @@ export async function POST(req: NextRequest) {
         })
     : [];
 
-  const userId =
-    typeof body.userId === "string" && body.userId.trim()
-      ? body.userId.trim()
-      : null;
+  const bodyUserId =
+    typeof body.userId === "string" && body.userId.trim() ? body.userId.trim() : undefined;
+  let userId: string | null = null;
+  let isAuthenticated = false;
+  try {
+    const resolved = await getUserId(bodyUserId);
+    userId = resolved.userId;
+    isAuthenticated = resolved.isAuthenticated;
+  } catch {
+    // No userId — rate-limit by IP only
+  }
 
   // ── Rate limiting ──────────────────────────────────────────────────────────
   const rateLimitKey = userId ?? `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
-  const rateLimit = await checkRateLimit(rateLimitKey, false);
+  const rateLimit = await checkRateLimit(rateLimitKey, isAuthenticated);
 
   if (!rateLimit.allowed) {
     // For generate-recipe: return a fallback community recipe rather than a hard error

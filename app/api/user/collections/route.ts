@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { getUserId } from "@/lib/get-user-id";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId")?.trim();
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  let userId: string;
+  try {
+    const resolved = await getUserId(req.nextUrl.searchParams.get("userId")?.trim() ?? undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
 
   const result = await dynamo.send(
     new QueryCommand({
@@ -25,9 +31,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, collectionId, name } = body;
-  if (!userId || !collectionId || !name?.trim()) {
-    return NextResponse.json({ error: "Missing userId, collectionId, or name" }, { status: 400 });
+  const { collectionId, name } = body;
+  if (!collectionId || !name?.trim()) {
+    return NextResponse.json({ error: "Missing collectionId or name" }, { status: 400 });
+  }
+  let userId: string;
+  try {
+    const resolved = await getUserId(typeof body.userId === "string" ? body.userId : undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
   const now = new Date().toISOString();

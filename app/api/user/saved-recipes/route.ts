@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { QueryCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
+import { getUserId } from "@/lib/get-user-id";
 import { ttlFromNow } from "@/lib/ttl";
 
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId")?.trim();
-  if (!userId) return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  let userId: string;
+  try {
+    const resolved = await getUserId(req.nextUrl.searchParams.get("userId")?.trim() ?? undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
 
   const result = await dynamo.send(new QueryCommand({
     TableName: "fable-saved-recipes",
@@ -26,9 +32,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { userId, recipe } = body;
-  if (!userId || !recipe) {
-    return NextResponse.json({ error: "Missing userId or recipe" }, { status: 400 });
+  const { recipe } = body;
+  if (!recipe) {
+    return NextResponse.json({ error: "Missing recipe" }, { status: 400 });
+  }
+  let userId: string;
+  try {
+    const resolved = await getUserId(typeof body.userId === "string" ? body.userId : undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
   }
 
   // Use the recipe's existing id as the sort key so we can delete by it later

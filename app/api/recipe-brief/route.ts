@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
+import { getUserId } from "@/lib/get-user-id";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
 import { buildPreferenceProfile } from "@/lib/preference-profile";
@@ -37,15 +38,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ brief: GUEST_BRIEF });
   }
 
-  const uid =
-    typeof body.userId === "string" && body.userId.trim()
-      ? body.userId.trim()
-      : null;
+  const bodyUserId =
+    typeof body.userId === "string" && body.userId.trim() ? body.userId.trim() : undefined;
+  let uid: string | null = null;
+  let isAuthenticated = false;
+  try {
+    const resolved = await getUserId(bodyUserId);
+    uid = resolved.userId;
+    isAuthenticated = resolved.isAuthenticated;
+  } catch {
+    // No userId
+  }
 
   if (!uid) return NextResponse.json({ brief: GUEST_BRIEF });
 
-  // Rate limit check (uses userId since recipe-brief always has one at this point)
-  const rateLimit = await checkRateLimit(uid, false);
+  // Rate limit check
+  const rateLimit = await checkRateLimit(uid, isAuthenticated);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
