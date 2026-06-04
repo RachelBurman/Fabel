@@ -16,6 +16,34 @@ jest.mock('@/lib/dynamo', () => ({
   dynamo: { send: mockSend },
 }))
 
+// ─── Mock Epicure and flavour territory ───────────────────────────────────────
+// Existing tests never reach resolveToEpicureKey (hasEnoughSignals is false).
+// Mocked here for determinism in the deduplication test.
+
+jest.mock('@/lib/epicure', () => ({
+  getEpicureVectors: jest.fn(() => ({
+    onion:   [1, 0, 0],
+    garlic:  [0, 1, 0],
+    chicken: [0, 0, 1],
+  })),
+  allIngredients: ['onion', 'garlic', 'chicken'],
+  findSimilarIngredients: jest.fn(() => []),
+  cosineSimilarityBetween: jest.fn(() => 0),
+  toEpicureKey: jest.fn((s: string) => s),
+  getCategoryForIngredient: jest.fn(() => null),
+  rankSimilar: jest.fn(() => []),
+  getAllergensForIngredient: jest.fn(() => []),
+  allergenIngredients: {},
+  ALLERGEN_CODES: [],
+  COMMON_ALLERGENS: [],
+  INGREDIENT_CATEGORIES: {},
+  findSafeIngredients: jest.fn(() => []),
+}))
+
+jest.mock('@/lib/flavour-territory', () => ({
+  deriveFlavourTerritory: jest.fn(() => []),
+}))
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function makeGetRequest(userId: string): NextRequest {
@@ -150,5 +178,80 @@ describe('GET /api/insights', () => {
     expect(body.profileKey).toBe('global')
     expect(body.profileWeek).toBeNull()
     expect(body.profileAllTime).toBeNull()
+  })
+})
+
+// ─── Avoided deduplication ───────────────────────────────────────────────────
+
+describe('avoided deduplication — resolveToEpicureKey collision', () => {
+  it('deduplicates avoided entries that collapse to the same Epicure key', async () => {
+    // "onion" → direct match → "onion"
+    // "spring onion" → "spring_onion" not in vectors → token "spring" not in vectors
+    //                 → token "onion" IS in vectors → "onion"
+    // Without [...new Set(...)], both map to "onion" and "Onion" appears twice.
+    const freshTime = new Date(Date.now() - 60_000).toISOString()
+    mockSend
+      .mockResolvedValueOnce({
+        Item: {
+          userId: 'u-dedup',
+          allergens: [],
+          activePresets: [],
+          tasteProfile: {
+            preferred: ['garlic'],
+            avoided: ['onion', 'spring onion'],
+            emerging: [],
+            fading: [],
+            formatSignals: [],
+            strength: 'full',
+            signalCount: 10,
+            recipeSuggestions: [],
+            lastComputedAt: freshTime,
+          },
+        },
+      })
+      .mockResolvedValueOnce({ Item: null })  // profileWeek
+      .mockResolvedValueOnce({ Item: null })  // profileAllTime
+
+    const res = await GET(makeGetRequest('u-dedup'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+
+    const avoided: string[] = body.tasteProfile?.avoided ?? []
+    // "Onion" must appear exactly once
+    expect(avoided.filter((a: string) => a === 'Onion')).toHaveLength(1)
+    // No duplicates of any kind
+    expect(avoided.length).toBe(new Set(avoided).size)
+  })
+
+  it('deduplicates preferred entries that collapse to the same Epicure key', async () => {
+    const freshTime = new Date(Date.now() - 60_000).toISOString()
+    mockSend
+      .mockResolvedValueOnce({
+        Item: {
+          userId: 'u-dedup-pref',
+          allergens: [],
+          activePresets: [],
+          tasteProfile: {
+            preferred: ['garlic', 'garlic cloves'],  // both resolve to "garlic"
+            avoided: ['onion'],
+            emerging: [],
+            fading: [],
+            formatSignals: [],
+            strength: 'full',
+            signalCount: 10,
+            recipeSuggestions: [],
+            lastComputedAt: freshTime,
+          },
+        },
+      })
+      .mockResolvedValueOnce({ Item: null })
+      .mockResolvedValueOnce({ Item: null })
+
+    const res = await GET(makeGetRequest('u-dedup-pref'))
+    const body = await res.json()
+
+    const preferred: string[] = body.tasteProfile?.preferred ?? []
+    expect(preferred.filter((p: string) => p === 'Garlic')).toHaveLength(1)
+    expect(preferred.length).toBe(new Set(preferred).size)
   })
 })

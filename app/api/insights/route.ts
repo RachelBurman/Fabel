@@ -107,14 +107,14 @@ export async function GET(req: NextRequest) {
   // Resolve Claude's verbose ingredient names to clean Epicure keys.
   // Drops anything that can't be matched (e.g. "grapes" not in 1790-ingredient set).
   const resolvedPreferred = hasEnoughSignals
-    ? preferenceProfile!.preferred
+    ? [...new Set(preferenceProfile!.preferred
         .map((k) => resolveToEpicureKey(k, epicureVectors))
-        .filter((k): k is string => k !== null)
+        .filter((k): k is string => k !== null))]
     : [];
   const resolvedAvoided = hasEnoughSignals
-    ? preferenceProfile!.avoided
+    ? [...new Set(preferenceProfile!.avoided
         .map((k) => resolveToEpicureKey(k, epicureVectors))
-        .filter((k): k is string => k !== null)
+        .filter((k): k is string => k !== null))]
     : [];
 
   const toDisplayName = (key: string) =>
