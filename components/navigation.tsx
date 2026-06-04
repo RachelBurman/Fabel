@@ -224,7 +224,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="fixed top-16 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-[320px] md:absolute md:top-full md:left-auto md:translate-x-0 md:right-0 md:mt-2 md:w-[320px] bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+                className="absolute top-full right-0 mt-2 w-[280px] bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
               >
                 {isSignedIn ? (
                   /* ── Signed-in view ── */
@@ -279,7 +279,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="px-3 pb-1">
+                    <div className="w-full overflow-hidden scale-[0.92] origin-top">
                       <SignIn
                         routing="hash"
                         afterSignInUrl="/"
@@ -287,19 +287,15 @@ export function Header({ onSettingsClick }: HeaderProps) {
                         appearance={{
                           elements: {
                             rootBox: 'w-full',
-                            card: 'shadow-none p-0 bg-transparent border-0 rounded-none',
+                            card: 'shadow-none border-0 rounded-none',
                             headerTitle: 'hidden',
                             headerSubtitle: 'hidden',
                             header: 'hidden',
-                            footer: 'pt-1',
+                            footer: 'pb-0',
                           },
                         }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground text-center px-4 pb-3 leading-relaxed">
-                      Already saving to this browser.{' '}
-                      Sign in to access across all devices.
-                    </p>
                   </div>
                 )}
               </motion.div>
