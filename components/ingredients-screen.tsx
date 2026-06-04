@@ -324,16 +324,22 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     setVisionLoading(true)
     try {
       const base64 = await compressImageToBase64(file, 1200, 0.82)
+      const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
 
       const res = await fetch('/api/scan-ingredients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, mediaType: 'image/jpeg' }),
+        body: JSON.stringify({ image: base64, mediaType: 'image/jpeg', ...(uid ? { userId: uid } : {}) }),
       })
 
       if (!res.ok) {
-        const err: { error?: string } = await res.json().catch(() => ({}))
-        if (err.error === 'Vision Lambda not configured') {
+        const err: { error?: string; resetAt?: string } = await res.json().catch(() => ({}))
+        if (res.status === 429) {
+          const time = err.resetAt
+            ? new Date(err.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+            : 'soon'
+          toast.error(`You've used your AI calls for this hour. Resets at ${time}.`)
+        } else if (err.error === 'Vision Lambda not configured') {
           toast.error("Photo recognition isn't set up yet")
         } else {
           toast.error("Couldn't read that photo — try better lighting or a closer shot")

@@ -1,15 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
 
 const client = new Anthropic();
 
 export async function POST(req: NextRequest) {
-  let body: { text?: unknown };
+  let body: { text?: unknown; userId?: unknown };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+
+  // Rate limiting
+  const rateLimitKey = typeof body.userId === "string" && body.userId.trim()
+    ? body.userId.trim()
+    : `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
+
+  const rateLimit = await checkRateLimit(rateLimitKey, false);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        hourRemaining: rateLimit.hourRemaining,
+        dayRemaining: rateLimit.dayRemaining,
+        resetAt: rateLimit.resetAt,
+      },
+      { status: 429 }
+    );
+  }
+  void incrementRateLimit(rateLimitKey);
 
   const text = typeof body.text === "string" ? body.text.trim() : "";
   if (!text) return NextResponse.json({ ingredients: [] });

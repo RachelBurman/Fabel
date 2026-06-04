@@ -7,6 +7,7 @@ import {
   toEpicureKey,
   getCategoryForIngredient,
 } from "@/lib/epicure";
+import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
 
 // Grain ingredients must never substitute for these categories
 const GRAIN_INCOMPATIBLE = new Set(["fat", "dairy_alternative", "cheese", "liquid"]);
@@ -19,12 +20,32 @@ export async function POST(req: NextRequest) {
     context?: unknown;
     allergens?: unknown;
     safeIngredients?: unknown;
+    userId?: unknown;
   };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
+
+  // Rate limiting
+  const rateLimitKey = typeof body.userId === "string" && body.userId.trim()
+    ? body.userId.trim()
+    : `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
+
+  const rateLimit = await checkRateLimit(rateLimitKey, false);
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        hourRemaining: rateLimit.hourRemaining,
+        dayRemaining: rateLimit.dayRemaining,
+        resetAt: rateLimit.resetAt,
+      },
+      { status: 429 }
+    );
+  }
+  void incrementRateLimit(rateLimitKey);
 
   const ingredient =
     typeof body.ingredient === "string" ? toEpicureKey(body.ingredient) : "";

@@ -12,6 +12,8 @@ import {
   LIQUID_TERMS,
   SALT_TERMS,
 } from "@/lib/safe-foods";
+import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
+import { findFallbackRecipe } from "@/lib/community-recipe-fallback";
 
 const client = new Anthropic();
 
@@ -114,6 +116,53 @@ export async function POST(req: NextRequest) {
     typeof body.userId === "string" && body.userId.trim()
       ? body.userId.trim()
       : null;
+
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const rateLimitKey = userId ?? `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
+  const rateLimit = await checkRateLimit(rateLimitKey, false);
+
+  if (!rateLimit.allowed) {
+    // For generate-recipe: return a fallback community recipe rather than a hard error
+    const allergens = Array.isArray(body.allergens)
+      ? (body.allergens as unknown[]).filter((a): a is string => typeof a === "string")
+      : [];
+    const safeFoodsMode = body.safeFoodsMode === true;
+    const safeIngredients = Array.isArray(body.safeIngredients)
+      ? (body.safeIngredients as unknown[]).filter((s): s is string => typeof s === "string")
+      : [];
+
+    const fallback = await findFallbackRecipe({
+      allergens,
+      safeFoods: safeFoodsMode && safeIngredients.length > 0 ? safeIngredients : null,
+      cuisine: typeof body.cuisine === "string" ? body.cuisine : undefined,
+      occasion: typeof body.occasion === "string" ? body.occasion : undefined,
+      mealType: typeof body.mealType === "string" ? body.mealType : undefined,
+    });
+
+    if (fallback) {
+      return NextResponse.json({
+        recipe: fallback,
+        rateLimited: true,
+        fallbackSource: "community",
+        hourRemaining: rateLimit.hourRemaining,
+        dayRemaining: rateLimit.dayRemaining,
+        resetAt: rateLimit.resetAt,
+      });
+    }
+
+    return NextResponse.json(
+      {
+        error: "rate_limited",
+        hourRemaining: rateLimit.hourRemaining,
+        dayRemaining: rateLimit.dayRemaining,
+        resetAt: rateLimit.resetAt,
+      },
+      { status: 429 }
+    );
+  }
+
+  // Increment before the Claude call — fail open if DynamoDB write fails
+  void incrementRateLimit(rateLimitKey);
 
   // ── Feedback-informed preference profile ────────────────────────────────────
   let tasteProfileClause = "";

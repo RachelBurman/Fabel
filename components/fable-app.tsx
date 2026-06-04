@@ -63,6 +63,8 @@ function FableAppContent() {
   const [brief, setBrief] = useState<RecipeBrief | null>(null)
   const [generatedRecipeSaved, setGeneratedRecipeSaved] = useState(false)
   const [recipeAttempted, setRecipeAttempted] = useState(false)
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ hourRemaining: number; dayRemaining: number; resetAt: string } | null>(null)
+  const [macrosRateLimitMsg, setMacrosRateLimitMsg] = useState<string | null>(null)
 
   const [dislikedPatterns, setDislikedPatterns] = useState<string[]>([])
   const [dislikedIngredients, setDislikedIngredients] = useState<string[]>([])
@@ -150,6 +152,7 @@ function FableAppContent() {
     setGeneratedRecipe(null)
     setBrief(null)
     setGeneratedRecipeSaved(false)
+    setRateLimitInfo(null)
     setRecipeAttempted(true)
     setLoadingStep('pairings')
     navigate('generated')
@@ -264,7 +267,20 @@ function FableAppContent() {
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
-      const recipe: GeneratedRecipe = await recipeRes.json()
+      const recipeData = await recipeRes.json() as GeneratedRecipe & {
+        rateLimited?: boolean; recipe?: GeneratedRecipe;
+        hourRemaining?: number; dayRemaining?: number; resetAt?: string
+      }
+      const recipe: GeneratedRecipe = recipeData.rateLimited && recipeData.recipe
+        ? recipeData.recipe
+        : recipeData as GeneratedRecipe
+      if (recipeData.rateLimited) {
+        setRateLimitInfo({
+          hourRemaining: recipeData.hourRemaining ?? 0,
+          dayRemaining: recipeData.dayRemaining ?? 0,
+          resetAt: recipeData.resetAt ?? '',
+        })
+      }
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -282,6 +298,7 @@ function FableAppContent() {
     setGeneratedRecipe(null)
     setBrief(null)
     setGeneratedRecipeSaved(false)
+    setRateLimitInfo(null)
     setRecipeAttempted(true)
     setLoadingStep('pairings')
     navigate('generated')
@@ -350,7 +367,20 @@ function FableAppContent() {
         }),
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
-      const recipe: GeneratedRecipe = await recipeRes.json()
+      const recipeData = await recipeRes.json() as GeneratedRecipe & {
+        rateLimited?: boolean; recipe?: GeneratedRecipe;
+        hourRemaining?: number; dayRemaining?: number; resetAt?: string
+      }
+      const recipe: GeneratedRecipe = recipeData.rateLimited && recipeData.recipe
+        ? recipeData.recipe
+        : recipeData as GeneratedRecipe
+      if (recipeData.rateLimited) {
+        setRateLimitInfo({
+          hourRemaining: recipeData.hourRemaining ?? 0,
+          dayRemaining: recipeData.dayRemaining ?? 0,
+          resetAt: recipeData.resetAt ?? '',
+        })
+      }
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -388,6 +418,7 @@ function FableAppContent() {
   const handleAdaptAndCook = useCallback(async (adaptedIngredientNames: string[], recipeContext?: string) => {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
+    setRateLimitInfo(null)
     setRecipeAttempted(true)
     setLoadingStep('recipe')
     navigate('generated')
@@ -417,7 +448,20 @@ function FableAppContent() {
         }),
       })
       if (!res.ok) throw new Error(`Generate error: ${res.status}`)
-      const recipe: GeneratedRecipe = await res.json()
+      const recipeData = await res.json() as GeneratedRecipe & {
+        rateLimited?: boolean; recipe?: GeneratedRecipe;
+        hourRemaining?: number; dayRemaining?: number; resetAt?: string
+      }
+      const recipe: GeneratedRecipe = recipeData.rateLimited && recipeData.recipe
+        ? recipeData.recipe
+        : recipeData as GeneratedRecipe
+      if (recipeData.rateLimited) {
+        setRateLimitInfo({
+          hourRemaining: recipeData.hourRemaining ?? 0,
+          dayRemaining: recipeData.dayRemaining ?? 0,
+          resetAt: recipeData.resetAt ?? '',
+        })
+      }
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -446,7 +490,9 @@ function FableAppContent() {
   // â”€â”€ Fetch macros on demand when toggle is turned on after generation â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (!preferences.showMacros || !generatedRecipe || generatedRecipe.macros) return
+    setMacrosRateLimitMsg(null)
     let cancelled = false
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     fetch('/api/macros', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -454,9 +500,22 @@ function FableAppContent() {
         title: generatedRecipe.title,
         ingredients: generatedRecipe.ingredients,
         servings: generatedRecipe.servings,
+        ...(uid ? { userId: uid } : {}),
       }),
     })
-      .then(res => res.ok ? res.json() : null)
+      .then(async (res) => {
+        if (res.status === 429) {
+          const data = await res.json().catch(() => ({})) as { resetAt?: string }
+          if (!cancelled) {
+            const time = data.resetAt
+              ? new Date(data.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+              : 'soon'
+            setMacrosRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          }
+          return null
+        }
+        return res.ok ? res.json() : null
+      })
       .then((macros: import('@/lib/types').RecipeMacros | null) => {
         if (cancelled || !macros) return
         setGeneratedRecipe(prev => prev ? { ...prev, macros } : prev)
@@ -682,6 +741,8 @@ function FableAppContent() {
                 onFindSubstitute={handleFindSubstitute}
                 lactoseIntolerant={preferences.lactoseIntolerant}
                 lactoseMode={preferences.lactoseMode}
+                rateLimitInfo={rateLimitInfo}
+                macrosRateLimitMsg={macrosRateLimitMsg}
               />
             </motion.div>
           )}

@@ -130,15 +130,22 @@ async function resolveIngredientKeyRobust(rawName: string): Promise<string | nul
   return null
 }
 
-async function extractViaClause(text: string): Promise<string[]> {
+async function extractViaClause(
+  text: string,
+  userId: string | null
+): Promise<{ ingredients: string[]; rateLimitResetAt?: string }> {
   const res = await fetch('/api/extract-ingredients', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, ...(userId ? { userId } : {}) }),
   })
-  if (!res.ok) return []
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({})) as { resetAt?: string }
+    return { ingredients: [], rateLimitResetAt: data.resetAt }
+  }
+  if (!res.ok) return { ingredients: [] }
   const data: { ingredients: string[] } = await res.json()
-  return data.ingredients
+  return { ingredients: data.ingredients }
 }
 
 /** Parse lines to Epicure keys while preserving the original text for quantity display. */
@@ -173,7 +180,8 @@ async function fetchTopSubstitute(
   ingredient: string,
   context: string[],
   allergens: string[],
-  safeIngredients?: string[]
+  safeIngredients?: string[],
+  userId?: string | null
 ): Promise<SubstituteResult | null> {
   try {
     const res = await fetch('/api/substitutes', {
@@ -184,6 +192,7 @@ async function fetchTopSubstitute(
         context,
         allergens,
         ...(safeIngredients && safeIngredients.length > 0 ? { safeIngredients } : {}),
+        ...(userId ? { userId } : {}),
       }),
     })
     if (!res.ok) return null
@@ -222,6 +231,7 @@ export function SubstitutesScreen({
   )
   const [results, setResults] = useState<EnrichedResult[]>([])
   const [isLoadingResults, setIsLoadingResults] = useState(false)
+  const [rateLimitMsg, setRateLimitMsg] = useState<string | null>(null)
 
   const kitchenIngredients = preferences.ingredients.map((i) => i.name)
 
@@ -283,6 +293,9 @@ export function SubstitutesScreen({
       setSelectedIngredient(ingredient)
       setIsLoadingResults(true)
       setResults([])
+      setRateLimitMsg(null)
+
+      const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
 
       const context =
         initialContext ??
@@ -301,8 +314,17 @@ export function SubstitutesScreen({
             ...(preferences.safeFoodsMode && preferences.safeIngredients.length > 0
               ? { safeIngredients: preferences.safeIngredients }
               : {}),
+            ...(uid ? { userId: uid } : {}),
           }),
         })
+        if (res.status === 429) {
+          const data = await res.json().catch(() => ({})) as { resetAt?: string }
+          const time = data.resetAt
+            ? new Date(data.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+            : 'soon'
+          setRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          return
+        }
         if (!res.ok) throw new Error('API error')
         const data: { substitutes: SubstituteResult[] } = await res.json()
 
@@ -350,10 +372,20 @@ export function SubstitutesScreen({
     setSelectedIngredient(null)
     setResults([])
     setAnalysis(null)
+    setRateLimitMsg(null)
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     try {
       let ingredientNames: string[]
       if (inputMode === 'full-recipe') {
-        ingredientNames = await extractViaClause(fullRecipeText)
+        const extracted = await extractViaClause(fullRecipeText, uid)
+        if (extracted.rateLimitResetAt !== undefined) {
+          const time = extracted.rateLimitResetAt
+            ? new Date(extracted.rateLimitResetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+            : 'soon'
+          setRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          return
+        }
+        ingredientNames = extracted.ingredients
       } else {
         ingredientNames = ingredientsText.split('\n').filter((l) => l.trim().length > 0)
       }
@@ -532,6 +564,13 @@ export function SubstitutesScreen({
                   )}
                 </div>
               </div>
+
+              {/* Rate limit error (extract-ingredients or substitutes) */}
+              {!isAnalysing && rateLimitMsg && !analysis && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="py-4">
+                  <p className="text-sm text-muted-foreground">{rateLimitMsg}</p>
+                </motion.div>
+              )}
 
               {/* Analysing */}
               {isAnalysing && (
@@ -767,7 +806,13 @@ export function SubstitutesScreen({
                 </motion.div>
               )}
 
-              {!isLoadingResults && selectedIngredient && results.length === 0 && (
+              {!isLoadingResults && rateLimitMsg && (
+                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="py-6">
+                  <p className="text-sm text-muted-foreground">{rateLimitMsg}</p>
+                </motion.div>
+              )}
+
+              {!isLoadingResults && !rateLimitMsg && selectedIngredient && results.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
                   <p className="text-muted-foreground text-sm">
                     No allergen-safe substitutes found for {epicureDisplay(selectedIngredient)}.

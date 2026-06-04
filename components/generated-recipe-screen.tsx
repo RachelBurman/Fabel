@@ -57,6 +57,8 @@ interface GeneratedRecipeScreenProps {
   onFindSubstitute?: (ingredient: string, context: string[]) => void
   lactoseIntolerant?: boolean
   lactoseMode?: 'include' | 'exclude'
+  rateLimitInfo?: { hourRemaining: number; dayRemaining: number; resetAt: string } | null
+  macrosRateLimitMsg?: string | null
 }
 
 
@@ -204,6 +206,8 @@ export function GeneratedRecipeScreen({
   onFindSubstitute,
   lactoseIntolerant = false,
   lactoseMode,
+  rateLimitInfo,
+  macrosRateLimitMsg,
 }: GeneratedRecipeScreenProps) {
   const { preferences } = useFable()
   const isLoading = loadingStep !== null
@@ -394,6 +398,17 @@ export function GeneratedRecipeScreen({
                 {recipe.description}
               </p>
 
+              {rateLimitInfo && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-base shrink-0">🍳</span>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">You&apos;ve reached your recipe limit for now</span>
+                    {' '}— here&apos;s a community recipe that matches your preferences.{' '}
+                    Resets at {new Date(rateLimitInfo.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.
+                  </p>
+                </div>
+              )}
+
               {missingEquipment.length > 0 && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">⚠️</span>
@@ -433,6 +448,9 @@ export function GeneratedRecipeScreen({
               </div>
 
               {/* Macros */}
+              {showMacros && macrosRateLimitMsg && !recipe.macros && (
+                <p className="text-sm text-muted-foreground">{macrosRateLimitMsg}</p>
+              )}
               {showMacros && recipe.macros && (
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-foreground">Estimated nutritional information</p>
