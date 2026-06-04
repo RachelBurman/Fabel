@@ -153,6 +153,15 @@ export function Header({ onSettingsClick }: HeaderProps) {
     if (isSignedIn && guestOpen) setGuestOpen(false)
   }, [isSignedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleSignOut = () => {
+    localStorage.removeItem('fable-guest-migrated')
+    localStorage.removeItem('fable-onboarding-complete')
+    // Regenerate guest UUID immediately so the app works right after sign-out
+    localStorage.setItem('fable_user_id', crypto.randomUUID())
+    void signOut()
+    setGuestOpen(false)
+  }
+
   const displayName = isLoaded && isSignedIn
     ? (user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'Account').slice(0, 12)
     : 'Guest'
@@ -215,10 +224,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className={cn(
-                  'absolute top-full right-0 mt-2 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden',
-                  isSignedIn ? 'w-72' : 'w-[340px] max-w-[calc(100vw-2rem)]'
-                )}
+                className="fixed top-16 left-1/2 -translate-x-1/2 w-[calc(100vw-2rem)] max-w-[320px] md:absolute md:top-full md:left-auto md:translate-x-0 md:right-0 md:mt-2 md:w-[320px] bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
               >
                 {isSignedIn ? (
                   /* ── Signed-in view ── */
@@ -247,7 +253,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                     </div>
                     <div className="px-4 pb-4">
                       <button
-                        onClick={() => { void signOut(); setGuestOpen(false) }}
+                        onClick={handleSignOut}
                         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
                       >
                         <LogOut className="w-4 h-4" />
