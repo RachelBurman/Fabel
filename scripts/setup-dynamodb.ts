@@ -85,6 +85,21 @@ async function main() {
     ],
     BillingMode: "PAY_PER_REQUEST",
   });
+
+  // Rate limiting: PK=userId, SK=windowKey (e.g. "hour#2026-06-04T15" or "day#2026-06-04")
+  // TTL attribute name: "ttl" — enable TTL on this table in the AWS console after creation
+  await createTable({
+    TableName: "fable-rate-limits",
+    KeySchema: [
+      { AttributeName: "userId", KeyType: "HASH" },
+      { AttributeName: "windowKey", KeyType: "RANGE" },
+    ],
+    AttributeDefinitions: [
+      { AttributeName: "userId", AttributeType: "S" },
+      { AttributeName: "windowKey", AttributeType: "S" },
+    ],
+    BillingMode: "PAY_PER_REQUEST",
+  });
 }
 
 main();
