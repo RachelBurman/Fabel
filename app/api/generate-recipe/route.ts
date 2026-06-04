@@ -125,6 +125,31 @@ export async function POST(req: NextRequest) {
     // No userId — rate-limit by IP only
   }
 
+  // ── Guest mode: return DB fallback, no Claude call, no rate limit consumed ──
+  if (!isAuthenticated) {
+    const allergens = Array.isArray(body.allergens)
+      ? (body.allergens as unknown[]).filter((a): a is string => typeof a === "string")
+      : [];
+    const safeFoodsMode = body.safeFoodsMode === true;
+    const safeIngredients = Array.isArray(body.safeIngredients)
+      ? (body.safeIngredients as unknown[]).filter((s): s is string => typeof s === "string")
+      : [];
+
+    const fallback = await findFallbackRecipe({
+      allergens,
+      safeFoods: safeFoodsMode && safeIngredients.length > 0 ? safeIngredients : null,
+      cuisine: typeof body.cuisine === "string" ? body.cuisine : undefined,
+      occasion: typeof body.occasion === "string" ? body.occasion : undefined,
+      mealType: typeof body.mealType === "string" ? body.mealType : undefined,
+    });
+
+    return NextResponse.json({
+      recipe: fallback ?? null,
+      guestMode: true,
+      fallbackSource: "community",
+    });
+  }
+
   // ── Rate limiting ──────────────────────────────────────────────────────────
   const rateLimitKey = userId ?? `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
   const rateLimit = await checkRateLimit(rateLimitKey, isAuthenticated);

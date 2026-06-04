@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
+import { requireAuth, AuthRequiredError } from "@/lib/get-user-id";
 
 const client = new Anthropic();
 
@@ -8,11 +9,23 @@ const SYSTEM_PROMPT =
   "You are a nutritional expert. Estimate macro-nutrients for recipes accurately. Always respond with valid JSON only, no markdown.";
 
 export async function POST(req: NextRequest) {
+  let userId: string;
+  try {
+    ({ userId } = await requireAuth());
+  } catch (err) {
+    if (err instanceof AuthRequiredError) {
+      return NextResponse.json(
+        { error: "auth_required", message: "Please sign in to use this feature" },
+        { status: 401 }
+      );
+    }
+    throw err;
+  }
+
   let body: {
     title?: unknown;
     ingredients?: unknown;
     servings?: unknown;
-    userId?: unknown;
   };
   try {
     body = await req.json();
@@ -20,12 +33,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // Rate limiting
-  const rateLimitKey = typeof body.userId === "string" && body.userId.trim()
-    ? body.userId.trim()
-    : `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
-
-  const rateLimit = await checkRateLimit(rateLimitKey, false);
+  const rateLimit = await checkRateLimit(userId, true);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
@@ -37,7 +45,7 @@ export async function POST(req: NextRequest) {
       { status: 429 }
     );
   }
-  void incrementRateLimit(rateLimitKey);
+  void incrementRateLimit(userId);
 
   const title = typeof body.title === "string" ? body.title : "Recipe";
   const servings = typeof body.servings === "number" ? body.servings : 2;

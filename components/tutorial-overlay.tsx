@@ -173,7 +173,7 @@ const SLIDES = [
     id: 'recipe',
     visual: <RecipeVisual />,
     headline: 'Safe ingredients. Bold flavours.',
-    body: "Choose your cuisine, occasion, cook time and servings. Claude generates a recipe built around your restrictions — every time.",
+    body: "Generate personalised recipes with AI — or browse community recipes as a guest. Sign in to unlock AI generation tailored to your taste.",
   },
   {
     id: 'safe-foods',

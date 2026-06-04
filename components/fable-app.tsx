@@ -1,9 +1,11 @@
 ﻿'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useUser, SignIn } from '@clerk/nextjs'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
@@ -37,9 +39,15 @@ type Screen =
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
   const { setTheme } = useTheme()
+  const { isSignedIn } = useUser()
 
   // All hooks must be declared before any early return (Rules of Hooks)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [authOverlayOpen, setAuthOverlayOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => { setIsMounted(true) }, [])
+  useEffect(() => { if (isSignedIn) setAuthOverlayOpen(false) }, [isSignedIn])
+  const openAuth = useCallback(() => setAuthOverlayOpen(true), [])
 
   useEffect(() => {
     if (shouldShowTutorial()) setShowTutorial(true)
@@ -65,6 +73,7 @@ function FableAppContent() {
   const [recipeAttempted, setRecipeAttempted] = useState(false)
   const [rateLimitInfo, setRateLimitInfo] = useState<{ hourRemaining: number; dayRemaining: number; resetAt: string } | null>(null)
   const [macrosRateLimitMsg, setMacrosRateLimitMsg] = useState<string | null>(null)
+  const [guestMode, setGuestMode] = useState(false)
 
   const [dislikedPatterns, setDislikedPatterns] = useState<string[]>([])
   const [dislikedIngredients, setDislikedIngredients] = useState<string[]>([])
@@ -153,6 +162,7 @@ function FableAppContent() {
     setBrief(null)
     setGeneratedRecipeSaved(false)
     setRateLimitInfo(null)
+    setGuestMode(false)
     setRecipeAttempted(true)
     setLoadingStep('pairings')
     navigate('generated')
@@ -268,10 +278,10 @@ function FableAppContent() {
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
       const recipeData = await recipeRes.json() as GeneratedRecipe & {
-        rateLimited?: boolean; recipe?: GeneratedRecipe;
+        rateLimited?: boolean; guestMode?: boolean; recipe?: GeneratedRecipe;
         hourRemaining?: number; dayRemaining?: number; resetAt?: string
       }
-      const recipe: GeneratedRecipe = recipeData.rateLimited && recipeData.recipe
+      const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
       if (recipeData.rateLimited) {
@@ -281,6 +291,7 @@ function FableAppContent() {
           resetAt: recipeData.resetAt ?? '',
         })
       }
+      if (recipeData.guestMode) setGuestMode(true)
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -299,6 +310,7 @@ function FableAppContent() {
     setBrief(null)
     setGeneratedRecipeSaved(false)
     setRateLimitInfo(null)
+    setGuestMode(false)
     setRecipeAttempted(true)
     setLoadingStep('pairings')
     navigate('generated')
@@ -368,10 +380,10 @@ function FableAppContent() {
       })
       if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
       const recipeData = await recipeRes.json() as GeneratedRecipe & {
-        rateLimited?: boolean; recipe?: GeneratedRecipe;
+        rateLimited?: boolean; guestMode?: boolean; recipe?: GeneratedRecipe;
         hourRemaining?: number; dayRemaining?: number; resetAt?: string
       }
-      const recipe: GeneratedRecipe = recipeData.rateLimited && recipeData.recipe
+      const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
       if (recipeData.rateLimited) {
@@ -381,6 +393,7 @@ function FableAppContent() {
           resetAt: recipeData.resetAt ?? '',
         })
       }
+      if (recipeData.guestMode) setGuestMode(true)
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -419,6 +432,7 @@ function FableAppContent() {
     setGeneratedRecipe(null)
     setGeneratedRecipeSaved(false)
     setRateLimitInfo(null)
+    setGuestMode(false)
     setRecipeAttempted(true)
     setLoadingStep('recipe')
     navigate('generated')
@@ -449,10 +463,10 @@ function FableAppContent() {
       })
       if (!res.ok) throw new Error(`Generate error: ${res.status}`)
       const recipeData = await res.json() as GeneratedRecipe & {
-        rateLimited?: boolean; recipe?: GeneratedRecipe;
+        rateLimited?: boolean; guestMode?: boolean; recipe?: GeneratedRecipe;
         hourRemaining?: number; dayRemaining?: number; resetAt?: string
       }
-      const recipe: GeneratedRecipe = recipeData.rateLimited && recipeData.recipe
+      const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
       if (recipeData.rateLimited) {
@@ -462,6 +476,7 @@ function FableAppContent() {
           resetAt: recipeData.resetAt ?? '',
         })
       }
+      if (recipeData.guestMode) setGuestMode(true)
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -490,6 +505,10 @@ function FableAppContent() {
   // â”€â”€ Fetch macros on demand when toggle is turned on after generation â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (!preferences.showMacros || !generatedRecipe || generatedRecipe.macros) return
+    if (!isSignedIn) {
+      setMacrosRateLimitMsg('Sign in to see nutritional information.')
+      return
+    }
     setMacrosRateLimitMsg(null)
     let cancelled = false
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
@@ -662,6 +681,7 @@ function FableAppContent() {
                 onDone={() => navigate(prevScreen === 'allergens' ? 'ingredients' : prevScreen)}
                 onManageSafeFoods={() => navigate('safe-foods')}
                 onRestartTutorial={handleRestartTutorial}
+                onOpenAuth={openAuth}
               />
             </motion.div>
           )}
@@ -695,6 +715,7 @@ function FableAppContent() {
                 onShowPairings={handleShowPairings}
                 onGenerateRecipe={handleGenerateRecipe}
                 onFindSubstitutes={handleOpenSubstitutes}
+                onOpenAuth={openAuth}
               />
             </motion.div>
           )}
@@ -743,6 +764,8 @@ function FableAppContent() {
                 lactoseMode={preferences.lactoseMode}
                 rateLimitInfo={rateLimitInfo}
                 macrosRateLimitMsg={macrosRateLimitMsg}
+                guestMode={guestMode}
+                onOpenAuth={openAuth}
               />
             </motion.div>
           )}
@@ -829,6 +852,33 @@ function FableAppContent() {
       )}
     </div>
     {tutorialOverlay}
+
+    {isMounted && createPortal(
+      <AnimatePresence>
+        {authOverlayOpen && (
+          <motion.div
+            key="auth-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className={`fixed inset-0 z-[200] flex flex-col overflow-y-auto px-5 py-6 ${preferences.darkMode ? 'bg-[#1c1917]' : 'bg-white'}`}
+          >
+            <button
+              onClick={() => setAuthOverlayOpen(false)}
+              aria-label="Close"
+              className="fixed top-4 right-4 z-[201] w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 transition-colors"
+            >
+              <X className="w-4 h-4" style={{ color: preferences.darkMode ? '#fafaf9' : '#374151' }} />
+            </button>
+            <div className="w-full">
+              <SignIn routing="hash" afterSignInUrl="/" afterSignUpUrl="/" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
+    )}
     </>
   )
 }

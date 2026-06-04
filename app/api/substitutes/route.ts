@@ -8,6 +8,7 @@ import {
   getCategoryForIngredient,
 } from "@/lib/epicure";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
+import { getUserId } from "@/lib/get-user-id";
 
 // Grain ingredients must never substitute for these categories
 const GRAIN_INCOMPATIBLE = new Set(["fat", "dairy_alternative", "cheese", "liquid"]);
@@ -28,12 +29,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  // Rate limiting
-  const rateLimitKey = typeof body.userId === "string" && body.userId.trim()
-    ? body.userId.trim()
-    : `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
+  const bodyUserId =
+    typeof body.userId === "string" && body.userId.trim() ? body.userId.trim() : undefined;
+  let isAuthenticated = false;
+  let rateLimitKey: string;
+  try {
+    const resolved = await getUserId(bodyUserId);
+    isAuthenticated = resolved.isAuthenticated;
+    rateLimitKey = resolved.userId;
+  } catch {
+    rateLimitKey = `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
+  }
 
-  const rateLimit = await checkRateLimit(rateLimitKey, false);
+  const rateLimit = await checkRateLimit(rateLimitKey, isAuthenticated);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
@@ -122,39 +130,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ substitutes: [] });
   }
 
-  // Claude explanation for each substitute
-  const originalDisplay = ingredient.replace(/_/g, " ");
-  const contextDisplay =
-    context.length > 0
-      ? context.map((c) => c.replace(/_/g, " ")).join(", ")
-      : "various ingredients";
-
-  const substitutesDisplay = top3
-    .map((s) => s.name.replace(/_/g, " "))
-    .join(", ");
-
-  const userPrompt =
-    `A dish contains: ${contextDisplay}. ` +
-    `In one sentence each, explain why each of these could substitute for ${originalDisplay}: ${substitutesDisplay}. ` +
-    `Return JSON: { ${top3.map((s) => `"${s.name}": "explanation"`).join(", ")} }`;
-
+  // Claude explanation for each substitute — authenticated users only
   let explanations: Record<string, string> = {};
-  try {
-    const message = await client.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 300,
-      messages: [{ role: "user", content: userPrompt }],
-    });
-    const textBlock = message.content.find((b) => b.type === "text");
-    if (textBlock && textBlock.type === "text") {
-      const raw = textBlock.text
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/```\s*$/, "")
-        .trim();
-      explanations = JSON.parse(raw);
+  if (isAuthenticated) {
+    const originalDisplay = ingredient.replace(/_/g, " ");
+    const contextDisplay =
+      context.length > 0
+        ? context.map((c) => c.replace(/_/g, " ")).join(", ")
+        : "various ingredients";
+    const substitutesDisplay = top3.map((s) => s.name.replace(/_/g, " ")).join(", ");
+    const userPrompt =
+      `A dish contains: ${contextDisplay}. ` +
+      `In one sentence each, explain why each of these could substitute for ${originalDisplay}: ${substitutesDisplay}. ` +
+      `Return JSON: { ${top3.map((s) => `"${s.name}": "explanation"`).join(", ")} }`;
+    try {
+      const message = await client.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 300,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+      const textBlock = message.content.find((b) => b.type === "text");
+      if (textBlock && textBlock.type === "text") {
+        const raw = textBlock.text
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/```\s*$/, "")
+          .trim();
+        explanations = JSON.parse(raw);
+      }
+    } catch {
+      // explanations remain empty — non-fatal
     }
-  } catch {
-    // explanations remain empty — non-fatal
   }
 
   function cap(n: number) {

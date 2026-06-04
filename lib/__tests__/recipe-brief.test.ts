@@ -10,6 +10,11 @@
 
 import { NextRequest } from 'next/server'
 
+// ─── Clerk mock ───────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const clerkServer = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+
 // ─── Mock Anthropic SDK ───────────────────────────────────────────────────────
 
 const mockCreate = jest.fn()
@@ -113,6 +118,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  clerkServer.auth.mockResolvedValue({ userId: 'user-123' })
   mockDynamoSend.mockResolvedValue({ Items: [
     { recipeTitle: 'Chicken Stir Fry', liked: true, timestamp: '2026-06-01T10:00:00Z' },
     { recipeTitle: 'Tomato Pasta', liked: false, timestamp: '2026-06-02T10:00:00Z' },
@@ -123,39 +129,32 @@ beforeEach(() => {
   })
 })
 
-// ─── Guest brief — null userId ────────────────────────────────────────────────
+// ─── Guest (unauthenticated) — returns 401 ───────────────────────────────────
 
-describe('guest brief — null userId', () => {
-  it('returns guest brief when userId is null', async () => {
-    const res = await POST(makeRequest({ ...MINIMAL_BODY, userId: null }))
-    expect(res.status).toBe(200)
-    const { brief } = await res.json()
-    expect(brief.direction).toBeNull()
-    expect(brief.reasoning).toBeNull()
-    expect(brief.keyIngredients).toEqual([])
-    expect(brief.loadingHints.length).toBeGreaterThan(0)
+describe('unauthenticated request', () => {
+  beforeEach(() => {
+    clerkServer.auth.mockResolvedValue({ userId: null })
   })
 
-  it('does not call Claude when userId is null', async () => {
-    await POST(makeRequest({ ...MINIMAL_BODY, userId: null }))
+  it('returns 401 auth_required when no Clerk session', async () => {
+    const res = await POST(makeRequest(MINIMAL_BODY))
+    expect(res.status).toBe(401)
+    const body = await res.json() as { error: string }
+    expect(body.error).toBe('auth_required')
+  })
+
+  it('does not call Claude when unauthenticated', async () => {
+    await POST(makeRequest(MINIMAL_BODY))
     expect(mockCreate).not.toHaveBeenCalled()
   })
 
-  it('does not call buildPreferenceProfile when userId is null', async () => {
-    await POST(makeRequest({ ...MINIMAL_BODY, userId: null }))
+  it('does not call buildPreferenceProfile when unauthenticated', async () => {
+    await POST(makeRequest(MINIMAL_BODY))
     expect(mockBuildPreferenceProfile).not.toHaveBeenCalled()
-  })
-
-  it('returns guest brief when userId is missing from body', async () => {
-    const { userId: _omit, ...bodyWithoutUserId } = MINIMAL_BODY
-    const res = await POST(makeRequest(bodyWithoutUserId))
-    const { brief } = await res.json()
-    expect(brief.direction).toBeNull()
-    expect(mockCreate).not.toHaveBeenCalled()
   })
 })
 
-// ─── Guest brief — insufficient history ──────────────────────────────────────
+// ─── Fallback brief — authenticated but no history ────────────────────────────
 
 describe('guest brief — insufficient history', () => {
   it('returns guest brief when buildPreferenceProfile returns null', async () => {

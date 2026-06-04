@@ -59,6 +59,8 @@ interface GeneratedRecipeScreenProps {
   lactoseMode?: 'include' | 'exclude'
   rateLimitInfo?: { hourRemaining: number; dayRemaining: number; resetAt: string } | null
   macrosRateLimitMsg?: string | null
+  guestMode?: boolean
+  onOpenAuth?: () => void
 }
 
 
@@ -208,6 +210,8 @@ export function GeneratedRecipeScreen({
   lactoseMode,
   rateLimitInfo,
   macrosRateLimitMsg,
+  guestMode = false,
+  onOpenAuth,
 }: GeneratedRecipeScreenProps) {
   const { preferences } = useFable()
   const isLoading = loadingStep !== null
@@ -398,7 +402,23 @@ export function GeneratedRecipeScreen({
                 {recipe.description}
               </p>
 
-              {rateLimitInfo && (
+              {guestMode && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-base shrink-0">🍳</span>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    You&apos;re seeing a community recipe —{' '}
+                    <button
+                      onClick={onOpenAuth}
+                      className="font-medium underline underline-offset-2 hover:no-underline"
+                    >
+                      Sign in
+                    </button>
+                    {' '}to generate a personalised recipe with AI.
+                  </p>
+                </div>
+              )}
+
+              {!guestMode && rateLimitInfo && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">🍳</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">

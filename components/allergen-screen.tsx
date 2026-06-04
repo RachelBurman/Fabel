@@ -7,6 +7,7 @@ import { useFable } from '@/lib/fable-context'
 import { ALL_TABS } from '@/lib/types'
 import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, PlayCircle, Compass, Layout } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
@@ -15,11 +16,14 @@ interface AllergenScreenProps {
   onDone: () => void
   onManageSafeFoods?: () => void
   onRestartTutorial?: () => void
+  onOpenAuth?: () => void
 }
 
-export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }: AllergenScreenProps) {
+export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, onOpenAuth }: AllergenScreenProps) {
   const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, setDiscoverSettings, setVisibleTabs, isLoadingProfile } = useFable()
   const { theme, setTheme } = useTheme()
+  const { isSignedIn } = useUser()
+  const [macrosAuthPrompt, setMacrosAuthPrompt] = useState(false)
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const isDark = theme === 'dark'
 
@@ -310,7 +314,10 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }:
                 </div>
               </div>
               <button
-                onClick={() => setShowMacros(!preferences.showMacros)}
+                onClick={() => {
+                  if (!isSignedIn) { setMacrosAuthPrompt(true); return }
+                  setShowMacros(!preferences.showMacros)
+                }}
                 className={cn(
                   'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
                   preferences.showMacros ? 'bg-green-500' : 'bg-secondary'
@@ -323,9 +330,21 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial }:
                 )} />
               </button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2.5">
-              Calorie and macro information is hidden by default out of respect for users in eating disorder recovery.
-            </p>
+            {macrosAuthPrompt && !isSignedIn ? (
+              <p className="text-xs text-muted-foreground mt-2.5">
+                <button
+                  onClick={onOpenAuth}
+                  className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+                >
+                  Sign in
+                </button>
+                {' '}to see nutritional information.
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground mt-2.5">
+                Calorie and macro information is hidden by default out of respect for users in eating disorder recovery.
+              </p>
+            )}
           </div>
 
           {/* Dark mode */}

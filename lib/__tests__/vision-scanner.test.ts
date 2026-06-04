@@ -7,6 +7,11 @@ import {
   type ReviewIngredient,
 } from '../vision-scanner'
 
+// ─── Clerk mock ───────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const clerkServer = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const TEST_KEYS = [
@@ -39,6 +44,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  clerkServer.auth.mockResolvedValue({ userId: 'test-user-123' })
 })
 
 describe('POST /api/scan-ingredients (proxy route)', () => {
@@ -89,6 +95,10 @@ describe('POST /api/scan-ingredients (proxy route)', () => {
     delete process.env.VISION_LAMBDA_URL
 
     jest.resetModules()
+    // Re-get the fresh Clerk mock after module reset and set authenticated user
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const freshClerk = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+    freshClerk.auth.mockResolvedValue({ userId: 'test-user-123' })
     const mod = await import('@/app/api/scan-ingredients/route')
 
     const req = new NextRequest('http://localhost/api/scan-ingredients', {

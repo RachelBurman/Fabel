@@ -7,6 +7,7 @@ import {
   Utensils, X, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useUser } from '@clerk/nextjs'
 import { useFable } from '@/lib/fable-context'
 import { getEffectiveUseByDate } from '@/lib/shelf-life'
 import { normaliseCandidates } from '@/lib/ingredient-utils'
@@ -212,6 +213,7 @@ export function SubstitutesScreen({
   onAdaptAndCook,
 }: SubstitutesScreenProps) {
   const { preferences } = useFable()
+  const { isSignedIn } = useUser()
 
   const [mode, setMode] = useState<Mode>('from-kitchen')
   const [inputMode, setInputMode] = useState<InputMode>('full-recipe')
@@ -786,9 +788,11 @@ export function SubstitutesScreen({
                           </span>
                         </div>
 
-                        {sub.explanation && (
+                        {sub.explanation ? (
                           <p className="text-sm text-muted-foreground leading-relaxed">{sub.explanation}</p>
-                        )}
+                        ) : !isSignedIn ? (
+                          <p className="text-sm text-muted-foreground italic">Sign in to see why this substitution works.</p>
+                        ) : null}
 
                         <div className="flex gap-6 mt-3 pt-3 border-t border-border/50">
                           <div>

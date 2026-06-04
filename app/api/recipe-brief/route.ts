@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
-import { getUserId } from "@/lib/get-user-id";
+import { requireAuth, AuthRequiredError } from "@/lib/get-user-id";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
 import { buildPreferenceProfile } from "@/lib/preference-profile";
@@ -27,6 +27,19 @@ const GUEST_BRIEF: RecipeBrief = {
 };
 
 export async function POST(req: NextRequest) {
+  let uid: string;
+  try {
+    ({ userId: uid } = await requireAuth());
+  } catch (err) {
+    if (err instanceof AuthRequiredError) {
+      return NextResponse.json(
+        { error: "auth_required", message: "Please sign in to use this feature" },
+        { status: 401 }
+      );
+    }
+    throw err;
+  }
+
   let body: {
     userId?: unknown;
     preferences?: unknown;
@@ -38,22 +51,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ brief: GUEST_BRIEF });
   }
 
-  const bodyUserId =
-    typeof body.userId === "string" && body.userId.trim() ? body.userId.trim() : undefined;
-  let uid: string | null = null;
-  let isAuthenticated = false;
-  try {
-    const resolved = await getUserId(bodyUserId);
-    uid = resolved.userId;
-    isAuthenticated = resolved.isAuthenticated;
-  } catch {
-    // No userId
-  }
-
-  if (!uid) return NextResponse.json({ brief: GUEST_BRIEF });
-
   // Rate limit check
-  const rateLimit = await checkRateLimit(uid, isAuthenticated);
+  const rateLimit = await checkRateLimit(uid, true);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {

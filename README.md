@@ -21,7 +21,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 628 tests across 32 suites; 12 Lambda tests (node:test) |
+| Testing | Jest 29, ts-jest, React Testing Library — 637 tests across 33 suites; 12 Lambda tests (node:test) |
 
 ---
 
@@ -86,6 +86,22 @@ pnpm dev
 - **Kitchen equipment** — collapsible "What equipment do you have?" section with checkboxes for Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue/Grill, Instant Pot; Hob and Oven on by default; preference persisted permanently to DynamoDB
 - **Use my kitchen only** toggle — constrains recipe generation to exactly the ingredients added; skips Epicure pairings and adds a hard prompt constraint so Claude adds nothing extra
 - Ingredient list persisted in DynamoDB with debounced auto-save; old string-array profiles migrated automatically
+
+### Guest vs Authenticated Mode
+Fable is fully usable without an account — guests get a meaningful experience, with AI features unlocked on sign-in.
+
+- **Always open (no account needed):** kitchen management, allergen/safe foods settings, Epicure ingredient search, community recipe browsing, drink pairings, substitute ingredient matching, Discover tab, recipe saving/liking, dark mode, onboarding tutorial
+- **Requires sign-in:**
+  - **Photo scanning** — camera icon in the kitchen search bar shows an inline prompt with a "Sign in" link for guests instead of opening the camera
+  - **Macros toggle** — in Allergen Settings, tapping the toggle shows "Sign in to see nutritional information." inline for guests instead of enabling it
+  - **Recipe brief** (`/api/recipe-brief`) — returns 401 for guests; guest recipe generation proceeds without the personalised direction brief
+  - **Macro estimation** (`/api/macros`) — returns 401 for guests; macros section hidden for guest sessions
+- **Modified for guests:**
+  - **Recipe generation** — guests receive a community DB recipe (same as rate-limited users) with an amber "You're seeing a community recipe — Sign in to generate a personalised recipe with AI." banner; no rate limit consumed; no Claude call made; `RecipeBriefCard` not shown
+  - **Substitute explanations** — Epicure similarity matching runs as normal; Claude explanation step is skipped; "Sign in to see why this substitution works." shown where the explanation would appear
+- Auth overlay rendered via a portal in `FableAppContent`; opened from inline guest prompts; auto-closes on successful sign-in
+- `AuthRequiredError` pattern in `lib/get-user-id.ts` — `requireAuth()` throws; callers catch and return `{ error: 'auth_required', message: '...' }` with status 401
+- Anthropic spend protection: guest recipe generation costs nothing (DB fallback); guest substitute matching costs nothing (Epicure only)
 
 ### Photo Ingredient Recognition
 - Camera icon alongside the kitchen search bar — taps open the device camera or photo library
@@ -356,6 +372,7 @@ In-memory (loaded at server startup)
 - ✅ **Agentic taste profile evolution** — `fable-taste-profile-writer` Lambda (EventBridge, every 6h) queries the `needsRecompute-lastComputedAt-index` GSI for eligible users, runs `computeDriftAwareProfile` (all-time vs. recent-10 diff for emerging/fading signals), calls Claude Haiku to generate 2-3 proactive recipe direction suggestions, and writes a `StoredTasteProfile` to `fable-users`; `fable-feedback-stream-processor` now sets `needsRecompute = "true"` and initialises `lastComputedAt` on every feedback write; `/api/insights` reads the stored profile when fresh (skips live `buildPreferenceProfile` call) and returns `recipeSuggestions`; Discover tab surfaces suggestions as tappable direction cards — tapping one skips the `/api/recipe-brief` call and uses the pre-computed direction directly; 11 new Jest tests + 12 Lambda tests (575 Jest + 12 node:test)
 - ✅ **Rate limiting with community recipe fallback** — new `fable-rate-limits` DynamoDB table (PK: userId, SK: windowKey, atomic ADD counters, TTL auto-cleanup); `lib/rate-limiter.ts` checks and increments dual-window (hour + day) counters via `TransactWriteCommand` (single atomic call, race-condition safe); fail-open on DynamoDB errors; guest limits 10/hour 30/day, auth stubs defined (50/200); `/api/generate-recipe` returns HTTP 200 with `rateLimited: true` + best-matching community recipe rather than a hard error; `lib/community-recipe-fallback.ts` scans `fable-saved-recipes` with allergen/safe-foods hard filter + preference scoring, falls back to 15 pre-seeded allergen-free community recipes; all other rate-limited routes return 429; amber banner in recipe screen, inline messages in substitutes/scan; 40 new tests (617 Jest total across 30 suites)
 - ✅ **Clerk authentication + guest migration** — Clerk auth (`@clerk/nextjs`) wired into the Guest pill in the header: signed-out users see the embedded `<SignIn />` component (email/password, Google, GitHub); signed-in users see their name, avatar initial, and a sign-out button. All API routes use `lib/get-user-id.ts` — server reads Clerk session first, falls back to guest UUID from the request if unauthenticated. Authenticated users get higher rate limits (50/hour, 200/day). On first sign-in from a device, `POST /api/user/migrate-guest` merges the guest UUID data into the Clerk account: allergens and safeIngredients are unioned (safety-critical, never discarded), kitchen ingredients deduplicated by epicureKey (auth wins on conflict), preferenceSignals appended, auth record wins for discoverSettings/visibleTabs/tasteProfile; feedback, saved recipes, and collections are copied over. Migration is non-fatal and fires once per device via `localStorage['fable-guest-migrated']`; success shows a Sonner toast. 11 new tests (628 Jest total across 32 suites)
+- ✅ **Auth-gated Claude routes + guest DB-only mode** — `/api/scan-ingredients`, `/api/macros`, and `/api/recipe-brief` now return 401 for unauthenticated requests via `requireAuth()` + `AuthRequiredError` pattern in `lib/get-user-id.ts`. `/api/generate-recipe` returns a community DB fallback with `guestMode: true` for guests (no Claude call, no rate limit consumed). `/api/substitutes` skips the Claude explanation step for guests. Frontend: camera button shows inline "Sign in" prompt for guests; macros toggle in Settings shows "Sign in to see nutritional information."; recipe screen shows a warm amber "community recipe" banner for guest mode; substitute cards show "Sign in to see why this substitution works." in place of explanations; tutorial slide 4 updated to mention guest mode. Auth overlay portal in `FableAppContent` (opens from inline prompts, auto-closes on sign-in). 10 new tests (637 Jest total across 33 suites)
 
 ### In Progress
 

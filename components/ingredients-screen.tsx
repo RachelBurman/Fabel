@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { useUser } from '@clerk/nextjs'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
 import { type VisionResult } from '@/lib/vision-scanner'
@@ -227,9 +228,11 @@ interface IngredientsScreenProps {
   onShowPairings: (filters: RecipeFilters) => void
   onGenerateRecipe: (filters: RecipeFilters) => void
   onFindSubstitutes: () => void
+  onOpenAuth?: () => void
 }
 
-export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes }: IngredientsScreenProps) {
+export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes, onOpenAuth }: IngredientsScreenProps) {
+  const { isSignedIn } = useUser()
   const { preferences, addIngredient, removeIngredient, setIngredients, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
   const showLactoseTag = preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
@@ -264,6 +267,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const [visionLoading, setVisionLoading] = useState(false)
   const [visionResult, setVisionResult] = useState<VisionResult | null>(null)
+  const [cameraAuthPrompt, setCameraAuthPrompt] = useState(false)
 
   // Portal dropdown positioning
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -472,7 +476,10 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                       className="pl-12 pr-12 py-6 text-base rounded-xl bg-card border-border"
                     />
                     <button
-                      onClick={() => cameraInputRef.current?.click()}
+                      onClick={() => {
+                        if (!isSignedIn) { setCameraAuthPrompt(true); return }
+                        cameraInputRef.current?.click()
+                      }}
                       disabled={visionLoading}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40"
                       aria-label="Scan ingredients from photo"
@@ -493,6 +500,18 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   {visionLoading && (
                     <p className="text-xs text-muted-foreground mt-1.5 text-center animate-pulse">
                       Analysing your kitchen…
+                    </p>
+                  )}
+                  {cameraAuthPrompt && !isSignedIn && (
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      📷 Photo scanning requires an account.{' '}
+                      <button
+                        onClick={onOpenAuth}
+                        className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+                      >
+                        Sign in
+                      </button>
+                      {' '}to scan your fridge.
                     </p>
                   )}
                 </div>

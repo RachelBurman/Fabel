@@ -1,9 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
+import { requireAuth, AuthRequiredError } from "@/lib/get-user-id";
 
 const LAMBDA_URL = process.env.VISION_LAMBDA_URL;
 
 export async function POST(req: NextRequest) {
+  let userId: string;
+  try {
+    ({ userId } = await requireAuth());
+  } catch (err) {
+    if (err instanceof AuthRequiredError) {
+      return NextResponse.json(
+        { error: "auth_required", message: "Please sign in to use this feature" },
+        { status: 401 }
+      );
+    }
+    throw err;
+  }
+
   console.log("[scan-ingredients] LAMBDA_URL:", LAMBDA_URL ?? "(not set)");
 
   if (!LAMBDA_URL) {
@@ -20,12 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // Rate limiting — use userId from body if present, else IP
-  const userId = typeof body.userId === "string" && body.userId.trim()
-    ? body.userId.trim()
-    : `ip:${(req.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim()}`;
-
-  const rateLimit = await checkRateLimit(userId, false);
+  const rateLimit = await checkRateLimit(userId, true);
   if (!rateLimit.allowed) {
     return NextResponse.json(
       {
