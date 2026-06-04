@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, User, X, Compass, LogOut } from 'lucide-react'
 import { useTheme } from 'next-themes'
@@ -128,7 +129,10 @@ export function Header({ onSettingsClick }: HeaderProps) {
   const isDark = theme === 'dark'
 
   const [guestOpen, setGuestOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const rightGroupRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { setIsMounted(true) }, [])
 
   const handleThemeToggle = () => {
     const newDark = !isDark
@@ -263,17 +267,16 @@ export function Header({ onSettingsClick }: HeaderProps) {
             )}
 
             {guestOpen && !isSignedIn && (
-              /* ── Signed-out view: Clerk card IS the container ── */
+              /* ── Signed-out: desktop absolute popover ── */
               <motion.div
-                key="clerk-signin"
+                key="clerk-signin-desktop"
                 initial={{ opacity: 0, y: -6, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="fixed top-16 inset-x-0 md:absolute md:top-full md:inset-x-auto md:left-auto md:right-0 md:mt-2 md:w-[420px] z-50 rounded-b-xl md:rounded-xl overflow-hidden shadow-xl"
+                className="hidden md:block absolute top-full right-0 mt-2 w-[420px] z-50 rounded-xl overflow-hidden shadow-xl"
               >
                 <div className="relative">
-                  {/* Close button overlaid on Clerk's card */}
                   <button
                     onClick={() => setGuestOpen(false)}
                     aria-label="Close"
@@ -294,16 +297,66 @@ export function Header({ onSettingsClick }: HeaderProps) {
                         colorInputText: '#fafaf9',
                         colorNeutral: '#78716c',
                       } : undefined,
-                      elements: {
-                        rootBox: 'w-full',
-                        card: 'shadow-xl rounded-xl',
-                      },
+                      elements: { rootBox: 'w-full', card: 'shadow-xl rounded-xl' },
                     }}
                   />
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Mobile full-screen sign-in — portal escapes backdrop-filter stacking context */}
+          {isMounted && createPortal(
+            <AnimatePresence>
+              {guestOpen && !isSignedIn && (
+                <motion.div
+                  key="clerk-signin-mobile"
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 24 }}
+                  transition={{ duration: 0.2, ease: 'easeOut' }}
+                  className="fixed inset-0 z-[200] flex flex-col md:hidden"
+                >
+                  {/* Header bar */}
+                  <div className={cn(
+                    'flex items-center justify-between px-4 h-16 border-b border-border shrink-0',
+                    isDark ? 'bg-[#1c1917]' : 'bg-white'
+                  )}>
+                    <span className="text-base font-semibold" style={{ color: isDark ? '#fafaf9' : undefined }}>
+                      Sign in to Fable
+                    </span>
+                    <button
+                      onClick={() => setGuestOpen(false)}
+                      aria-label="Close"
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {/* Clerk form — scrollable */}
+                  <div className={cn('flex-1 overflow-y-auto', isDark ? 'bg-[#1c1917]' : 'bg-white')}>
+                    <SignIn
+                      routing="hash"
+                      afterSignInUrl="/"
+                      afterSignUpUrl="/"
+                      appearance={{
+                        variables: isDark ? {
+                          colorBackground: '#1c1917',
+                          colorText: '#fafaf9',
+                          colorTextSecondary: '#a8a29e',
+                          colorInputBackground: '#292524',
+                          colorInputText: '#fafaf9',
+                          colorNeutral: '#78716c',
+                        } : undefined,
+                        elements: { rootBox: 'w-full', card: 'shadow-none rounded-none' },
+                      }}
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>,
+            document.body
+          )}
 
           {/* Dark mode toggle */}
           <button
