@@ -175,20 +175,20 @@ export function Header({ onSettingsClick }: HeaderProps) {
       <div className="flex items-center justify-between h-16 px-6 md:justify-end">
 
         {/* Left: logo + Safe Foods badge — hidden on desktop (sidebar shows the logo) */}
-        <div className="flex items-center gap-2 md:hidden">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+        <div className="flex items-center gap-2 min-w-0 flex-1 md:hidden">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <Leaf className="w-4 h-4 text-primary" />
           </div>
-          <span className="text-lg font-semibold text-foreground">Fable</span>
+          <span className="text-lg font-semibold text-foreground shrink-0">Fable</span>
           {safeFoodsActive && (
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0"
               style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#15803d' }}
             >
               <ShieldCheck className="w-3 h-3" />
-              Safe Foods
+              <span className="hidden xs:inline">Safe Foods</span>
             </motion.div>
           )}
         </div>
@@ -270,7 +270,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="fixed top-16 left-2 right-2 md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-[420px] z-50 rounded-xl overflow-hidden"
+                className="fixed top-16 inset-x-0 md:absolute md:top-full md:inset-x-auto md:left-auto md:right-0 md:mt-2 md:w-[420px] z-50 rounded-b-xl md:rounded-xl overflow-hidden shadow-xl"
               >
                 <div className="relative">
                   {/* Close button overlaid on Clerk's card */}
