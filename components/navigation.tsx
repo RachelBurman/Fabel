@@ -311,30 +311,26 @@ export function Header({ onSettingsClick }: HeaderProps) {
               {guestOpen && !isSignedIn && (
                 <motion.div
                   key="clerk-signin-mobile"
-                  initial={{ opacity: 0, y: 24 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 24 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="fixed inset-0 z-[200] flex flex-col md:hidden"
-                >
-                  {/* Header bar */}
-                  <div className={cn(
-                    'flex items-center justify-between px-4 h-16 border-b border-border shrink-0',
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  className={cn(
+                    'fixed inset-0 z-[200] flex flex-col overflow-y-auto px-5 py-6 md:hidden',
                     isDark ? 'bg-[#1c1917]' : 'bg-white'
-                  )}>
-                    <span className="text-base font-semibold" style={{ color: isDark ? '#fafaf9' : undefined }}>
-                      Sign in to Fable
-                    </span>
-                    <button
-                      onClick={() => setGuestOpen(false)}
-                      aria-label="Close"
-                      className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {/* Clerk form — scrollable */}
-                  <div className={cn('flex-1 overflow-y-auto', isDark ? 'bg-[#1c1917]' : 'bg-white')}>
+                  )}
+                >
+                  {/* Close button — fixed so it stays visible while scrolling */}
+                  <button
+                    onClick={() => setGuestOpen(false)}
+                    aria-label="Close"
+                    className="fixed top-4 right-4 z-[201] w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 transition-colors"
+                  >
+                    <X className="w-4 h-4" style={{ color: isDark ? '#fafaf9' : '#374151' }} />
+                  </button>
+
+                  {/* Clerk fills full width */}
+                  <div className="w-full">
                     <SignIn
                       routing="hash"
                       afterSignInUrl="/"
@@ -348,7 +344,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                           colorInputText: '#fafaf9',
                           colorNeutral: '#78716c',
                         } : undefined,
-                        elements: { rootBox: 'w-full', card: 'shadow-none rounded-none' },
+                        elements: { rootBox: 'w-full', card: 'shadow-none rounded-none w-full' },
                       }}
                     />
                   </div>
