@@ -279,29 +279,26 @@ export function Header({ onSettingsClick }: HeaderProps) {
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div>
+                    <div className="px-3 pb-1">
                       <SignIn
                         routing="hash"
                         afterSignInUrl="/"
                         afterSignUpUrl="/"
                         appearance={{
-                          variables: {
-                            colorBackground: 'transparent',
-                          },
                           elements: {
                             rootBox: 'w-full',
-                            card: 'shadow-none border-0 p-0 rounded-none',
-                            header: 'hidden',
+                            card: 'shadow-none p-0 bg-transparent border-0 rounded-none',
                             headerTitle: 'hidden',
                             headerSubtitle: 'hidden',
-                            main: 'px-4',
-                            footer: 'px-4 pb-3 pt-0',
+                            header: 'hidden',
+                            footer: 'pt-1',
                           },
                         }}
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground text-center px-4 pb-3 leading-relaxed border-t border-border pt-2">
-                      Already saving to this browser. Sign in to sync across devices.
+                    <p className="text-xs text-muted-foreground text-center px-4 pb-3 leading-relaxed">
+                      Already saving to this browser.{' '}
+                      Sign in to access across all devices.
                     </p>
                   </div>
                 )}
