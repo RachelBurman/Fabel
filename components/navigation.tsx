@@ -218,86 +218,89 @@ export function Header({ onSettingsClick }: HeaderProps) {
 
           {/* Auth popover */}
           <AnimatePresence>
-            {guestOpen && (
+            {guestOpen && isSignedIn && (
+              /* ── Signed-in view ── */
               <motion.div
+                key="user-menu"
                 initial={{ opacity: 0, y: -6, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute top-full right-0 mt-2 w-[280px] bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
+                className="absolute top-full right-0 mt-2 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
               >
-                {isSignedIn ? (
-                  /* ── Signed-in view ── */
-                  <div>
-                    <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                          {user?.firstName?.[0]?.toUpperCase() ?? user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-foreground truncate">
-                            {user?.fullName || user?.firstName || 'Account'}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {user?.primaryEmailAddress?.emailAddress}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setGuestOpen(false)}
-                        aria-label="Close"
-                        className="text-muted-foreground hover:text-foreground transition-colors mt-0.5 shrink-0"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
+                      {user?.firstName?.[0]?.toUpperCase() ?? user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'}
                     </div>
-                    <div className="px-4 pb-4">
-                      <button
-                        onClick={handleSignOut}
-                        className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Sign out
-                      </button>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {user?.fullName || user?.firstName || 'Account'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user?.primaryEmailAddress?.emailAddress}
+                      </p>
                     </div>
                   </div>
-                ) : (
-                  /* ── Signed-out view ── */
-                  <div>
-                    <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                          <Leaf className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                        <span className="text-sm font-semibold text-foreground">Sign in to Fable</span>
-                      </div>
-                      <button
-                        onClick={() => setGuestOpen(false)}
-                        aria-label="Close"
-                        className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    <div className="w-full overflow-hidden scale-[0.92] origin-top">
-                      <SignIn
-                        routing="hash"
-                        afterSignInUrl="/"
-                        afterSignUpUrl="/"
-                        appearance={{
-                          elements: {
-                            rootBox: 'w-full',
-                            card: 'shadow-none border-0 rounded-none',
-                            headerTitle: 'hidden',
-                            headerSubtitle: 'hidden',
-                            header: 'hidden',
-                            footer: 'pb-0',
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  <button
+                    onClick={() => setGuestOpen(false)}
+                    aria-label="Close"
+                    className="text-muted-foreground hover:text-foreground transition-colors mt-0.5 shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="px-4 pb-4">
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
+            {guestOpen && !isSignedIn && (
+              /* ── Signed-out view: Clerk card IS the container ── */
+              <motion.div
+                key="clerk-signin"
+                initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
+                className="fixed top-16 left-2 right-2 md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-auto z-50 rounded-xl overflow-hidden"
+              >
+                <div className="relative">
+                  {/* Close button overlaid on Clerk's card */}
+                  <button
+                    onClick={() => setGuestOpen(false)}
+                    aria-label="Close"
+                    className="absolute top-3 right-3 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-black/8 hover:bg-black/15 text-gray-500 hover:text-gray-800 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                  <SignIn
+                    routing="hash"
+                    afterSignInUrl="/"
+                    afterSignUpUrl="/"
+                    appearance={{
+                      variables: isDark ? {
+                        colorBackground: '#1c1917',
+                        colorText: '#fafaf9',
+                        colorTextSecondary: '#a8a29e',
+                        colorInputBackground: '#292524',
+                        colorInputText: '#fafaf9',
+                        colorNeutral: '#78716c',
+                      } : undefined,
+                      elements: {
+                        rootBox: 'w-full',
+                        card: 'shadow-xl rounded-xl',
+                      },
+                    }}
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
