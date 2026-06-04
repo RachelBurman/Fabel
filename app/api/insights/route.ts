@@ -7,8 +7,10 @@ import { buildPreferenceProfile } from "@/lib/preference-profile";
 import { deriveFlavourTerritory } from "@/lib/flavour-territory";
 import { getEpicureVectors } from "@/lib/epicure";
 
-// Cache responses for 1 hour — insights don't need to be real-time
-export const revalidate = 3600;
+// Force dynamic — this route serves personalized data (tasteProfile, recipeSuggestions)
+// per userId. Data freshness is governed by the stored profile's lastComputedAt (6h),
+// not by HTTP caching. A stale cached response would silently omit recipeSuggestions.
+export const dynamic = "force-dynamic";
 
 const FRESH_HOURS = 6;
 
@@ -144,6 +146,8 @@ export async function GET(req: NextRequest) {
     occasion: rt.occasion,
     seedIngredients,
   }));
+
+  console.log(`[insights] userId=${userId} useStoredProfile=${useStoredProfile} hasEnoughSignals=${hasEnoughSignals} recipeSuggestions=${recipeSuggestions?.length ?? 0} tasteProfile=${tasteProfile !== null}`);
 
   return NextResponse.json({
     profileKey,
