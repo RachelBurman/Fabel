@@ -270,7 +270,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="fixed top-16 left-2 right-2 md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-auto z-50 rounded-xl overflow-hidden"
+                className="fixed top-16 left-2 right-2 md:absolute md:top-full md:left-auto md:right-0 md:mt-2 md:w-[420px] z-50 rounded-xl overflow-hidden"
               >
                 <div className="relative">
                   {/* Close button overlaid on Clerk's card */}
