@@ -32,6 +32,15 @@ export async function POST(req: NextRequest) {
   void incrementRateLimit(rateLimitKey);
 
   const text = typeof body.text === "string" ? body.text.trim() : "";
+  if (text.length > 8000) {
+    return NextResponse.json(
+      {
+        error: "Input too long",
+        message: "Recipe text must be under 8,000 characters.",
+      },
+      { status: 400 }
+    );
+  }
   if (!text) return NextResponse.json({ ingredients: [] });
 
   try {

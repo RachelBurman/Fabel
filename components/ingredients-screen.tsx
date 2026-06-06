@@ -469,6 +469,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     <Input
                       type="text"
                       placeholder="Search 1,790 ingredients…"
+                      maxLength={100}
                       value={inputValue}
                       onChange={e => { setInputValue(e.target.value); setShowDropdown(e.target.value.length > 0) }}
                       onKeyDown={handleInputKeyDown}

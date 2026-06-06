@@ -368,6 +368,8 @@ export function SubstitutesScreen({
 
   const currentText = inputMode === 'full-recipe' ? fullRecipeText : ingredientsText
   const setCurrentText = inputMode === 'full-recipe' ? setFullRecipeText : setIngredientsText
+  const TEXT_LIMIT = inputMode === 'full-recipe' ? 8000 : 2000
+  const isOverLimit = currentText.length > TEXT_LIMIT
 
   const handleParseRecipe = async () => {
     if (!currentText.trim()) return
@@ -534,11 +536,14 @@ export function SubstitutesScreen({
                   }
                   className="w-full h-36 text-sm bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
+                <p className={cn('text-xs text-right tabular-nums', isOverLimit ? 'text-destructive' : 'text-muted-foreground')}>
+                  {currentText.length.toLocaleString('en-US')} / {TEXT_LIMIT.toLocaleString('en-US')}
+                </p>
 
                 <div className="flex gap-2">
                   <Button
                     onClick={handleParseRecipe}
-                    disabled={!currentText.trim() || isParsing}
+                    disabled={!currentText.trim() || isParsing || isOverLimit}
                     className="flex-1 rounded-full gap-2"
                     variant="outline"
                   >

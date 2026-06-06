@@ -19,6 +19,18 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
 
   const handleSubmit = async () => {
     setError(null)
+    if (mode === 'signup' && name.length > 50) {
+      setError('Name must be 50 characters or fewer')
+      return
+    }
+    if (email.length > 254) {
+      setError('Email must be 254 characters or fewer')
+      return
+    }
+    if (password.length > 72) {
+      setError('Password must be 72 characters or fewer')
+      return
+    }
     setLoading(true)
     try {
       if (mode === 'signin') {
