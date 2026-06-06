@@ -18,3 +18,9 @@ package-lock.json
 
 # Lambda build artefacts
 lambda/**/*.zip
+
+# next-pwa generated service worker (build artifact, regenerated on every build)
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map
