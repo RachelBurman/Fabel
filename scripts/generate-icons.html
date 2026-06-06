@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head><title>Generate Fable Icons</title></head>
+<body>
+<p>Generating icons… check your Downloads folder.</p>
+<canvas id="c" style="display:none"></canvas>
+<script>
+const SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#8fbc8f"/>
+  <svg x="88" y="88" width="336" height="336" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+  </svg>
+</svg>`
+
+const blob = new Blob([SVG], { type: 'image/svg+xml' })
+const url = URL.createObjectURL(blob)
+
+const sizes = [
+  { w: 512, h: 512, name: 'icon-512.png' },
+  { w: 192, h: 192, name: 'icon-192.png' },
+  { w: 180, h: 180, name: 'apple-icon.png' },
+]
+
+const canvas = document.getElementById('c')
+const ctx = canvas.getContext('2d')
+
+async function generate() {
+  const img = new Image()
+  img.src = url
+  await new Promise(r => img.onload = r)
+
+  for (const { w, h, name } of sizes) {
+    canvas.width = w
+    canvas.height = h
+    ctx.clearRect(0, 0, w, h)
+    ctx.drawImage(img, 0, 0, w, h)
+    const a = document.createElement('a')
+    a.download = name
+    a.href = canvas.toDataURL('image/png')
+    a.click()
+    await new Promise(r => setTimeout(r, 300))
+  }
+
+  document.querySelector('p').textContent = 'Done! 3 files downloaded: icon-512.png, icon-192.png, apple-icon.png — move them to public/icons/ (and apple-icon.png to public/).'
+}
+
+generate()
+</script>
+</body>
+</html>
