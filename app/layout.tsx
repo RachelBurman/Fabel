@@ -20,7 +20,6 @@ export const metadata: Metadata = {
   title: 'Fable - Allergen-Aware Recipe Discovery',
   description: 'Find safe, flavour-matched recipes tailored to your dietary needs. Fable helps people with food allergies discover delicious meals with confidence.',
   generator: 'v0.app',
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
