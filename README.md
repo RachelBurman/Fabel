@@ -294,80 +294,112 @@ Trending ingredient insights as a dedicated tab (Compass icon), between Recipe a
 
 ```
 Browser
+  │  lib/barcode-scanner.ts — @zxing/browser BrowserMultiFormatReader runs client-side on every image
+  │  Numeric EAN/UPC barcode detected → POST /api/scan-barcode
+  │  No barcode (or detection fails)  → POST /api/scan-ingredients  (Vision path)
+  │  Both paths produce identical VisionResult shape → same review screen
   │
   ▼
 Vercel — Next.js 16 (App Router)
   │
-  ├── /api/auth/[...all]       Better Auth handler — sign-in, sign-up, sign-out, session (Neon Postgres)
-  ├── /api/ingredients         Epicure ingredient search (fuzzy, 1,790 items)
-  ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
-  ├── /api/recipe-brief        Anthropic Claude Haiku taste-history reasoning → RecipeBrief (step 1)
-  ├── /api/generate-recipe     Anthropic Claude recipe generation + validation (step 2)
-  ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
-  ├── /api/scan-ingredients    Thin proxy → fable-vision-ingredient-scanner Lambda (image compressed to JPEG ≤1200px client-side before upload)
-  ├── /api/scan-barcode        Thin proxy → fable-barcode-scanner Lambda (barcode auto-detected client-side via @zxing/browser before upload)
-  ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
-  ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
-  ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
-  ├── /api/extract-ingredients Claude ingredient extraction from arbitrary recipe text
-  ├── /api/insights            Ingredient insights (1h cache) — allergen-profile + global trends + taste profile
-  ├── /api/recipe-share        POST create public share record in fable-recipe-shares (90-day TTL)
-  ├── /api/recipe-share/[id]   GET read share record — used by the shared recipe page
-  ├── /recipe/[recipeId]       Public shared recipe page — no auth; OG metadata; drink pairings
+  ├── /api/auth/[...all]         Better Auth — sign-in, sign-up, sign-out, session (Neon Postgres)
+  ├── /api/ingredients           Epicure ingredient search (fuzzy, 1,790 items)
+  ├── /api/recipes               Cosine similarity + allergen/safe-foods filter
+  ├── /api/recipe-brief          Auth-gated · Claude Haiku taste-history reasoning → RecipeBrief (step 1)
+  ├── /api/generate-recipe       Rate-limited · Claude Sonnet recipe generation + validation (step 2)
+  │                              Guest/rate-limited → community DB fallback (no Claude call)
+  ├── /api/drink-pairings        Epicure beverage similarity search + allergen filter (open)
+  ├── /api/scan-ingredients      Auth-gated · rate-limited · thin proxy → fable-vision-ingredient-scanner
+  │                              (image compressed client-side to JPEG ≤1200px before upload)
+  ├── /api/scan-barcode          Auth-gated · rate-limited · thin proxy → fable-barcode-scanner
+  │                              (barcode already extracted client-side; only the string is sent)
+  ├── /api/feedback              Recipe like/dislike write + preference pattern retrieval
+  ├── /api/substitutes           Epicure similarity + category scoring · Claude explanation (auth only)
+  ├── /api/macros                Auth-gated · Claude Haiku on-demand macro estimation
+  ├── /api/extract-ingredients   Claude ingredient extraction from arbitrary recipe text
+  ├── /api/insights              1h-cached · allergen-profile trends + taste profile + suggestions
+  ├── /api/recipe-share          POST write share record to fable-recipe-shares (90-day TTL)
+  ├── /api/recipe-share/[id]     GET read share record (public, no auth)
+  ├── /recipe/[recipeId]         Public shared recipe page — OG metadata, drink pairings, no auth
   └── /api/user/
-       ├── profile             DynamoDB read/write (allergens, safe foods, ingredients, colorMode)
-       ├── saved-recipes       DynamoDB read/write (full recipe objects)
-       ├── collections         DynamoDB CRUD (GET, POST, PUT, DELETE)
-       └── migrate-guest       One-time guest-to-auth data merge (POST, auth-gated)
+       ├── profile               DynamoDB read/write (allergens, safe foods, ingredients, colorMode, …)
+       ├── saved-recipes         DynamoDB read/write (full recipe objects + history)
+       ├── collections           DynamoDB CRUD (GET, POST, PUT, DELETE)
+       └── migrate-guest         One-time guest-to-auth data merge (POST, auth-gated)
+
+External APIs (outbound from Lambda or Next.js route)
+  ├── Anthropic Claude      claude-haiku-4-5 (Vision · brief · macros) · claude-sonnet-4-6 (recipes)
+  │                         System prompt cached — ~90% cost reduction on repeated calls
+  └── Open Food Facts       world.openfoodfacts.org/api/v0/product/{barcode}.json
+                            Called by fable-barcode-scanner · 5s AbortController timeout
+                            Only numeric EAN/UPC barcodes forwarded · no QR URLs ever followed
+
+Auth (Neon Postgres — separate from DynamoDB)
+  └── better-auth 1.2.7     Tables: user · session · account · verification
+                            Email/password only · serverExternalPackages: ['pg', 'better-auth']
 
 DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
   │                            ingredients[]{name, displayName, subtype, quantity, unit,
   │                            area, dateType, useByDate, boughtDate, addedAt},
   │                            kitchenEquipment[], colorMode ('light'|'dark'|'system'),
-  │                            preferenceSignals[], discoverSettings{}, visibleTabs[])
-  ├── fable-saved-recipes      Saved recipes + history entries with full recipe JSON (userId+recipeId)
-  ├── fable-recipe-shares      Public recipe shares (recipeId PK, fullRecipe, 90-day TTL)
-  ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], createdAt, updatedAt)
-  ├── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
-  │                            recipeTitle, recipeIngredients, allergenProfile, timestamp,
+  │                            preferenceSignals[], discoverSettings{}, visibleTabs[],
+  │                            tasteProfile{}, needsRecompute, lastComputedAt)
+  ├── fable-saved-recipes      Saved recipes + history (userId+recipeId PK·SK)
+  │                            Saved: no TTL · Unsaved history: 90-day TTL
+  ├── fable-recipe-shares      Public shares (recipeId PK, fullRecipe JSON, 90-day TTL)
+  ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], timestamps)
+  ├── fable-rate-limits        Dual-window rate counters (userId PK, windowKey SK)
+  │                            Atomic ADD via TransactWriteCommand · TTL auto-cleanup · fail-open
+  ├── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, allergenProfile,
   │                            surveyResponse?{ingredientsHighlighted, ingredientsSkipped,
-  │                              recipePositives, recipeNegatives})
+  │                              recipePositives, recipeNegatives}, timestamp)
   │                              │
   │                              ▼ DynamoDB Stream
   │                            AWS Lambda — fable-feedback-stream-processor
-  │                              │  1. Extracts one preferenceSignal per ingredient → fable-users
-  │                              └─ 2. Increments likeCount per ingredient in fable-ingredient-insights
-  │                                    (liked events only; non-fatal; updates week + all-time records)
+  │                              │  1. preferenceSignal per ingredient → fable-users (list_append)
+  │                              │  2. likeCount per ingredient → fable-ingredient-insights
+  │                              └─ 3. needsRecompute = "true" → fable-users (GSI entry point)
   └── fable-ingredient-insights  Aggregate trending data (allergenProfile PK + timeWindow SK)
                                   trendingIngredients[], trendingPairings[], trendingRecipeTypes[]
-                                  Profiles: global, gluten-free, dairy-free, nut-free,
-                                            gluten-free#dairy-free, vegan, low-fodmap
+                                  Profiles: global · gluten-free · dairy-free · nut-free ·
+                                            gluten-free#dairy-free · vegan · low-fodmap
 
 AWS Lambda
   ├── fable-feedback-stream-processor   DynamoDB Stream → preference signals + ingredient insights
-  │                                      + sets needsRecompute = "true" on fable-users (GSI entry point)
-  ├── fable-taste-profile-writer        EventBridge scheduled (every 6h) → GSI query → drift-aware
-  │                                      preference analysis → Claude Haiku suggestion generation →
-  │                                      writes tasteProfile to fable-users, clears needsRecompute
-  ├── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients → Claude Vision (Haiku 4.5)
-  │                                      → fuzzy Epicure key matching → structured ingredient list
-  │                                      (CJS · nodejs24.x · 30s timeout)
-  └── fable-barcode-scanner             API Gateway POST /scan-barcode → Open Food Facts API (5s timeout)
-                                         → ingredient extraction + sanitisation → fuzzy Epicure matching
-                                         → structured ingredient list, inferredArea: cupboard
-                                         (CJS · nodejs24.x · 10s timeout · no external deps)
+  │                                      + needsRecompute flag (nodejs24.x · CJS)
+  ├── fable-taste-profile-writer        EventBridge every 6h → needsRecompute-lastComputedAt-index GSI
+  │                                      → drift-aware profile (all-time vs recent-10 diff)
+  │                                      → Claude Haiku 2-3 recipe suggestions → tasteProfile on fable-users
+  │                                      (nodejs24.x · CJS)
+  ├── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients
+  │                                      → Claude Vision Haiku 4.5 (image analysis + storage area inference)
+  │                                      → three-tier Epicure matching (exact · prefix · token-overlap)
+  │                                      → { inferredArea, areaConfident, ingredients[] }
+  │                                      (nodejs24.x · CJS · 30s timeout)
+  └── fable-barcode-scanner             API Gateway POST /scan-barcode
+                                         → Open Food Facts API (5s AbortController timeout)
+                                         → ingredient extraction (structured array → text fallback)
+                                         → sanitise (alphanumeric + spaces · max 100 chars)
+                                         → three-tier Epicure matching (same logic as Vision Lambda)
+                                         → { inferredArea: 'cupboard', areaConfident: true, ingredients[] }
+                                         (nodejs24.x · CJS · 10s timeout · no npm deps)
 
 Shared server-side libs
   ├── lib/preference-profile.ts  buildPreferenceProfile — DynamoDB query + computePreferenceProfile
   │                              + survey merge + aggregateFormatSignals; called by /api/generate-recipe,
-  │                              /api/recipe-brief, and /api/insights. Returns scores, preferred,
-  │                              avoided, formatSignals.
+  │                              /api/recipe-brief, and /api/insights
   ├── lib/flavour-territory.ts   deriveFlavourTerritory — cosine-similarity neighbour overlap
-  │                              for taste-space anchor ingredients; called by /api/insights
-  │                              and /api/recipe-brief
-  └── lib/survey-signals.ts      formatSignalsToClauses — maps aggregated signal keys to Claude
-                                  prompt clauses via RECIPE_SIGNAL_MAP
+  │                              for taste-space anchor ingredients
+  ├── lib/survey-signals.ts      formatSignalsToClauses — signal keys → Claude prompt clauses
+  │                              via RECIPE_SIGNAL_MAP
+  └── lib/vision-scanner.ts      matchToEpicureKey · buildReviewIngredients · buildKitchenIngredients
+                                  shared by scan-ingredients route and the review screen
+
+Client-side libs
+  └── lib/barcode-scanner.ts     detectBarcodeFromFile — @zxing/browser BrowserMultiFormatReader
+                                  EAN-8 · EAN-13 · UPC-A · UPC-E · numeric-only guard
+                                  Returns barcode string or null · never throws · always falls through
 
 In-memory (loaded at server startup)
   ├── Epicure Core embeddings  1,790 × 300 float32 — cosine similarity search
