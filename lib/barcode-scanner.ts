@@ -1,39 +1,24 @@
-const BARCODE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e']
-const NUMERIC_BARCODE_RE = /^\d{8,14}$/
+import { BrowserMultiFormatReader } from '@zxing/browser'
 
-export interface BarcodeDetectorLike {
-  detect(bitmap: ImageBitmap): Promise<Array<{ rawValue: string }>>
-}
-
-export type BarcodeDetectorCtor = new (opts: { formats: string[] }) => BarcodeDetectorLike
-
-/**
- * Attempt to detect a numeric EAN/UPC barcode from a file.
- * Returns the barcode string if found, or null if unavailable/not numeric.
- */
-export async function detectBarcodeFromFile(
-  file: File,
-  BarcodeDetectorCls?: BarcodeDetectorCtor
-): Promise<string | null> {
-  const Cls = BarcodeDetectorCls ?? (
-    'BarcodeDetector' in window
-      ? (window as Window & { BarcodeDetector: BarcodeDetectorCtor }).BarcodeDetector
-      : null
-  )
-  if (!Cls) return null
-
-  let bitmap: ImageBitmap | null = null
+export async function detectBarcodeFromFile(file: File): Promise<string | null> {
   try {
-    bitmap = await createImageBitmap(file)
-    const detector = new Cls({ formats: BARCODE_FORMATS })
-    const barcodes = await detector.detect(bitmap)
-    if (barcodes.length > 0 && NUMERIC_BARCODE_RE.test(barcodes[0].rawValue)) {
-      return barcodes[0].rawValue
+    const reader = new BrowserMultiFormatReader()
+    const imageUrl = URL.createObjectURL(file)
+
+    try {
+      const result = await reader.decodeFromImageUrl(imageUrl)
+      const value = result.getText()
+
+      // Only accept numeric EAN/UPC barcodes
+      if (/^\d{8,14}$/.test(value)) {
+        return value
+      }
+      return null
+    } finally {
+      URL.revokeObjectURL(imageUrl)
     }
-    return null
   } catch {
+    // No barcode found or decode failed — return null to fall through to Vision
     return null
-  } finally {
-    bitmap?.close()
   }
 }
