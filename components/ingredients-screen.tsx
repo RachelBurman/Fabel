@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
-import { useUser } from '@clerk/nextjs'
+import { useSession } from '@/lib/auth-client'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
 import { type VisionResult } from '@/lib/vision-scanner'
@@ -232,7 +232,8 @@ interface IngredientsScreenProps {
 }
 
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes, onOpenAuth }: IngredientsScreenProps) {
-  const { isSignedIn } = useUser()
+  const { data: session } = useSession()
+  const isSignedIn = !!session?.user
   const { preferences, addIngredient, removeIngredient, setIngredients, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
   const showLactoseTag = preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0

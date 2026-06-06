@@ -1,39 +1,41 @@
 import { getUserId } from '../get-user-id'
 
-// @clerk/nextjs/server is mapped to __mocks__/@clerk/nextjs/server.js via jest.config.js
+// @/lib/auth is mapped to __mocks__/lib/auth.js via jest.config.js
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const clerkServer = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+const authMod = require('@/lib/auth') as {
+  auth: { api: { getSession: jest.MockedFunction<() => Promise<{ user: { id: string } } | null>> } }
+}
 
 beforeEach(() => {
-  clerkServer.auth.mockReset()
+  authMod.auth.api.getSession.mockReset()
 })
 
 describe('getUserId', () => {
-  it('returns Clerk userId and isAuthenticated:true when session is active', async () => {
-    clerkServer.auth.mockResolvedValue({ userId: 'clerk_user_123' })
+  it('returns userId and isAuthenticated:true when session is active', async () => {
+    authMod.auth.api.getSession.mockResolvedValue({ user: { id: 'user_123' } })
     const result = await getUserId('guest-uuid-456')
-    expect(result).toEqual({ userId: 'clerk_user_123', isAuthenticated: true })
+    expect(result).toEqual({ userId: 'user_123', isAuthenticated: true })
   })
 
-  it('ignores guestId when Clerk session is active', async () => {
-    clerkServer.auth.mockResolvedValue({ userId: 'clerk_user_123' })
+  it('ignores guestId when session is active', async () => {
+    authMod.auth.api.getSession.mockResolvedValue({ user: { id: 'user_123' } })
     const result = await getUserId('some-guest-id')
-    expect(result.userId).toBe('clerk_user_123')
+    expect(result.userId).toBe('user_123')
   })
 
   it('falls back to guestId with isAuthenticated:false when no session', async () => {
-    clerkServer.auth.mockResolvedValue({ userId: null })
+    authMod.auth.api.getSession.mockResolvedValue(null)
     const result = await getUserId('guest-uuid-456')
     expect(result).toEqual({ userId: 'guest-uuid-456', isAuthenticated: false })
   })
 
-  it('throws when neither Clerk session nor guestId is available', async () => {
-    clerkServer.auth.mockResolvedValue({ userId: null })
+  it('throws when neither session nor guestId is available', async () => {
+    authMod.auth.api.getSession.mockResolvedValue(null)
     await expect(getUserId()).rejects.toThrow('No userId available')
   })
 
   it('throws when guestId is undefined and no session', async () => {
-    clerkServer.auth.mockResolvedValue({ userId: null })
+    authMod.auth.api.getSession.mockResolvedValue(null)
     await expect(getUserId(undefined)).rejects.toThrow('No userId available')
   })
 })

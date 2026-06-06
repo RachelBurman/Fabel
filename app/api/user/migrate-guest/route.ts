@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
 import { migrateGuestToAuth } from '@/lib/guest-migration'
 
 export async function POST(req: NextRequest) {
-  const { userId: clerkId } = await auth()
-  if (!clerkId) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user?.id) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
+  const authUserId = session.user.id
 
   let body: { guestId?: string }
   try {
@@ -20,12 +22,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing guestId' }, { status: 400 })
   }
 
-  if (guestId === clerkId) {
+  if (guestId === authUserId) {
     return NextResponse.json({ merged: false, reason: 'same-id' })
   }
 
   try {
-    const result = await migrateGuestToAuth(guestId, clerkId)
+    const result = await migrateGuestToAuth(guestId, authUserId)
     return NextResponse.json(result)
   } catch (err) {
     console.error('[migrate-guest] Unexpected error:', err)

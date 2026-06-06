@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useSession } from '@/lib/auth-client'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 
@@ -79,7 +79,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [collections, setCollections] = useState<Collection[]>([])
 
-  const { isSignedIn, isLoaded: clerkLoaded } = useUser()
+  const { data: session, isPending } = useSession()
+  const isSignedIn = !!session?.user
   const prevSignedInRef = useRef<boolean | undefined>(undefined)
 
   const userIdRef = useRef<string>('')
@@ -175,7 +176,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   // ── React to sign-in / sign-out after initial load ───────────────────────────
   useEffect(() => {
-    if (!clerkLoaded) return
+    if (isPending) return
 
     const nowSignedIn = isSignedIn === true
 
@@ -220,7 +221,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       setCollections([])
       setHasCompletedOnboarding(false)
     }
-  }, [isSignedIn, clerkLoaded, loadProfile])
+  }, [isSignedIn, isPending, loadProfile])
 
   // ── Debounced auto-save: persist the full profile whenever it changes ────────
   const syncingRef = useRef(false)

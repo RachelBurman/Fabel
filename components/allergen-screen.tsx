@@ -7,7 +7,7 @@ import { useFable } from '@/lib/fable-context'
 import { ALL_TABS } from '@/lib/types'
 import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, PlayCircle, Compass, Layout } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useUser } from '@clerk/nextjs'
+import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
@@ -22,7 +22,8 @@ interface AllergenScreenProps {
 export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, onOpenAuth }: AllergenScreenProps) {
   const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, setDiscoverSettings, setVisibleTabs, isLoadingProfile } = useFable()
   const { theme, setTheme } = useTheme()
-  const { isSignedIn } = useUser()
+  const { data: session } = useSession()
+  const isSignedIn = !!session?.user
   const [macrosAuthPrompt, setMacrosAuthPrompt] = useState(false)
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const isDark = theme === 'dark'

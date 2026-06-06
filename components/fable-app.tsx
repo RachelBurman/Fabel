@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Loader2, X } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useUser, SignIn } from '@clerk/nextjs'
+import { useSession } from '@/lib/auth-client'
+import { AuthForm } from '@/components/auth-form'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
@@ -39,7 +40,8 @@ type Screen =
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
   const { setTheme } = useTheme()
-  const { isSignedIn } = useUser()
+  const { data: session } = useSession()
+  const isSignedIn = !!session?.user
 
   // All hooks must be declared before any early return (Rules of Hooks)
   const [showTutorial, setShowTutorial] = useState(false)
@@ -871,8 +873,8 @@ function FableAppContent() {
             >
               <X className="w-4 h-4" style={{ color: preferences.darkMode ? '#fafaf9' : '#374151' }} />
             </button>
-            <div className="w-full">
-              <SignIn routing="hash" afterSignInUrl="/" afterSignUpUrl="/" />
+            <div className="w-full max-w-sm mx-auto">
+              <AuthForm onSuccess={() => setAuthOverlayOpen(false)} />
             </div>
           </motion.div>
         )}

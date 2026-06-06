@@ -13,7 +13,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Framer Motion |
-| Auth | Clerk (`@clerk/nextjs`) — email/password, Google, GitHub |
+| Auth | Better Auth (`better-auth`) — email/password; Neon Postgres for session/user storage |
 | Deployment | Vercel |
 | Database | AWS DynamoDB |
 | Embeddings | Epicure Core (1,790 ingredients × 300 dimensions, cosine similarity) |
@@ -53,8 +53,8 @@ pnpm dev
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `ANTHROPIC_API_KEY` | Anthropic API key for recipe generation |
 | `VISION_LAMBDA_URL` | API Gateway URL for the `fable-vision-ingredient-scanner` Lambda |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
-| `CLERK_SECRET_KEY` | Clerk secret key |
+| `DATABASE_URL` | Neon Postgres connection string (used by Better Auth) |
+| `NEXT_PUBLIC_APP_URL` | Public app URL (e.g. `https://v0-allergen-recipe-app.vercel.app`) — used by the Better Auth client |
 
 > **Note:** the project uses `pnpm`. Running `npm install` will create a `package-lock.json` that conflicts with `pnpm-lock.yaml` and break the Vercel build.
 
@@ -259,6 +259,7 @@ Browser
   ▼
 Vercel — Next.js 16 (App Router)
   │
+  ├── /api/auth/[...all]       Better Auth handler — sign-in, sign-up, sign-out, session (Neon Postgres)
   ├── /api/ingredients         Epicure ingredient search (fuzzy, 1,790 items)
   ├── /api/recipes             Cosine similarity + allergen/safe-foods filter
   ├── /api/recipe-brief        Anthropic Claude Haiku taste-history reasoning → RecipeBrief (step 1)
@@ -371,7 +372,7 @@ In-memory (loaded at server startup)
 - ✅ **Agentic two-step recipe generation** — `/api/recipe-brief` (Claude Haiku 4.5) reasons over taste history and returns a `RecipeBrief` (dish direction, reasoning, novelty note, loading hints); `/api/generate-recipe` (Claude Sonnet) receives the brief as creative direction; brief fetch and Epicure pairings run in parallel; brief card replaces the loading spinner during recipe generation; falls back gracefully to guest hints on error or insufficient history; 26 new tests (564 total across 27 suites)
 - ✅ **Agentic taste profile evolution** — `fable-taste-profile-writer` Lambda (EventBridge, every 6h) queries the `needsRecompute-lastComputedAt-index` GSI for eligible users, runs `computeDriftAwareProfile` (all-time vs. recent-10 diff for emerging/fading signals), calls Claude Haiku to generate 2-3 proactive recipe direction suggestions, and writes a `StoredTasteProfile` to `fable-users`; `fable-feedback-stream-processor` now sets `needsRecompute = "true"` and initialises `lastComputedAt` on every feedback write; `/api/insights` reads the stored profile when fresh (skips live `buildPreferenceProfile` call) and returns `recipeSuggestions`; Discover tab surfaces suggestions as tappable direction cards — tapping one skips the `/api/recipe-brief` call and uses the pre-computed direction directly; 11 new Jest tests + 12 Lambda tests (575 Jest + 12 node:test)
 - ✅ **Rate limiting with community recipe fallback** — new `fable-rate-limits` DynamoDB table (PK: userId, SK: windowKey, atomic ADD counters, TTL auto-cleanup); `lib/rate-limiter.ts` checks and increments dual-window (hour + day) counters via `TransactWriteCommand` (single atomic call, race-condition safe); fail-open on DynamoDB errors; guest limits 10/hour 30/day, auth stubs defined (50/200); `/api/generate-recipe` returns HTTP 200 with `rateLimited: true` + best-matching community recipe rather than a hard error; `lib/community-recipe-fallback.ts` scans `fable-saved-recipes` with allergen/safe-foods hard filter + preference scoring, falls back to 15 pre-seeded allergen-free community recipes; all other rate-limited routes return 429; amber banner in recipe screen, inline messages in substitutes/scan; 40 new tests (617 Jest total across 30 suites)
-- ✅ **Clerk authentication + guest migration** — Clerk auth (`@clerk/nextjs`) wired into the Guest pill in the header: signed-out users see the embedded `<SignIn />` component (email/password, Google, GitHub); signed-in users see their name, avatar initial, and a sign-out button. All API routes use `lib/get-user-id.ts` — server reads Clerk session first, falls back to guest UUID from the request if unauthenticated. Authenticated users get higher rate limits (50/hour, 200/day). On first sign-in from a device, `POST /api/user/migrate-guest` merges the guest UUID data into the Clerk account: allergens and safeIngredients are unioned (safety-critical, never discarded), kitchen ingredients deduplicated by epicureKey (auth wins on conflict), preferenceSignals appended, auth record wins for discoverSettings/visibleTabs/tasteProfile; feedback, saved recipes, and collections are copied over. Migration is non-fatal and fires once per device via `localStorage['fable-guest-migrated']`; success shows a Sonner toast. 11 new tests (628 Jest total across 32 suites)
+- ✅ **Better Auth + guest migration** — Custom email/password auth via `better-auth` with Neon Postgres for session/user storage; replaces Clerk entirely. Guest pill in the header: signed-out users see a custom sign-in/sign-up form (name, email, password; toggle between modes; inline errors; loading state); signed-in users see their name, avatar initial, and a sign-out button. All API routes use `lib/get-user-id.ts` — server reads Better Auth session first, falls back to guest UUID from the request if unauthenticated. On first sign-in from a device, `POST /api/user/migrate-guest` merges the guest UUID data into the auth account: allergens and safeIngredients are unioned, kitchen ingredients deduplicated by epicureKey (auth wins on conflict), preferenceSignals appended, auth record wins for discoverSettings/visibleTabs/tasteProfile; feedback, saved recipes, and collections are copied over. Migration fires once per device via `localStorage['fable-guest-migrated']`; success shows a Sonner toast. Better Auth auto-creates required Postgres tables on first request. Key engineering decision: Postgres for relational auth (sessions, users), DynamoDB for all app data — right tool for the right job.
 - ✅ **Auth-gated Claude routes + guest DB-only mode** — `/api/scan-ingredients`, `/api/macros`, and `/api/recipe-brief` now return 401 for unauthenticated requests via `requireAuth()` + `AuthRequiredError` pattern in `lib/get-user-id.ts`. `/api/generate-recipe` returns a community DB fallback with `guestMode: true` for guests (no Claude call, no rate limit consumed). `/api/substitutes` skips the Claude explanation step for guests. Frontend: camera button shows inline "Sign in" prompt for guests; macros toggle in Settings shows "Sign in to see nutritional information."; recipe screen shows a warm amber "community recipe" banner for guest mode; substitute cards show "Sign in to see why this substitution works." in place of explanations; tutorial slide 4 updated to mention guest mode. Auth overlay portal in `FableAppContent` (opens from inline prompts, auto-closes on sign-in). 10 new tests (637 Jest total across 33 suites)
 
 ### In Progress

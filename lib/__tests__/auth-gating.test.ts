@@ -9,11 +9,11 @@
 
 import { NextRequest } from 'next/server'
 
-// ─── Clerk mock ───────────────────────────────────────────────────────────────
+// ─── Better Auth mock ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const clerkServer = require('@clerk/nextjs/server') as {
-  auth: jest.MockedFunction<() => Promise<{ userId: string | null }>>
+const authMod = require('@/lib/auth') as {
+  auth: { api: { getSession: jest.MockedFunction<() => Promise<{ user: { id: string } } | null>> } }
 }
 
 // ─── Mock Anthropic SDK ───────────────────────────────────────────────────────
@@ -113,22 +113,22 @@ const FAKE_RECIPE = {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  clerkServer.auth.mockResolvedValue({ userId: null })
+  authMod.auth.api.getSession.mockResolvedValue(null)
   mockFindFallbackRecipe.mockResolvedValue(FAKE_RECIPE)
 })
 
 // ─── requireAuth ─────────────────────────────────────────────────────────────
 
 describe('requireAuth()', () => {
-  it('throws AuthRequiredError when no Clerk session', async () => {
+  it('throws AuthRequiredError when no session', async () => {
     const { requireAuth, AuthRequiredError } = await import('../get-user-id')
-    clerkServer.auth.mockResolvedValue({ userId: null })
+    authMod.auth.api.getSession.mockResolvedValue(null)
     await expect(requireAuth()).rejects.toBeInstanceOf(AuthRequiredError)
   })
 
   it('returns userId when authenticated', async () => {
     const { requireAuth } = await import('../get-user-id')
-    clerkServer.auth.mockResolvedValue({ userId: 'user_abc' })
+    authMod.auth.api.getSession.mockResolvedValue({ user: { id: 'user_abc' } })
     const result = await requireAuth()
     expect(result).toEqual({ userId: 'user_abc' })
   })

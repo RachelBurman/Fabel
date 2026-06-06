@@ -17,11 +17,10 @@ const config = {
     ],
   },
   moduleNameMapper: {
+    // Specific mocks must come before the catch-all @/ alias
+    '^@/lib/auth$': '<rootDir>/__mocks__/lib/auth.js',
+    '^next/headers$': '<rootDir>/__mocks__/next/headers.js',
     '^@/(.*)$': '<rootDir>/$1',
-    // Provide a no-session default so API route tests that don't mock Clerk
-    // still work — getUserId() falls back to the guestId from the request.
-    '^@clerk/nextjs/server$': '<rootDir>/__mocks__/@clerk/nextjs/server.js',
-    '^@clerk/nextjs$': '<rootDir>/__mocks__/@clerk/nextjs/index.js',
   },
   testMatch: ['**/__tests__/**/*.test.ts', '**/__tests__/**/*.test.tsx'],
 }

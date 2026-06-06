@@ -1,19 +1,21 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useUser } from '@clerk/nextjs'
+import { useSession } from '@/lib/auth-client'
 import { toast } from 'sonner'
 
 export function AuthMigrationHandler() {
-  const { isSignedIn, user } = useUser()
+  const { data: session } = useSession()
+  const isSignedIn = !!session?.user
+  const userId = session?.user?.id
 
   useEffect(() => {
-    if (!isSignedIn || !user?.id) return
+    if (!isSignedIn || !userId) return
 
     const guestId = localStorage.getItem('fable_user_id')
     const alreadyMigrated = localStorage.getItem('fable-guest-migrated')
 
-    if (!guestId || alreadyMigrated === user.id) return
+    if (!guestId || alreadyMigrated === userId) return
 
     fetch('/api/user/migrate-guest', {
       method: 'POST',
@@ -24,11 +26,11 @@ export function AuthMigrationHandler() {
       .then((data: { merged?: boolean }) => {
         if (data.merged) {
           toast.success('Your guest kitchen has been added to your account')
-          localStorage.setItem('fable-guest-migrated', user.id)
+          localStorage.setItem('fable-guest-migrated', userId)
         }
       })
       .catch(() => {})
-  }, [isSignedIn, user?.id])
+  }, [isSignedIn, userId])
 
   return null
 }

@@ -7,7 +7,7 @@ import {
   Utensils, X, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useUser } from '@clerk/nextjs'
+import { useSession } from '@/lib/auth-client'
 import { useFable } from '@/lib/fable-context'
 import { getEffectiveUseByDate } from '@/lib/shelf-life'
 import { normaliseCandidates } from '@/lib/ingredient-utils'
@@ -213,7 +213,8 @@ export function SubstitutesScreen({
   onAdaptAndCook,
 }: SubstitutesScreenProps) {
   const { preferences } = useFable()
-  const { isSignedIn } = useUser()
+  const { data: session } = useSession()
+  const isSignedIn = !!session?.user
 
   const [mode, setMode] = useState<Mode>('from-kitchen')
   const [inputMode, setInputMode] = useState<InputMode>('full-recipe')

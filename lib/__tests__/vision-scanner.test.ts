@@ -7,10 +7,10 @@ import {
   type ReviewIngredient,
 } from '../vision-scanner'
 
-// ─── Clerk mock ───────────────────────────────────────────────────────────────
+// ─── Better Auth mock ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const clerkServer = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+const authMod = require('@/lib/auth') as { auth: { api: { getSession: jest.MockedFunction<() => Promise<{ user: { id: string } } | null>> } } }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  clerkServer.auth.mockResolvedValue({ userId: 'test-user-123' })
+  authMod.auth.api.getSession.mockResolvedValue({ user: { id: 'test-user-123' } })
 })
 
 describe('POST /api/scan-ingredients (proxy route)', () => {
@@ -95,10 +95,10 @@ describe('POST /api/scan-ingredients (proxy route)', () => {
     delete process.env.VISION_LAMBDA_URL
 
     jest.resetModules()
-    // Re-get the fresh Clerk mock after module reset and set authenticated user
+    // Re-get the fresh auth mock after module reset and set authenticated user
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const freshClerk = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
-    freshClerk.auth.mockResolvedValue({ userId: 'test-user-123' })
+    const freshAuth = require('@/lib/auth') as { auth: { api: { getSession: jest.MockedFunction<() => Promise<{ user: { id: string } } | null>> } } }
+    freshAuth.auth.api.getSession.mockResolvedValue({ user: { id: 'test-user-123' } })
     const mod = await import('@/app/api/scan-ingredients/route')
 
     const req = new NextRequest('http://localhost/api/scan-ingredients', {

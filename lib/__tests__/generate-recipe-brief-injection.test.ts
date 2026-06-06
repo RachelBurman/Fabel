@@ -7,10 +7,10 @@
 
 import { NextRequest } from 'next/server'
 
-// ─── Clerk mock ───────────────────────────────────────────────────────────────
+// ─── Better Auth mock ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const clerkServer = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+const authMod = require('@/lib/auth') as { auth: { api: { getSession: jest.MockedFunction<() => Promise<{ user: { id: string } } | null>> } } }
 
 // ─── Mock Anthropic SDK ───────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  clerkServer.auth.mockResolvedValue({ userId: 'test-user-123' })
+  authMod.auth.api.getSession.mockResolvedValue({ user: { id: 'test-user-123' } })
   mockCreate.mockResolvedValue({
     content: [{ type: 'text', text: makeRecipeJson() }],
   })

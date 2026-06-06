@@ -10,10 +10,10 @@
 
 import { NextRequest } from 'next/server'
 
-// ─── Clerk mock ───────────────────────────────────────────────────────────────
+// ─── Better Auth mock ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const clerkServer = require('@clerk/nextjs/server') as { auth: jest.MockedFunction<() => Promise<{ userId: string | null }>> }
+const authMod = require('@/lib/auth') as { auth: { api: { getSession: jest.MockedFunction<() => Promise<{ user: { id: string } } | null>> } } }
 
 // ─── Mock Anthropic SDK ───────────────────────────────────────────────────────
 
@@ -118,7 +118,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  clerkServer.auth.mockResolvedValue({ userId: 'user-123' })
+  authMod.auth.api.getSession.mockResolvedValue({ user: { id: 'user-123' } })
   mockDynamoSend.mockResolvedValue({ Items: [
     { recipeTitle: 'Chicken Stir Fry', liked: true, timestamp: '2026-06-01T10:00:00Z' },
     { recipeTitle: 'Tomato Pasta', liked: false, timestamp: '2026-06-02T10:00:00Z' },
@@ -133,10 +133,10 @@ beforeEach(() => {
 
 describe('unauthenticated request', () => {
   beforeEach(() => {
-    clerkServer.auth.mockResolvedValue({ userId: null })
+    authMod.auth.api.getSession.mockResolvedValue(null)
   })
 
-  it('returns 401 auth_required when no Clerk session', async () => {
+  it('returns 401 auth_required when no session', async () => {
     const res = await POST(makeRequest(MINIMAL_BODY))
     expect(res.status).toBe(401)
     const body = await res.json() as { error: string }

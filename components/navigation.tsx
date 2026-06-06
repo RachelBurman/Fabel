@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, User, X, Compass, LogOut } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useUser, useClerk, SignIn } from '@clerk/nextjs'
+import { useSession, signOut as authSignOut } from '@/lib/auth-client'
+import { AuthForm } from '@/components/auth-form'
 import { cn } from '@/lib/utils'
 import { useFable } from '@/lib/fable-context'
 
@@ -123,8 +124,9 @@ interface HeaderProps {
 export function Header({ onSettingsClick }: HeaderProps) {
   const { preferences, setDarkMode } = useFable()
   const { theme, setTheme } = useTheme()
-  const { isSignedIn, user, isLoaded } = useUser()
-  const { signOut } = useClerk()
+  const { data: session, isPending } = useSession()
+  const isSignedIn = !!session?.user
+  const isLoaded = !isPending
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const isDark = theme === 'dark'
 
@@ -157,21 +159,20 @@ export function Header({ onSettingsClick }: HeaderProps) {
     if (isSignedIn && guestOpen) setGuestOpen(false)
   }, [isSignedIn]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     localStorage.removeItem('fable-guest-migrated')
     localStorage.removeItem('fable-onboarding-complete')
-    // Regenerate guest UUID immediately so the app works right after sign-out
     localStorage.setItem('fable_user_id', crypto.randomUUID())
-    void signOut()
     setGuestOpen(false)
+    await authSignOut()
   }
 
   const displayName = isLoaded && isSignedIn
-    ? (user?.firstName || user?.emailAddresses?.[0]?.emailAddress?.split('@')[0] || 'Account').slice(0, 12)
+    ? (session?.user?.name?.split(' ')?.[0] || session?.user?.email?.split('@')[0] || 'Account').slice(0, 12)
     : 'Guest'
 
-  const pillInitial = isLoaded && isSignedIn && user?.firstName
-    ? user.firstName[0].toUpperCase()
+  const pillInitial = isLoaded && isSignedIn && session?.user?.name
+    ? session.user.name[0].toUpperCase()
     : null
 
   return (
@@ -235,14 +236,14 @@ export function Header({ onSettingsClick }: HeaderProps) {
                 <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
-                      {user?.firstName?.[0]?.toUpperCase() ?? user?.emailAddresses?.[0]?.emailAddress?.[0]?.toUpperCase() ?? '?'}
+                      {session?.user?.name?.[0]?.toUpperCase() ?? session?.user?.email?.[0]?.toUpperCase() ?? '?'}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
-                        {user?.fullName || user?.firstName || 'Account'}
+                        {session?.user?.name || session?.user?.email?.split('@')[0] || 'Account'}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {user?.primaryEmailAddress?.emailAddress}
+                        {session?.user?.email}
                       </p>
                     </div>
                   </div>
@@ -269,38 +270,24 @@ export function Header({ onSettingsClick }: HeaderProps) {
             {guestOpen && !isSignedIn && (
               /* ── Signed-out: desktop absolute popover ── */
               <motion.div
-                key="clerk-signin-desktop"
+                key="auth-form-desktop"
                 initial={{ opacity: 0, y: -6, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -6, scale: 0.97 }}
                 transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="hidden md:block absolute top-full right-0 mt-2 w-[420px] z-50 rounded-xl overflow-hidden shadow-xl"
+                className="hidden md:block absolute top-full right-0 mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden"
               >
-                <div className="relative">
+                <div className="flex items-center justify-between px-4 pt-3">
+                  <span />
                   <button
                     onClick={() => setGuestOpen(false)}
                     aria-label="Close"
-                    className="absolute top-3 right-3 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-black/8 hover:bg-black/15 text-gray-500 hover:text-gray-800 transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                  <SignIn
-                    routing="hash"
-                    afterSignInUrl="/"
-                    afterSignUpUrl="/"
-                    appearance={{
-                      variables: isDark ? {
-                        colorBackground: '#1c1917',
-                        colorText: '#fafaf9',
-                        colorTextSecondary: '#a8a29e',
-                        colorInputBackground: '#292524',
-                        colorInputText: '#fafaf9',
-                        colorNeutral: '#78716c',
-                      } : undefined,
-                      elements: { rootBox: 'w-full', card: 'shadow-xl rounded-xl' },
-                    }}
-                  />
                 </div>
+                <AuthForm onSuccess={() => setGuestOpen(false)} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -310,17 +297,16 @@ export function Header({ onSettingsClick }: HeaderProps) {
             <AnimatePresence>
               {guestOpen && !isSignedIn && (
                 <motion.div
-                  key="clerk-signin-mobile"
+                  key="auth-form-mobile"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                   className={cn(
-                    'fixed inset-0 z-[200] flex flex-col overflow-y-auto px-5 py-6 md:hidden',
+                    'fixed inset-0 z-[200] flex flex-col overflow-y-auto md:hidden',
                     isDark ? 'bg-[#1c1917]' : 'bg-white'
                   )}
                 >
-                  {/* Close button — fixed so it stays visible while scrolling */}
                   <button
                     onClick={() => setGuestOpen(false)}
                     aria-label="Close"
@@ -328,25 +314,10 @@ export function Header({ onSettingsClick }: HeaderProps) {
                   >
                     <X className="w-4 h-4" style={{ color: isDark ? '#fafaf9' : '#374151' }} />
                   </button>
-
-                  {/* Clerk fills full width */}
-                  <div className="w-full">
-                    <SignIn
-                      routing="hash"
-                      afterSignInUrl="/"
-                      afterSignUpUrl="/"
-                      appearance={{
-                        variables: isDark ? {
-                          colorBackground: '#1c1917',
-                          colorText: '#fafaf9',
-                          colorTextSecondary: '#a8a29e',
-                          colorInputBackground: '#292524',
-                          colorInputText: '#fafaf9',
-                          colorNeutral: '#78716c',
-                        } : undefined,
-                        elements: { rootBox: 'w-full', card: 'shadow-none rounded-none w-full' },
-                      }}
-                    />
+                  <div className="flex-1 flex items-center justify-center p-6">
+                    <div className="w-full max-w-sm bg-card border border-border rounded-xl shadow-xl">
+                      <AuthForm onSuccess={() => setGuestOpen(false)} />
+                    </div>
                   </div>
                 </motion.div>
               )}

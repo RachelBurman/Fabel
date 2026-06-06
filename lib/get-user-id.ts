@@ -1,11 +1,12 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
 
 export async function getUserId(guestId?: string): Promise<{
   userId: string
   isAuthenticated: boolean
 }> {
-  const { userId: clerkId } = await auth()
-  if (clerkId) return { userId: clerkId, isAuthenticated: true }
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (session?.user?.id) return { userId: session.user.id, isAuthenticated: true }
   if (guestId) return { userId: guestId, isAuthenticated: false }
   throw new Error('No userId available')
 }
@@ -18,7 +19,7 @@ export class AuthRequiredError extends Error {
 }
 
 export async function requireAuth(): Promise<{ userId: string }> {
-  const { userId } = await auth()
-  if (!userId) throw new AuthRequiredError()
-  return { userId }
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user?.id) throw new AuthRequiredError()
+  return { userId: session.user.id }
 }

@@ -1,7 +1,5 @@
-import { clerkMiddleware } from '@clerk/nextjs/server'
-
 // All routes are public — Fable never forces login. Auth is additive, never a gate.
-export default clerkMiddleware()
+export default function middleware() {}
 
 export const config = {
   matcher: [
