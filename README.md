@@ -460,10 +460,10 @@ In-memory (loaded at server startup)
 - ✅ **Substitution engine — role-aware context scoring** — three improvements to the scoring logic and Claude prompt, all contained to `/api/substitutes`: (1) co-ingredient hard exclusion drops any candidate whose Epicure key exactly matches a key already in the dish context (pasta cannot substitute for cheese in a pasta bake); (2) relative co-ingredient penalty replaces the fixed context-fit weight — when `averageContextFit > similarityToOriginal + 0.15` a −0.2 penalty applies instead of the context contribution (self-calibrating against the embedding space rather than a fixed threshold, no cliff artefact at the boundary); formula rebalanced to `0.6 × similarity + (0.3 × contextFit or −0.2 co-ingredient penalty) + category adj`; (3) role-aware Claude prompt instructs Haiku to reason about the ingredient's functional role in the specific dish (fat, protein, binding, acidity, texture, or flavour) before explaining each substitute — explanations are now dish-specific rather than generic ingredient comparisons. No changes to API shape, response format, frontend, DynamoDB, allergen filtering, Safe Foods Mode, or guest/auth behaviour.
 
 ### In Progress
-- 🔄 Demo seed data — Maya (allergen profile) and Seren (Safe Foods Mode) demo accounts seeded via `pnpm seed:demo`
+- 🔄 Spice tolerance onboarding — preference question during onboarding, persisted to `fable-users`, injected into recipe generation prompt
 
 ### Near Term
-- [ ] Spice tolerance onboarding — preference question during onboarding, persisted to `fable-users`, injected into recipe generation prompt
+- ✅ Demo seed data — Maya (allergen profile) and Seren (Safe Foods Mode) demo accounts seeded via `pnpm seed:demo`
 - [ ] "Why is this safe?" explainer — Claude Haiku call explaining in plain English why a recipe or ingredient is safe for the user's specific allergen profile; trust feature for severe allergy and MCAS users
 - [ ] **Editable brief direction** — `direction` field editable after brief card appears; user nudges it before generation fires, brief re-sent as updated creative direction
 - [ ] High histamine preset — dietary filter excluding known high-histamine ingredients; same pattern as existing vegan/low-FODMAP presets; framed as a filter, not a medical tool, with disclaimer
