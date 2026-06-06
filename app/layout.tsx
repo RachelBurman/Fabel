@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthMigrationHandler } from '@/components/auth-migration-handler'
+import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -62,6 +63,7 @@ export default function RootLayout({
           {children}
           <Toaster />
           <AuthMigrationHandler />
+          <ServiceWorkerRegistration />
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
