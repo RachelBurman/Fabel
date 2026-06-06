@@ -460,27 +460,26 @@ In-memory (loaded at server startup)
 - ✅ **Substitution engine — role-aware context scoring** — three improvements to the scoring logic and Claude prompt, all contained to `/api/substitutes`: (1) co-ingredient hard exclusion drops any candidate whose Epicure key exactly matches a key already in the dish context (pasta cannot substitute for cheese in a pasta bake); (2) relative co-ingredient penalty replaces the fixed context-fit weight — when `averageContextFit > similarityToOriginal + 0.15` a −0.2 penalty applies instead of the context contribution (self-calibrating against the embedding space rather than a fixed threshold, no cliff artefact at the boundary); formula rebalanced to `0.6 × similarity + (0.3 × contextFit or −0.2 co-ingredient penalty) + category adj`; (3) role-aware Claude prompt instructs Haiku to reason about the ingredient's functional role in the specific dish (fat, protein, binding, acidity, texture, or flavour) before explaining each substitute — explanations are now dish-specific rather than generic ingredient comparisons. No changes to API shape, response format, frontend, DynamoDB, allergen filtering, Safe Foods Mode, or guest/auth behaviour.
 
 ### In Progress
+- 🔄 Demo seed data — Maya (allergen profile) and Seren (Safe Foods Mode) demo accounts seeded via `pnpm seed:demo`
 
 ### Near Term
-- [ ] Nutritional database integration — USDA FoodData Central for accurate macros
-- [ ] Equipment-aware ingredient substitution — when a recipe step requires equipment the user doesn't have, use Epicure similarity search to suggest alternative ingredients that achieve the same result with available equipment (e.g. slow cooker → hob-friendly cuts)
+- [ ] Spice tolerance onboarding — preference question during onboarding, persisted to `fable-users`, injected into recipe generation prompt
+- [ ] "Why is this safe?" explainer — Claude Haiku call explaining in plain English why a recipe or ingredient is safe for the user's specific allergen profile; trust feature for severe allergy and MCAS users
+- [ ] **Editable brief direction** — `direction` field editable after brief card appears; user nudges it before generation fires, brief re-sent as updated creative direction
+- [ ] High histamine preset — dietary filter excluding known high-histamine ingredients; same pattern as existing vegan/low-FODMAP presets; framed as a filter, not a medical tool, with disclaimer
+- [ ] **Multi-turn brief refinement** — "go vegetarian instead" updates direction and regenerates; brief card animates to new direction
+- [ ] i18n framework — next-intl, English + Spanish for hackathon; architecture supports Epicure's 7 languages; UI strings only (recipe output language is post-hackathon)
+- [ ] Mobile scrolling bugs — batch fix
 
-### Medium Term
-- [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware suggestions
-- [ ] Recipe cost calculator — grocery API integration (Tesco, Sainsbury's, Kroger)
-- [ ] Push notifications — expiring ingredient alerts
-- [ ] Native mobile app — iOS and Android for camera/barcode features
-
-### Research & Future
-- ✅ User authentication — email/password via Better Auth 1.2.7 with Neon Postgres for session/user storage; guest mode remains fully functional via UUID fallback; guest data migrated to auth account on first sign-in.
-- [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
-- [ ] **On-device recipe brief** — migrate the `/api/recipe-brief` Haiku call to Liquid AI LFM2.5 running on-device; eliminates the brief round-trip entirely and keeps taste reasoning private
-- [ ] **Editable brief direction** — show the `direction` field as an editable text input after the brief card appears; user can nudge it ("try something spicier") before generation fires, then the brief is re-sent as the updated creative direction
-- [ ] **Multi-turn brief refinement** — "try something spicier" or "go vegetarian instead" after seeing the brief updates the direction and regenerates; brief card persists and animates to the new direction
-- [ ] Medical nutrition database — elemental formulas for severe MCAS
-- [ ] Multilingual UI — Epicure supports 7 languages
-- [ ] Garmin/Apple Health/Google Health integration for glucose-aware suggestions for diabetic users
-- [ ] High histamine preset for MCAS
+### Post-Hackathon / Future
+- ✅ User authentication — shipped. Email/password via Better Auth 1.2.7, Neon Postgres for session storage, guest mode via UUID fallback, guest data migrated on first sign-in.
+- [ ] Better Auth + AWS RDS Postgres — replace Neon with RDS for a full AWS architecture story; schema identical, connection string swap
+- [ ] Social auth (Google + GitHub) — Better Auth config ready, Neon schema ready; needs OAuth app setup
+- [ ] Latency reduction on `/api/recipe-brief` — on-device AI when PWA limitations are resolved
+- [ ] GSI least-privilege IAM — tighter custom policy scoped to specific table ARNs
+- [ ] Lambda cold start optimisation for Vision
+- [ ] Multilingual recipe output — UI i18n ships for hackathon; recipe generation in user's language is post-hackathon
+- [ ] Native mobile app (React Native) — enables camera/barcode features natively; requires App Store and Play Store accounts
 
 ---
 
