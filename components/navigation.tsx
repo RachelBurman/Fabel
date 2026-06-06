@@ -302,17 +302,14 @@ export function Header({ onSettingsClick }: HeaderProps) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
-                  className={cn(
-                    'fixed inset-0 z-[200] flex flex-col overflow-y-auto md:hidden',
-                    isDark ? 'bg-[#1c1917]' : 'bg-white'
-                  )}
+                  className="fixed inset-0 z-[200] flex flex-col overflow-y-auto md:hidden bg-background"
                 >
                   <button
                     onClick={() => setGuestOpen(false)}
                     aria-label="Close"
                     className="fixed top-4 right-4 z-[201] w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 transition-colors"
                   >
-                    <X className="w-4 h-4" style={{ color: isDark ? '#fafaf9' : '#374151' }} />
+                    <X className="w-4 h-4 text-foreground" />
                   </button>
                   <div className="flex-1 flex items-center justify-center p-6">
                     <div
