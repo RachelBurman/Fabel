@@ -146,6 +146,18 @@ describe('POST /api/scan-ingredients', () => {
   })
 })
 
+// ─── /api/scan-barcode ───────────────────────────────────────────────────────
+
+describe('POST /api/scan-barcode', () => {
+  it('returns 401 for unauthenticated requests', async () => {
+    const { POST } = await import('../../app/api/scan-barcode/route')
+    const res = await POST(makeRequest({ barcode: '5000112637922' }))
+    expect(res.status).toBe(401)
+    const body = await res.json() as { error: string }
+    expect(body.error).toBe('auth_required')
+  })
+})
+
 // ─── /api/macros ─────────────────────────────────────────────────────────────
 
 describe('POST /api/macros', () => {

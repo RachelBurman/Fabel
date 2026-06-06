@@ -8,6 +8,7 @@ import { useSession } from '@/lib/auth-client'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientArea, type IngredientUnit, type IngredientItem, INGREDIENT_UNITS } from '@/lib/types'
 import { type VisionResult } from '@/lib/vision-scanner'
+import { detectBarcodeFromFile } from '@/lib/barcode-scanner'
 import { getShelfLifeDays, addDays, getEffectiveUseByDate } from '@/lib/shelf-life'
 import { computeServingWarnings } from '@/lib/serving-warnings'
 import { Plus, X, Search, Camera, ChefHat, Sparkles, Layers, Calendar, ArrowLeftRight, ChevronLeft, ChevronRight, Minus, Loader2 } from 'lucide-react'
@@ -328,9 +329,29 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
     setVisionLoading(true)
     try {
-      const base64 = await compressImageToBase64(file, 1200, 0.82)
       const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
 
+      // Step 1: attempt barcode detection — fast, in-browser, no server call needed
+      const barcode = await detectBarcodeFromFile(file)
+      if (barcode) {
+        const barcodeRes = await fetch('/api/scan-barcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ barcode, ...(uid ? { userId: uid } : {}) }),
+        })
+        if (barcodeRes.ok) {
+          const data: VisionResult = await barcodeRes.json()
+          if (data.ingredients && data.ingredients.length > 0) {
+            setVisionResult(data)
+            return
+          }
+        }
+        // Barcode found but product lookup failed or returned no ingredients —
+        // fall through to vision scan as a best-effort fallback
+      }
+
+      // Step 2: vision scan
+      const base64 = await compressImageToBase64(file, 1200, 0.82)
       const res = await fetch('/api/scan-ingredients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -28,18 +28,22 @@ function ingredient(overrides: Partial<VisionIngredient> = {}): VisionIngredient
   }
 }
 
-// ─── Proxy route ──────────────────────────────────────────────────────────────
+// ─── Proxy routes ─────────────────────────────────────────────────────────────
 
 // Mock global fetch for proxy route tests
 const mockFetch = jest.fn()
 global.fetch = mockFetch
 
 let POST: (req: NextRequest) => Promise<Response>
+let BARCODE_POST: (req: NextRequest) => Promise<Response>
 
 beforeAll(async () => {
   process.env.VISION_LAMBDA_URL = 'https://lambda.example.com/scan'
+  process.env.BARCODE_LAMBDA_URL = 'https://lambda.example.com/scan-barcode'
   const mod = await import('@/app/api/scan-ingredients/route')
   POST = mod.POST
+  const barcodeMod = await import('@/app/api/scan-barcode/route')
+  BARCODE_POST = barcodeMod.POST
 })
 
 beforeEach(() => {
@@ -247,5 +251,51 @@ describe('no ingredients recognised', () => {
     }
     expect(hasIngredients({ ingredients: [] })).toBe(false)
     expect(hasIngredients({ ingredients: [{ epicureKey: 'garlic' }] })).toBe(true)
+  })
+})
+
+// ─── /api/scan-barcode proxy route ────────────────────────────────────────────
+
+describe('POST /api/scan-barcode (proxy route)', () => {
+  it('forwards request to Barcode Lambda URL and returns response', async () => {
+    const lambdaResponse = {
+      inferredArea: 'cupboard',
+      areaConfident: true,
+      ingredients: [
+        { displayName: 'garlic', epicureKey: 'garlic', confident: true, matchScore: 1.0 },
+      ],
+    }
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => lambdaResponse,
+    })
+
+    const req = new NextRequest('http://localhost/api/scan-barcode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ barcode: '5000112637922' }),
+    })
+    const res = await BARCODE_POST(req)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.inferredArea).toBe('cupboard')
+    expect(body.areaConfident).toBe(true)
+    expect(body.ingredients[0].epicureKey).toBe('garlic')
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://lambda.example.com/scan-barcode',
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
+
+  it('returns 502 when Barcode Lambda call throws', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('network error'))
+    const req = new NextRequest('http://localhost/api/scan-barcode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ barcode: '5000112637922' }),
+    })
+    const res = await BARCODE_POST(req)
+    expect(res.status).toBe(502)
   })
 })
