@@ -38,7 +38,7 @@ type Screen =
   | 'discover'
 
 function FableAppContent() {
-  const { hasCompletedOnboarding, isLoadingProfile, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
+  const { hasCompletedOnboarding, isLoadingProfile, completeTutorial, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
@@ -52,8 +52,9 @@ function FableAppContent() {
   const openAuth = useCallback(() => setAuthOverlayOpen(true), [])
 
   useEffect(() => {
+    if (isLoadingProfile) return
     if (shouldShowTutorial()) setShowTutorial(true)
-  }, [])
+  }, [isLoadingProfile])
 
   const handleRestartTutorial = useCallback(() => {
     clearTutorialComplete()
@@ -633,7 +634,7 @@ function FableAppContent() {
   const tutorialOverlay = (
     <AnimatePresence>
       {showTutorial && (
-        <TutorialOverlay onDismiss={() => setShowTutorial(false)} />
+        <TutorialOverlay onDismiss={() => { completeTutorial(); setShowTutorial(false) }} />
       )}
     </AnimatePresence>
   )

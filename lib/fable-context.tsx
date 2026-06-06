@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, ty
 import { useSession } from '@/lib/auth-client'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
+import { markTutorialComplete } from '@/lib/tutorial'
 
 interface FableContextType {
   preferences: UserPreferences
@@ -44,6 +45,7 @@ interface FableContextType {
   addToHistory: (entry: HistoryEntry) => void
   hasCompletedOnboarding: boolean
   completeOnboarding: () => void
+  completeTutorial: () => void
   isLoadingProfile: boolean
   collections: Collection[]
   createCollection: (name: string) => void
@@ -76,6 +78,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
+  const [tutorialComplete, setTutorialComplete] = useState(false)
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [collections, setCollections] = useState<Collection[]>([])
 
@@ -112,6 +115,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
           darkMode?: boolean
           discoverSettings?: DiscoverSettings
           visibleTabs?: string[]
+          onboardingComplete?: boolean
         } = await profileRes.json()
         if (
           profile.allergens !== undefined ||
@@ -136,6 +140,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
             visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
           }))
           setHasCompletedOnboarding(true)
+        }
+        if (profile.onboardingComplete === true) {
+          markTutorialComplete()
+          setTutorialComplete(true)
         }
       }
 
@@ -249,6 +257,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             darkMode: preferences.darkMode,
             discoverSettings: preferences.discoverSettings,
             visibleTabs: preferences.visibleTabs,
+            onboardingComplete: tutorialComplete,
           }),
         })
       } catch (err) {
@@ -258,7 +267,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.darkMode, preferences.discoverSettings, preferences.visibleTabs])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.darkMode, preferences.discoverSettings, preferences.visibleTabs, tutorialComplete])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -545,6 +554,18 @@ export function FableProvider({ children }: { children: ReactNode }) {
     setHasCompletedOnboarding(true)
   }, [])
 
+  const completeTutorial = useCallback(() => {
+    markTutorialComplete()
+    setTutorialComplete(true)
+    if (isSignedIn) {
+      void fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userIdRef.current, onboardingComplete: true }),
+      })
+    }
+  }, [isSignedIn])
+
   return (
     <FableContext.Provider
       value={{
@@ -577,6 +598,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         addToHistory,
         hasCompletedOnboarding,
         completeOnboarding,
+        completeTutorial,
         isLoadingProfile,
         collections,
         createCollection,

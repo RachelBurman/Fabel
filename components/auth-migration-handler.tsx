@@ -20,7 +20,10 @@ export function AuthMigrationHandler() {
     fetch('/api/user/migrate-guest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ guestId }),
+      body: JSON.stringify({
+        guestId,
+        onboardingComplete: localStorage.getItem('fable-onboarding-complete') !== null,
+      }),
     })
       .then(res => res.json())
       .then((data: { merged?: boolean }) => {

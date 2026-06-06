@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
 import { getUserId } from "@/lib/get-user-id";
 import { type DiscoverSettings, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from "@/lib/types";
@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
     darkMode,
     discoverSettings,
     visibleTabs,
+    onboardingComplete,
   } = result.Item;
 
   return NextResponse.json({
@@ -72,6 +73,7 @@ export async function GET(req: NextRequest) {
     darkMode,
     discoverSettings,
     visibleTabs,
+    onboardingComplete,
   });
 }
 
@@ -91,6 +93,7 @@ export async function PUT(req: NextRequest) {
     darkMode?: boolean;
     discoverSettings?: DiscoverSettings;
     visibleTabs?: string[];
+    onboardingComplete?: boolean;
   };
   try {
     body = await req.json();
@@ -112,6 +115,7 @@ export async function PUT(req: NextRequest) {
     darkMode,
     discoverSettings,
     visibleTabs,
+    onboardingComplete,
   } = body;
   let userId: string;
   try {
@@ -139,7 +143,44 @@ export async function PUT(req: NextRequest) {
         darkMode: darkMode ?? false,
         discoverSettings: discoverSettings ?? DEFAULT_DISCOVER_SETTINGS,
         visibleTabs: visibleTabs ?? [...ALL_TABS],
+        onboardingComplete: onboardingComplete ?? false,
         updatedAt: new Date().toISOString(),
+      },
+    })
+  );
+
+  return NextResponse.json({ ok: true });
+}
+
+// Partial update — only touches onboardingComplete, leaves all other fields intact.
+export async function PATCH(req: NextRequest) {
+  let body: { userId?: string; onboardingComplete?: boolean };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (typeof body.onboardingComplete !== "boolean") {
+    return NextResponse.json({ error: "onboardingComplete must be a boolean" }, { status: 400 });
+  }
+
+  let userId: string;
+  try {
+    const resolved = await getUserId(typeof body.userId === "string" ? body.userId : undefined);
+    userId = resolved.userId;
+  } catch {
+    return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+  }
+
+  await dynamo.send(
+    new UpdateCommand({
+      TableName: "fable-users",
+      Key: { userId },
+      UpdateExpression: "SET onboardingComplete = :val, updatedAt = :ts",
+      ExpressionAttributeValues: {
+        ":val": body.onboardingComplete,
+        ":ts": new Date().toISOString(),
       },
     })
   );

@@ -16,7 +16,8 @@ function mergeKitchenIngredients(authItems: AnyRecord[], guestItems: AnyRecord[]
 
 export async function migrateGuestToAuth(
   guestId: string,
-  authUserId: string
+  authUserId: string,
+  onboardingComplete = false
 ): Promise<{ merged: boolean; itemsMerged: number }> {
   let itemsMerged = 0
 
@@ -35,7 +36,11 @@ export async function migrateGuestToAuth(
     if (!existing) {
       await dynamo.send(new PutCommand({
         TableName: 'fable-users',
-        Item: { ...guest, userId: authUserId },
+        Item: {
+          ...guest,
+          userId: authUserId,
+          onboardingComplete: (guest.onboardingComplete === true) || onboardingComplete,
+        },
       }))
     } else {
       await dynamo.send(new PutCommand({
@@ -58,7 +63,7 @@ export async function migrateGuestToAuth(
           discoverSettings: existing.discoverSettings ?? guest.discoverSettings,
           visibleTabs: existing.visibleTabs ?? guest.visibleTabs,
           tasteProfile: existing.tasteProfile ?? guest.tasteProfile ?? null,
-          onboardingComplete: (existing.onboardingComplete === true) || (guest.onboardingComplete === true),
+          onboardingComplete: (existing.onboardingComplete === true) || (guest.onboardingComplete === true) || onboardingComplete,
         },
       }))
     }

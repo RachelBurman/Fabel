@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   }
   const authUserId = session.user.id
 
-  let body: { guestId?: string }
+  let body: { guestId?: string; onboardingComplete?: boolean }
   try {
     body = await req.json()
   } catch {
@@ -26,8 +26,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ merged: false, reason: 'same-id' })
   }
 
+  const onboardingComplete = body.onboardingComplete === true
+
   try {
-    const result = await migrateGuestToAuth(guestId, authUserId)
+    const result = await migrateGuestToAuth(guestId, authUserId, onboardingComplete)
     return NextResponse.json(result)
   } catch (err) {
     console.error('[migrate-guest] Unexpected error:', err)
