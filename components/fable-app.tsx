@@ -48,7 +48,29 @@ function FableAppContent() {
   const [authOverlayOpen, setAuthOverlayOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   useEffect(() => { setIsMounted(true) }, [])
-  useEffect(() => { if (isSignedIn) setAuthOverlayOpen(false) }, [isSignedIn])
+  useEffect(() => {
+    if (isSignedIn) {
+      setAuthOverlayOpen(false)
+    } else {
+      // Clear auth user's session data for privacy — fires on sign-out and on initial guest load
+      // (initial load is a no-op since all these are already at their default values)
+      setGeneratedRecipe(null)
+      setGeneratedRecipeId('')
+      setBrief(null)
+      setPairings([])
+      setLoadingStep(null)
+      setRecipeAttempted(false)
+      setGuestMode(false)
+      setRateLimitInfo(null)
+      setMacrosRateLimitMsg(null)
+      setDislikedPatterns([])
+      setDislikedIngredients([])
+      setSubstituteIngredient(undefined)
+      setSubstituteContext(undefined)
+      discoverSeedIngredientsRef.current = []
+      discoverSuggestionRef.current = null
+    }
+  }, [isSignedIn])
   const openAuth = useCallback(() => setAuthOverlayOpen(true), [])
 
   useEffect(() => {

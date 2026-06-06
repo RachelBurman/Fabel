@@ -66,6 +66,7 @@ export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigation
 export function SidebarNavigation({ currentScreen, onNavigate }: BottomNavigationProps) {
   const { preferences } = useFable()
   const visibleTabs = preferences.visibleTabs
+  const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
   const allNavItems = [
     { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,        tabKey: 'kitchen'     },
@@ -80,11 +81,22 @@ export function SidebarNavigation({ currentScreen, onNavigate }: BottomNavigatio
 
   return (
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-[220px] flex-col bg-card/95 backdrop-blur-md border-r border-border z-50">
-      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border shrink-0">
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border shrink-0 min-w-0">
+        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Leaf className="w-4 h-4 text-primary" />
         </div>
-        <span className="text-lg font-semibold text-foreground">Fable</span>
+        <span className="text-lg font-semibold text-foreground truncate">Fable</span>
+        {safeFoodsActive && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium shrink-0 ml-auto"
+            style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#15803d' }}
+          >
+            <ShieldCheck className="w-3 h-3" />
+            <span>Safe</span>
+          </motion.div>
+        )}
       </div>
       <nav className="flex-1 flex flex-col gap-1 p-3 overflow-y-auto">
         {navItems.map(item => {
