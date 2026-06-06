@@ -104,6 +104,9 @@ export async function POST(req: NextRequest) {
     return true;
   });
 
+  // Drop exact co-ingredients — anything already in the dish context cannot substitute
+  candidates = candidates.filter(({ name }) => !context.includes(name));
+
   // d. Context score + category adjustment
   const withScores = candidates.map(({ name, score: similarityToOriginal }) => {
     let contextFit = 0;
@@ -111,8 +114,12 @@ export async function POST(req: NextRequest) {
       const scores = context.map((ctx) => cosineSimilarityBetween(name, ctx));
       contextFit = scores.reduce((a, b) => a + b, 0) / scores.length;
     }
-    // e. Weighted combination with functional category bonus/penalty
-    const base = 0.6 * similarityToOriginal + 0.4 * contextFit;
+    // e. Weighted combination with functional category bonus/penalty.
+    // A candidate more at home in the dish than it is close to the original
+    // is likely a co-ingredient — penalise rather than reward its context fit.
+    const isLikelyCoIngredient = contextFit > similarityToOriginal + 0.15;
+    const contextContribution = isLikelyCoIngredient ? -0.2 : 0.3 * contextFit;
+    const base = 0.6 * similarityToOriginal + contextContribution;
     const candidateCategory = getCategoryForIngredient(name);
     const categoryAdj =
       originalCategory && candidateCategory
@@ -140,8 +147,9 @@ export async function POST(req: NextRequest) {
         : "various ingredients";
     const substitutesDisplay = top3.map((s) => s.name.replace(/_/g, " ")).join(", ");
     const userPrompt =
-      `A dish contains: ${contextDisplay}. ` +
-      `In one sentence each, explain why each of these could substitute for ${originalDisplay}: ${substitutesDisplay}. ` +
+      `A dish contains: ${contextDisplay}. The ingredient being replaced is ${originalDisplay}. ` +
+      `Considering what role ${originalDisplay} plays in this specific dish — whether it provides fat, protein, binding, acidity, texture, or flavour — ` +
+      `in one sentence each, explain why each of these is a good substitute in this context: ${substitutesDisplay}. ` +
       `Return JSON: { ${top3.map((s) => `"${s.name}": "explanation"`).join(", ")} }`;
     try {
       const message = await client.messages.create({

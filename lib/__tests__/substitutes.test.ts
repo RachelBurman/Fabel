@@ -139,8 +139,8 @@ describe('context scoring', () => {
     const fitMeat   = cosineSimilarityBetween('chicken', 'pork')
     const fitBaking = cosineSimilarityBetween('chicken', 'flour')
 
-    const scoreMeat   = 0.6 * simToBeef + 0.4 * fitMeat
-    const scoreBaking = 0.6 * simToBeef + 0.4 * fitBaking
+    const scoreMeat   = 0.6 * simToBeef + (fitMeat   > simToBeef + 0.15 ? -0.2 : 0.3 * fitMeat)
+    const scoreBaking = 0.6 * simToBeef + (fitBaking > simToBeef + 0.15 ? -0.2 : 0.3 * fitBaking)
 
     expect(fitMeat).toBeGreaterThan(fitBaking)
     expect(scoreMeat).toBeGreaterThan(scoreBaking)
