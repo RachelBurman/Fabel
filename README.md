@@ -20,8 +20,8 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Recipe generation | Anthropic Claude (`claude-sonnet-4-6`) with prompt caching; `claude-haiku-4-5` for recipe brief |
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
-| Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 709 tests across 42 suites; 12 Lambda tests (node:test) |
+| Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner · Open Food Facts barcode scanner |
+| Testing | Jest 29, ts-jest, React Testing Library — 716 tests across 42 suites; 35 Lambda tests (node:test) |
 
 ---
 
@@ -67,6 +67,7 @@ Both produce `public/icons/icon-512.png`, `public/icons/icon-192.png`, and `publ
 | `AWS_SECRET_ACCESS_KEY` | AWS secret key |
 | `ANTHROPIC_API_KEY` | Anthropic API key for recipe generation |
 | `VISION_LAMBDA_URL` | API Gateway URL for the `fable-vision-ingredient-scanner` Lambda |
+| `BARCODE_LAMBDA_URL` | API Gateway URL for the `fable-barcode-scanner` Lambda |
 | `DATABASE_URL` | Neon Postgres connection string (used by Better Auth) |
 | `NEXT_PUBLIC_APP_URL` | Public app URL (e.g. `https://v0-allergen-recipe-app.vercel.app`) — used by the Better Auth client |
 
@@ -128,6 +129,18 @@ Fable is fully usable without an account — guests get a meaningful experience,
 - Confirmed ingredients written via `setIngredients` (triggers the existing debounced DynamoDB auto-save — no new endpoint)
 - Done with nothing selected = Cancel; no write made
 - Error toasts for Lambda timeout, no ingredients found, and network failure (Sonner, now mounted in root layout)
+
+### Barcode Scanning
+- The same camera button that triggers photo recognition also auto-detects barcodes — no separate UI; the user never has to choose
+- On image capture, the frontend runs `@zxing/browser` (`BrowserMultiFormatReader`) client-side first — works on iOS Safari, desktop Chrome, and Android Chrome (replaces the patchy native BarcodeDetector API)
+- If a numeric EAN-8, EAN-13, UPC-A, or UPC-E barcode is found, the image is routed to `POST /api/scan-barcode` (Next.js proxy → `fable-barcode-scanner` Lambda) instead of the Vision Lambda
+- `fable-barcode-scanner` validates the barcode (numeric, 8–14 digits; anything else rejected with 400), then calls the Open Food Facts API (`world.openfoodfacts.org/api/v0/product/${barcode}.json`) with a 5-second timeout
+- Ingredient extraction prefers the structured `ingredients[]` array; falls back to splitting `ingredients_text` on commas and semicolons
+- Each ingredient name is sanitised (alphanumeric + spaces only, max 100 chars) then run through the same three-tier Epicure fuzzy matching as the Vision Lambda: exact → singular-s → prefix → token-overlap
+- Matched ingredients default to **Cupboard** storage area (packaged goods); the user can change area on the review screen as normal
+- Non-barcode images fall through silently to the Vision Lambda — both paths produce identical `VisionResult` shape and flow into the same review screen
+- Error paths: product not found → 404 (falls through to Vision); Open Food Facts timeout → 504; network error → 500; barcode API returns nothing → falls through to Vision
+- Security rules enforced at the Lambda: only numeric barcode values are accepted; Open Food Facts is the only external call; ingredient names are sanitised before Epicure matching; no QR code URLs are ever followed
 
 ### Recipe Generation
 - **Show Pairings** — Epicure similarity search surfaces safe, flavour-matched ingredients
@@ -292,6 +305,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/generate-recipe     Anthropic Claude recipe generation + validation (step 2)
   ├── /api/drink-pairings      Epicure beverage similarity search + allergen filter
   ├── /api/scan-ingredients    Thin proxy → fable-vision-ingredient-scanner Lambda (image compressed to JPEG ≤1200px client-side before upload)
+  ├── /api/scan-barcode        Thin proxy → fable-barcode-scanner Lambda (barcode auto-detected client-side via @zxing/browser before upload)
   ├── /api/feedback            Recipe like/dislike storage and pattern retrieval
   ├── /api/substitutes         Embedding similarity + category scoring + Claude explanations
   ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
@@ -336,9 +350,13 @@ AWS Lambda
   ├── fable-taste-profile-writer        EventBridge scheduled (every 6h) → GSI query → drift-aware
   │                                      preference analysis → Claude Haiku suggestion generation →
   │                                      writes tasteProfile to fable-users, clears needsRecompute
-  └── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients → Claude Vision (Haiku 4.5)
-                                         → fuzzy Epicure key matching → structured ingredient list
-                                         (CJS · nodejs24.x · 30s timeout)
+  ├── fable-vision-ingredient-scanner   API Gateway POST /scan-ingredients → Claude Vision (Haiku 4.5)
+  │                                      → fuzzy Epicure key matching → structured ingredient list
+  │                                      (CJS · nodejs24.x · 30s timeout)
+  └── fable-barcode-scanner             API Gateway POST /scan-barcode → Open Food Facts API (5s timeout)
+                                         → ingredient extraction + sanitisation → fuzzy Epicure matching
+                                         → structured ingredient list, inferredArea: cupboard
+                                         (CJS · nodejs24.x · 10s timeout · no external deps)
 
 Shared server-side libs
   ├── lib/preference-profile.ts  buildPreferenceProfile — DynamoDB query + computePreferenceProfile
@@ -406,12 +424,12 @@ In-memory (loaded at server startup)
 - ✅ **Auth-gated Claude routes + guest DB-only mode** — `/api/scan-ingredients`, `/api/macros`, and `/api/recipe-brief` now return 401 for unauthenticated requests via `requireAuth()` + `AuthRequiredError` pattern in `lib/get-user-id.ts`. `/api/generate-recipe` returns a community DB fallback with `guestMode: true` for guests (no Claude call, no rate limit consumed). `/api/substitutes` skips the Claude explanation step for guests. Frontend: camera button shows inline "Sign in" prompt for guests; macros toggle in Settings shows "Sign in to see nutritional information."; recipe screen shows a warm amber "community recipe" banner for guest mode; substitute cards show "Sign in to see why this substitution works." in place of explanations; tutorial slide 4 updated to mention guest mode. Auth overlay portal in `FableAppContent` (opens from inline prompts, auto-closes on sign-in). 10 new tests (637 Jest total across 33 suites)
 - ✅ **Recipe sharing** — every generated recipe has a public share URL (`/recipe/${recipeId}`); Share button on recipe cards and history entries; `navigator.share` on mobile, clipboard copy + Sonner toast on desktop; `fable-recipe-shares` DynamoDB table (PK: recipeId, 90-day TTL); shared page renders full recipe with drink pairings (no allergen filter) and Fable branding footer; `generateMetadata` for OG link previews; available to guests and authenticated users alike; `handleViewHistoryRecipe` and `handleViewSavedRecipe` fixed to carry the original stable recipeId through to the share URL. 5 new tests (714 Jest total across 42 suites)
 - ✅ **3-way theme toggle** — replaced boolean `darkMode` toggle with `colorMode: 'light' | 'dark' | 'system'`; header button cycles through all three modes (Sun → Moon → Monitor); full segmented control (Light · Auto · Dark) in Allergen Settings; `next-themes` `enableSystem={true}` + `defaultTheme="system"` for new users; automatic migration of legacy boolean `darkMode` field on first GET; `colorMode` persisted to DynamoDB. 2 new tests (714 Jest total)
+- ✅ **Barcode scanning** — same camera button auto-routes to `fable-barcode-scanner` Lambda when a numeric EAN/UPC barcode is detected client-side via `@zxing/browser` (cross-platform: iOS Safari, desktop Chrome, Android Chrome); Lambda queries Open Food Facts, extracts and sanitises ingredient names, runs three-tier Epicure fuzzy matching identical to the Vision Lambda, returns `inferredArea: cupboard`; non-barcode images fall through silently to Vision; same review screen for both paths; security rules enforced at Lambda (numeric-only barcodes, sanitised names, no QR URL following); `@zxing/browser` replaces the patchy native `BarcodeDetector` API. 7 new tests (716 Jest total across 42 suites + 23 Lambda tests)
 
 ### In Progress
 
 ### Near Term
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
-- [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Ingredient substitutes improvements — better functional category matching
 - [ ] Equipment-aware ingredient substitution — when a recipe step requires equipment the user doesn't have, use Epicure similarity search to suggest alternative ingredients that achieve the same result with available equipment (e.g. slow cooker → hob-friendly cuts)
 
@@ -471,7 +489,7 @@ TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire afte
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **637** passing automated tests across 33 suites (+ 12 Lambda tests) ensuring allergen safety and filter accuracy
+- **716** passing automated tests across 42 suites (+ 35 Lambda tests) ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
