@@ -392,7 +392,7 @@ In-memory (loaded at server startup)
 - [ ] Native mobile app — iOS and Android for camera/barcode features
 
 ### Research & Future
-- ✅ User authentication — Clerk for cross-device persistence; guest mode remains fully functional via UUID fallback; guest data migrated to auth account on first sign-in.
+- ✅ User authentication — email/password via Better Auth 1.2.7 with Neon Postgres for session/user storage; guest mode remains fully functional via UUID fallback; guest data migrated to auth account on first sign-in.
 - [ ] Epicure Chem integration — chemical compound layer for cross-reactivity research
 - [ ] **On-device recipe brief** — migrate the `/api/recipe-brief` Haiku call to Liquid AI LFM2.5 running on-device; eliminates the brief round-trip entirely and keeps taste reasoning private
 - [ ] **Editable brief direction** — show the `direction` field as an editable text input after the brief card appears; user can nudge it ("try something spicier") before generation fires, then the brief is re-sent as the updated creative direction
@@ -441,7 +441,7 @@ TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire afte
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **575** passing automated tests across 28 suites (+ 12 Lambda tests) ensuring allergen safety and filter accuracy
+- **637** passing automated tests across 33 suites (+ 12 Lambda tests) ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
