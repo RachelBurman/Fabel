@@ -32,7 +32,7 @@ interface FableContextType {
   setLactoseMode: (mode: 'include' | 'exclude') => void
   setKitchenEquipment: (equipment: string[]) => void
   toggleKitchenEquipment: (item: string) => void
-  setDarkMode: (dark: boolean) => void
+  setColorMode: (mode: 'light' | 'dark' | 'system') => void
   setDiscoverSettings: (settings: DiscoverSettings) => void
   setVisibleTabs: (tabs: string[]) => void
   effectiveAllergens: string[]
@@ -71,7 +71,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     lactoseIntolerant: false,
     lactoseMode: 'include' as const,
     kitchenEquipment: ['hob', 'oven'],
-    darkMode: false,
+    colorMode: 'system' as const,
     discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
     visibleTabs: [...ALL_TABS], // includes 'discover' by default
   })
@@ -112,7 +112,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
           lactoseIntolerant?: boolean
           lactoseMode?: 'include' | 'exclude'
           kitchenEquipment?: string[]
-          darkMode?: boolean
+          colorMode?: string
           discoverSettings?: DiscoverSettings
           visibleTabs?: string[]
           onboardingComplete?: boolean
@@ -135,7 +135,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
             lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
             kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
-            darkMode: profile.darkMode ?? prev.darkMode,
+            colorMode: (profile.colorMode as 'light' | 'dark' | 'system' | undefined) ?? prev.colorMode,
             discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
             visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
           }))
@@ -220,7 +220,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         lactoseIntolerant: false,
         lactoseMode: 'include',
         kitchenEquipment: ['hob', 'oven'],
-        darkMode: false,
+        colorMode: 'system',
         discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
         visibleTabs: [...ALL_TABS],
       })
@@ -254,7 +254,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             lactoseIntolerant: preferences.lactoseIntolerant,
             lactoseMode: preferences.lactoseMode,
             kitchenEquipment: preferences.kitchenEquipment,
-            darkMode: preferences.darkMode,
+            colorMode: preferences.colorMode,
             discoverSettings: preferences.discoverSettings,
             visibleTabs: preferences.visibleTabs,
             onboardingComplete: tutorialComplete,
@@ -267,7 +267,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.darkMode, preferences.discoverSettings, preferences.visibleTabs, tutorialComplete])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, tutorialComplete])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -391,8 +391,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
-  const setDarkMode = useCallback((dark: boolean) => {
-    setPreferences(prev => ({ ...prev, darkMode: dark }))
+  const setColorMode = useCallback((mode: 'light' | 'dark' | 'system') => {
+    setPreferences(prev => ({ ...prev, colorMode: mode }))
   }, [])
 
   const setDiscoverSettings = useCallback((settings: DiscoverSettings) => {
@@ -585,7 +585,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         setLactoseMode,
         setKitchenEquipment,
         toggleKitchenEquipment,
-        setDarkMode,
+        setColorMode,
         setDiscoverSettings,
         setVisibleTabs,
         effectiveAllergens,

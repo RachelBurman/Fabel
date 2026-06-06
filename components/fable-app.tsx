@@ -93,10 +93,10 @@ function FableAppContent() {
     }
   }, [hasCompletedOnboarding, currentScreen])
 
-  // Sync dark mode from DynamoDB once profile finishes loading
+  // Sync colour mode from DynamoDB once profile finishes loading
   useEffect(() => {
     if (!isLoadingProfile) {
-      setTheme(preferences.darkMode ? 'dark' : 'light')
+      setTheme(preferences.colorMode)
     }
   }, [isLoadingProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -547,11 +547,11 @@ function FableAppContent() {
   }, [preferences.showMacros, generatedRecipeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ View a recipe from history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  const handleViewHistoryRecipe = useCallback((recipe: GeneratedRecipe) => {
-    setGeneratedRecipe(recipe)
+  const handleViewHistoryRecipe = useCallback((entry: import('@/lib/types').HistoryEntry) => {
+    setGeneratedRecipe(entry.recipe)
     setGeneratedRecipeSaved(false)
     setLoadingStep(null)
-    setGeneratedRecipeId(Date.now().toString())
+    setGeneratedRecipeId(entry.id)
     navigate('generated')
   }, [navigate])
 
@@ -571,7 +571,7 @@ function FableAppContent() {
     setGeneratedRecipe(recipe.fullRecipe)
     setGeneratedRecipeSaved(true)
     setLoadingStep(null)
-    setGeneratedRecipeId(Date.now().toString())
+    setGeneratedRecipeId(recipe.id)
     navigate('generated')
   }, [navigate])
 
@@ -751,6 +751,7 @@ function FableAppContent() {
             >
               <GeneratedRecipeScreen
                 recipe={generatedRecipe}
+                recipeId={generatedRecipeId}
                 loadingStep={loadingStep}
                 brief={brief}
                 onBack={() => navigate(prevScreen)}
@@ -786,6 +787,7 @@ function FableAppContent() {
                 onViewRecipe={handleViewHistoryRecipe}
                 onGenerateNew={() => navigate('ingredients')}
               />
+
             </motion.div>
           )}
 
@@ -865,14 +867,14 @@ function FableAppContent() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className={`fixed inset-0 z-[200] flex flex-col overflow-y-auto px-5 py-6 ${preferences.darkMode ? 'bg-[#1c1917]' : 'bg-white'}`}
+            className="fixed inset-0 z-[200] flex flex-col overflow-y-auto px-5 py-6 bg-background"
           >
             <button
               onClick={() => setAuthOverlayOpen(false)}
               aria-label="Close"
               className="fixed top-4 right-4 z-[201] w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 transition-colors"
             >
-              <X className="w-4 h-4" style={{ color: preferences.darkMode ? '#fafaf9' : '#374151' }} />
+              <X className="w-4 h-4 text-foreground" />
             </button>
             <div className="w-full max-w-sm mx-auto">
               <AuthForm onSuccess={() => setAuthOverlayOpen(false)} />

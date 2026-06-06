@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
 import { ALL_TABS } from '@/lib/types'
-import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, PlayCircle, Compass, Layout } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, Monitor, PlayCircle, Compass, Layout } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -20,18 +20,17 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, onOpenAuth }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setDarkMode, setDiscoverSettings, setVisibleTabs, isLoadingProfile } = useFable()
-  const { theme, setTheme } = useTheme()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setColorMode, setDiscoverSettings, setVisibleTabs, isLoadingProfile } = useFable()
+  const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
   const [macrosAuthPrompt, setMacrosAuthPrompt] = useState(false)
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-  const isDark = theme === 'dark'
+  const colorMode = preferences.colorMode
 
-  const handleThemeToggle = () => {
-    const newDark = !isDark
-    setTheme(newDark ? 'dark' : 'light')
-    setDarkMode(newDark)
+  const handleColorModeChange = (mode: 'light' | 'dark' | 'system') => {
+    setTheme(mode)
+    setColorMode(mode)
   }
 
   const activePresetLabels = preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id)
@@ -348,29 +347,35 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
             )}
           </div>
 
-          {/* Dark mode */}
+          {/* Theme */}
           <div className="py-4 border-t border-border">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {isDark ? <Moon className="w-5 h-5 text-muted-foreground" /> : <Sun className="w-5 h-5 text-muted-foreground" />}
-                <div>
-                  <p className="text-sm font-semibold text-foreground">Dark mode</p>
-                  <p className="text-xs text-muted-foreground">{isDark ? 'Currently using dark theme' : 'Currently using light theme'}</p>
-                </div>
+            <div className="flex items-center gap-2 mb-3">
+              {colorMode === 'dark' ? <Moon className="w-5 h-5 text-muted-foreground" /> : colorMode === 'light' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Monitor className="w-5 h-5 text-muted-foreground" />}
+              <div>
+                <p className="text-sm font-semibold text-foreground">Theme</p>
+                <p className="text-xs text-muted-foreground">{colorMode === 'system' ? 'Follows your device setting' : colorMode === 'dark' ? 'Always dark' : 'Always light'}</p>
               </div>
-              <button
-                onClick={handleThemeToggle}
-                className={cn(
-                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                  isDark ? 'bg-green-500' : 'bg-secondary'
-                )}
-                aria-label="Toggle dark mode"
-              >
-                <span className={cn(
-                  'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
-                  isDark ? 'translate-x-5' : 'translate-x-0'
-                )} />
-              </button>
+            </div>
+            <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
+              {([
+                { value: 'light', label: 'Light', Icon: Sun },
+                { value: 'system', label: 'Auto', Icon: Monitor },
+                { value: 'dark', label: 'Dark', Icon: Moon },
+              ] as const).map(({ value, label, Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handleColorModeChange(value)}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors',
+                    colorMode === value
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, User, X, Compass, LogOut } from 'lucide-react'
+import { ChefHat, BookOpen, Heart, Settings, Leaf, Clock, ShieldCheck, ArrowLeftRight, Moon, Sun, Monitor, User, X, Compass, LogOut } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSession, signOut as authSignOut } from '@/lib/auth-client'
 import { AuthForm } from '@/components/auth-form'
@@ -122,13 +122,13 @@ interface HeaderProps {
 }
 
 export function Header({ onSettingsClick }: HeaderProps) {
-  const { preferences, setDarkMode } = useFable()
-  const { theme, setTheme } = useTheme()
+  const { preferences, setColorMode } = useFable()
+  const { setTheme } = useTheme()
   const { data: session, isPending } = useSession()
   const isSignedIn = !!session?.user
   const isLoaded = !isPending
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-  const isDark = theme === 'dark'
+  const colorMode = preferences.colorMode
 
   const [guestOpen, setGuestOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -136,10 +136,10 @@ export function Header({ onSettingsClick }: HeaderProps) {
 
   useEffect(() => { setIsMounted(true) }, [])
 
-  const handleThemeToggle = () => {
-    const newDark = !isDark
-    setTheme(newDark ? 'dark' : 'light')
-    setDarkMode(newDark)
+  const handleColorModeCycle = () => {
+    const next = colorMode === 'light' ? 'dark' : colorMode === 'dark' ? 'system' : 'light'
+    setTheme(next)
+    setColorMode(next)
   }
 
   // Close popover on click outside the whole right button group
@@ -329,13 +329,14 @@ export function Header({ onSettingsClick }: HeaderProps) {
             document.body
           )}
 
-          {/* Dark mode toggle */}
+          {/* Theme toggle — cycles light → dark → auto */}
           <button
-            onClick={handleThemeToggle}
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={handleColorModeCycle}
+            aria-label="Cycle theme: light, dark, auto"
+            title={colorMode === 'light' ? 'Light mode' : colorMode === 'dark' ? 'Dark mode' : 'Auto (system)'}
             className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {colorMode === 'dark' ? <Moon className="w-5 h-5" /> : colorMode === 'light' ? <Sun className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
           </button>
 
           {/* Settings */}

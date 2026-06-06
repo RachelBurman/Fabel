@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief } from '@/lib/types'
-import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight } from 'lucide-react'
+import { shareRecipe } from '@/lib/share-recipe'
+import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight, Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
@@ -43,6 +44,7 @@ interface DrinkPairing {
 
 interface GeneratedRecipeScreenProps {
   recipe: GeneratedRecipe | null
+  recipeId?: string
   loadingStep: LoadingStep | null
   brief?: RecipeBrief | null
   onBack: () => void
@@ -194,6 +196,7 @@ function RecipeBriefCard({ brief }: { brief: RecipeBrief }) {
 
 export function GeneratedRecipeScreen({
   recipe,
+  recipeId,
   loadingStep,
   brief,
   onBack,
@@ -219,6 +222,7 @@ export function GeneratedRecipeScreen({
 
   const [drinkPairings, setDrinkPairings] = useState<DrinkPairing[]>([])
   const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
+  const [sharing, setSharing] = useState(false)
 
   const [feedbackGiven, setFeedbackGiven] = useState<'liked' | 'disliked' | null>(null)
   const [showSurveyPanel, setShowSurveyPanel] = useState(false)
@@ -262,6 +266,16 @@ export function GeneratedRecipeScreen({
 
     return () => controller.abort()
   }, [recipe]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleShare = async () => {
+    if (!recipe || !recipeId || sharing) return
+    setSharing(true)
+    try {
+      await shareRecipe(recipeId, recipe)
+    } finally {
+      setSharing(false)
+    }
+  }
 
   const handleLike = () => {
     setFeedbackGiven('liked')
@@ -347,6 +361,17 @@ export function GeneratedRecipeScreen({
 
             {/* Spacer when recipe is shown (title lives in the gradient hero) */}
             {!isLoading && recipe && <div className="flex-1" />}
+
+            {!isLoading && recipe && recipeId && (
+              <button
+                onClick={handleShare}
+                disabled={sharing}
+                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-card border border-border text-muted-foreground hover:text-primary hover:border-primary/50 transition-all duration-200 disabled:opacity-50"
+                aria-label="Share recipe"
+              >
+                {sharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+              </button>
+            )}
 
             {!isLoading && recipe && onSave && (
               <button

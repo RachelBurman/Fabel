@@ -1,10 +1,11 @@
 /**
  * Integration tests for /api/user/profile — GET and PUT — covering the new
- * kitchenEquipment and darkMode fields added in the recipe filters feature.
+ * kitchenEquipment and colorMode fields.
  *
  * DynamoDB is mocked so no real AWS calls are made. The tests verify:
- *  - GET returns kitchenEquipment and darkMode from DynamoDB
- *  - PUT saves kitchenEquipment and darkMode to DynamoDB
+ *  - GET returns kitchenEquipment and colorMode from DynamoDB
+ *  - GET migrates old boolean darkMode to string colorMode
+ *  - PUT saves kitchenEquipment and colorMode to DynamoDB
  *  - Defaults are applied when the fields are absent from the stored item
  *  - Existing fields (allergens, ingredients, etc.) are unaffected
  */
@@ -50,7 +51,7 @@ function makeStoredItem(overrides: Record<string, unknown> = {}): Record<string,
     lactoseIntolerant: false,
     lactoseMode: 'include',
     kitchenEquipment: ['hob', 'oven'],
-    darkMode: false,
+    colorMode: 'system',
     ...overrides,
   }
 }
@@ -107,21 +108,35 @@ describe('GET /api/user/profile — kitchenEquipment', () => {
   })
 })
 
-// ─── GET — darkMode ───────────────────────────────────────────────────────────
+// ─── GET — colorMode ─────────────────────────────────────────────────────────
 
-describe('GET /api/user/profile — darkMode', () => {
-  it('returns darkMode: false when stored as false', async () => {
-    mockSend.mockResolvedValue({ Item: makeStoredItem({ darkMode: false }) })
+describe('GET /api/user/profile — colorMode', () => {
+  it('returns colorMode when stored as system', async () => {
+    mockSend.mockResolvedValue({ Item: makeStoredItem({ colorMode: 'system' }) })
     const res = await GET(makeGetRequest('test-user-123'))
     const body = await res.json()
-    expect(body.darkMode).toBe(false)
+    expect(body.colorMode).toBe('system')
   })
 
-  it('returns darkMode: true when stored as true', async () => {
-    mockSend.mockResolvedValue({ Item: makeStoredItem({ darkMode: true }) })
+  it('returns colorMode: dark when stored as dark', async () => {
+    mockSend.mockResolvedValue({ Item: makeStoredItem({ colorMode: 'dark' }) })
     const res = await GET(makeGetRequest('test-user-123'))
     const body = await res.json()
-    expect(body.darkMode).toBe(true)
+    expect(body.colorMode).toBe('dark')
+  })
+
+  it('migrates legacy darkMode: true to colorMode: dark', async () => {
+    mockSend.mockResolvedValue({ Item: { ...makeStoredItem(), darkMode: true, colorMode: undefined } })
+    const res = await GET(makeGetRequest('test-user-123'))
+    const body = await res.json()
+    expect(body.colorMode).toBe('dark')
+  })
+
+  it('migrates legacy darkMode: false to colorMode: light', async () => {
+    mockSend.mockResolvedValue({ Item: { ...makeStoredItem(), darkMode: false, colorMode: undefined } })
+    const res = await GET(makeGetRequest('test-user-123'))
+    const body = await res.json()
+    expect(body.colorMode).toBe('light')
   })
 
   it('returns 200 status when item is found', async () => {
@@ -195,7 +210,7 @@ describe('PUT /api/user/profile — kitchenEquipment', () => {
       activePresets: [],
       lactoseIntolerant: false,
       lactoseMode: 'include',
-      darkMode: false,
+      colorMode: 'system',
       // kitchenEquipment intentionally omitted
     }))
     const putArg = mockSend.mock.calls[0][0]
@@ -203,10 +218,10 @@ describe('PUT /api/user/profile — kitchenEquipment', () => {
   })
 })
 
-// ─── PUT — darkMode ───────────────────────────────────────────────────────────
+// ─── PUT — colorMode ─────────────────────────────────────────────────────────
 
-describe('PUT /api/user/profile — darkMode', () => {
-  it('saves darkMode: true', async () => {
+describe('PUT /api/user/profile — colorMode', () => {
+  it('saves colorMode: dark', async () => {
     mockSend.mockResolvedValue({})
     await PUT(makePutRequest({
       userId: 'test-user-123',
@@ -220,13 +235,13 @@ describe('PUT /api/user/profile — darkMode', () => {
       lactoseIntolerant: false,
       lactoseMode: 'include',
       kitchenEquipment: ['hob', 'oven'],
-      darkMode: true,
+      colorMode: 'dark',
     }))
     const putArg = mockSend.mock.calls[0][0]
-    expect(putArg.input.Item.darkMode).toBe(true)
+    expect(putArg.input.Item.colorMode).toBe('dark')
   })
 
-  it('saves darkMode: false', async () => {
+  it('saves colorMode: light', async () => {
     mockSend.mockResolvedValue({})
     await PUT(makePutRequest({
       userId: 'test-user-123',
@@ -240,13 +255,13 @@ describe('PUT /api/user/profile — darkMode', () => {
       lactoseIntolerant: false,
       lactoseMode: 'include',
       kitchenEquipment: ['hob', 'oven'],
-      darkMode: false,
+      colorMode: 'light',
     }))
     const putArg = mockSend.mock.calls[0][0]
-    expect(putArg.input.Item.darkMode).toBe(false)
+    expect(putArg.input.Item.colorMode).toBe('light')
   })
 
-  it('defaults darkMode to false when not provided in body', async () => {
+  it('defaults colorMode to system when not provided in body', async () => {
     mockSend.mockResolvedValue({})
     await PUT(makePutRequest({
       userId: 'test-user-123',
@@ -260,10 +275,10 @@ describe('PUT /api/user/profile — darkMode', () => {
       lactoseIntolerant: false,
       lactoseMode: 'include',
       kitchenEquipment: ['hob'],
-      // darkMode intentionally omitted
+      // colorMode intentionally omitted
     }))
     const putArg = mockSend.mock.calls[0][0]
-    expect(putArg.input.Item.darkMode).toBe(false)
+    expect(putArg.input.Item.colorMode).toBe('system')
   })
 
   it('returns 200 ok on successful save', async () => {
@@ -280,7 +295,7 @@ describe('PUT /api/user/profile — darkMode', () => {
       lactoseIntolerant: false,
       lactoseMode: 'include',
       kitchenEquipment: ['hob', 'oven'],
-      darkMode: true,
+      colorMode: 'system',
     }))
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -288,7 +303,7 @@ describe('PUT /api/user/profile — darkMode', () => {
   })
 
   it('returns 400 when userId is missing', async () => {
-    const res = await PUT(makePutRequest({ allergens: [], darkMode: true }))
+    const res = await PUT(makePutRequest({ allergens: [], colorMode: 'dark' }))
     expect(res.status).toBe(400)
   })
 })
@@ -296,7 +311,7 @@ describe('PUT /api/user/profile — darkMode', () => {
 // ─── PUT — existing fields are unaffected ─────────────────────────────────────
 
 describe('PUT — existing fields co-exist with new fields', () => {
-  it('saves allergens, kitchenEquipment, and darkMode all in the same item', async () => {
+  it('saves allergens, kitchenEquipment, and colorMode all in the same item', async () => {
     mockSend.mockResolvedValue({})
     await PUT(makePutRequest({
       userId: 'test-user-123',
@@ -310,7 +325,7 @@ describe('PUT — existing fields co-exist with new fields', () => {
       lactoseIntolerant: true,
       lactoseMode: 'exclude',
       kitchenEquipment: ['hob', 'oven', 'slow_cooker'],
-      darkMode: true,
+      colorMode: 'dark',
     }))
     const item = mockSend.mock.calls[0][0].input.Item
     expect(item.allergens).toEqual(['gluten', 'milk'])
@@ -319,7 +334,7 @@ describe('PUT — existing fields co-exist with new fields', () => {
     expect(item.lactoseIntolerant).toBe(true)
     expect(item.lactoseMode).toBe('exclude')
     expect(item.kitchenEquipment).toEqual(['hob', 'oven', 'slow_cooker'])
-    expect(item.darkMode).toBe(true)
+    expect(item.colorMode).toBe('dark')
     expect(item.updatedAt).toBeDefined()
   })
 })

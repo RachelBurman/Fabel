@@ -81,7 +81,7 @@ export interface UserPreferences {
   lactoseIntolerant: boolean
   lactoseMode: 'include' | 'exclude' // 'include' = dairy allowed with Lactaid reminder; 'exclude' = treat dairy as allergen
   kitchenEquipment: string[] // equipment the user has available (persisted)
-  darkMode: boolean           // app-level dark mode preference (persisted)
+  colorMode: 'light' | 'dark' | 'system' // theme preference; 'system' follows OS
   discoverSettings: DiscoverSettings
   visibleTabs: string[]       // which nav tabs are shown; min 2
 }

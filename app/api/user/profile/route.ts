@@ -53,11 +53,16 @@ export async function GET(req: NextRequest) {
     lactoseIntolerant,
     lactoseMode,
     kitchenEquipment,
+    colorMode,
     darkMode,
     discoverSettings,
     visibleTabs,
     onboardingComplete,
   } = result.Item;
+
+  // Migrate old boolean darkMode to string colorMode
+  const resolvedColorMode: string | undefined =
+    colorMode ?? (darkMode === true ? 'dark' : darkMode === false ? 'light' : undefined);
 
   return NextResponse.json({
     allergens,
@@ -70,7 +75,7 @@ export async function GET(req: NextRequest) {
     lactoseIntolerant,
     lactoseMode,
     kitchenEquipment,
-    darkMode,
+    colorMode: resolvedColorMode,
     discoverSettings,
     visibleTabs,
     onboardingComplete,
@@ -90,7 +95,7 @@ export async function PUT(req: NextRequest) {
     lactoseIntolerant?: boolean;
     lactoseMode?: "include" | "exclude";
     kitchenEquipment?: string[];
-    darkMode?: boolean;
+    colorMode?: "light" | "dark" | "system";
     discoverSettings?: DiscoverSettings;
     visibleTabs?: string[];
     onboardingComplete?: boolean;
@@ -112,7 +117,7 @@ export async function PUT(req: NextRequest) {
     lactoseIntolerant,
     lactoseMode,
     kitchenEquipment,
-    darkMode,
+    colorMode,
     discoverSettings,
     visibleTabs,
     onboardingComplete,
@@ -140,7 +145,7 @@ export async function PUT(req: NextRequest) {
         lactoseIntolerant: lactoseIntolerant ?? false,
         lactoseMode: lactoseMode ?? "include",
         kitchenEquipment: kitchenEquipment ?? ["hob", "oven"],
-        darkMode: darkMode ?? false,
+        colorMode: colorMode ?? "system",
         discoverSettings: discoverSettings ?? DEFAULT_DISCOVER_SETTINGS,
         visibleTabs: visibleTabs ?? [...ALL_TABS],
         onboardingComplete: onboardingComplete ?? false,

@@ -21,7 +21,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 637 tests across 33 suites; 12 Lambda tests (node:test) |
+| Testing | Jest 29, ts-jest, React Testing Library — 709 tests across 42 suites; 12 Lambda tests (node:test) |
 
 ---
 
@@ -161,11 +161,22 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - Mode indicator badge in the app header; toggle in allergen settings
 - Safe ingredients and mode preference persisted in DynamoDB
 
-### Dark Mode
-- 🌙 / ☀️ toggle in the header alongside the settings cog
-- Toggle also available in Allergen Settings
-- Preference persisted to DynamoDB — carries across devices
+### Theme
+- Three-way theme control: **Light**, **Auto** (follows OS `prefers-color-scheme`), **Dark**
+- Header icon button cycles through all three modes (Sun → Moon → Monitor); full segmented control in Allergen Settings
+- `colorMode: 'light' | 'dark' | 'system'` stored in DynamoDB, persisted across devices — replaces the old boolean `darkMode` field with automatic migration on first load
+- `next-themes` `enableSystem={true}` drives the system mode; `defaultTheme="system"` for new users
 - Full `dark:` variant support via Tailwind and the existing `.dark` CSS variable theme
+
+### Recipe Sharing
+- Every generated recipe has a stable share URL: `${APP_URL}/recipe/${recipeId}`
+- **Share button** on every generated recipe card and history card — Share icon (lucide `Share2`) alongside the save/heart button
+- Behaviour: `navigator.share` on mobile (native share sheet); clipboard copy + Sonner toast on desktop
+- On share tap: recipe is written to `fable-recipe-shares` DynamoDB table (TTL 90 days) so the URL is publicly readable without an account
+- **Shared recipe page** (`/recipe/[recipeId]`) — public, no auth required; renders the full recipe (gradient hero, title, description, ingredients, method, cook time, servings) plus drink pairings (no allergen filter applied since viewer's profile is unknown); disclaimer beneath pairings; Fable branding footer with a link to generate your own recipe
+- Page metadata (`generateMetadata`) sets `<title>` and OpenGraph tags for rich link previews
+- "Recipe no longer available" page shown when the share link has expired or was never created
+- Guests and authenticated users both see the share button
 
 ### Nutritional Information (Macros)
 - "Show nutritional information" toggle in Allergen Settings — **off by default**
@@ -271,8 +282,11 @@ Vercel — Next.js 16 (App Router)
   ├── /api/macros              Claude Haiku on-demand macro estimation for existing recipes
   ├── /api/extract-ingredients Claude ingredient extraction from arbitrary recipe text
   ├── /api/insights            Ingredient insights (1h cache) — allergen-profile + global trends + taste profile
+  ├── /api/recipe-share        POST create public share record in fable-recipe-shares (90-day TTL)
+  ├── /api/recipe-share/[id]   GET read share record — used by the shared recipe page
+  ├── /recipe/[recipeId]       Public shared recipe page — no auth; OG metadata; drink pairings
   └── /api/user/
-       ├── profile             DynamoDB read/write (allergens, safe foods, ingredients)
+       ├── profile             DynamoDB read/write (allergens, safe foods, ingredients, colorMode)
        ├── saved-recipes       DynamoDB read/write (full recipe objects)
        ├── collections         DynamoDB CRUD (GET, POST, PUT, DELETE)
        └── migrate-guest       One-time guest-to-auth data merge (POST, auth-gated)
@@ -281,9 +295,10 @@ DynamoDB tables
   ├── fable-users              Per-user profile (allergens, safeIngredients, safeFoodsMode,
   │                            ingredients[]{name, displayName, subtype, quantity, unit,
   │                            area, dateType, useByDate, boughtDate, addedAt},
-  │                            kitchenEquipment[], darkMode, preferenceSignals[],
-  │                            discoverSettings{}, visibleTabs[])
-  ├── fable-saved-recipes      Saved recipes with full recipe JSON
+  │                            kitchenEquipment[], colorMode ('light'|'dark'|'system'),
+  │                            preferenceSignals[], discoverSettings{}, visibleTabs[])
+  ├── fable-saved-recipes      Saved recipes + history entries with full recipe JSON (userId+recipeId)
+  ├── fable-recipe-shares      Public recipe shares (recipeId PK, fullRecipe, 90-day TTL)
   ├── fable-collections        Collections (userId+collectionId, name, recipeIds[], createdAt, updatedAt)
   ├── fable-feedback           Recipe feedback (userId+recipeId, liked, reasons, notes,
   │                            recipeTitle, recipeIngredients, allergenProfile, timestamp,
@@ -354,7 +369,7 @@ In-memory (loaded at server startup)
 - ✅ Occasion filter — Weeknight, Dinner Party, Street Food, Comfort Food, Packed Lunch, Romantic Dinner, Meal Prep, Celebration
 - ✅ Servings stepper — scale recipe quantities for 1–12 people (default 2)
 - ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
-- ✅ Dark mode — Moon/Sun toggle in header and allergen settings, persisted to DynamoDB
+- ✅ Dark mode → Theme — 3-way toggle (Light / Auto / Dark) in header and allergen settings; `colorMode` persisted to DynamoDB; backward-migration from old boolean `darkMode` field
 - ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
 - ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence. UUID persists in `localStorage['fable_user_id']` until the user signs in, at which point guest data is migrated to the Clerk account automatically
@@ -374,6 +389,8 @@ In-memory (loaded at server startup)
 - ✅ **Rate limiting with community recipe fallback** — new `fable-rate-limits` DynamoDB table (PK: userId, SK: windowKey, atomic ADD counters, TTL auto-cleanup); `lib/rate-limiter.ts` checks and increments dual-window (hour + day) counters via `TransactWriteCommand` (single atomic call, race-condition safe); fail-open on DynamoDB errors; guest limits 10/hour 30/day, auth stubs defined (50/200); `/api/generate-recipe` returns HTTP 200 with `rateLimited: true` + best-matching community recipe rather than a hard error; `lib/community-recipe-fallback.ts` scans `fable-saved-recipes` with allergen/safe-foods hard filter + preference scoring, falls back to 15 pre-seeded allergen-free community recipes; all other rate-limited routes return 429; amber banner in recipe screen, inline messages in substitutes/scan; 40 new tests (617 Jest total across 30 suites)
 - ✅ **Better Auth + guest migration** — Custom email/password auth via `better-auth` with Neon Postgres for session/user storage; replaces Clerk entirely. Guest pill in the header: signed-out users see a custom sign-in/sign-up form (name, email, password; toggle between modes; inline errors; loading state); signed-in users see their name, avatar initial, and a sign-out button. All API routes use `lib/get-user-id.ts` — server reads Better Auth session first, falls back to guest UUID from the request if unauthenticated. On first sign-in from a device, `POST /api/user/migrate-guest` merges the guest UUID data into the auth account: allergens and safeIngredients are unioned, kitchen ingredients deduplicated by epicureKey (auth wins on conflict), preferenceSignals appended, auth record wins for discoverSettings/visibleTabs/tasteProfile; feedback, saved recipes, and collections are copied over. Migration fires once per device via `localStorage['fable-guest-migrated']`; success shows a Sonner toast. Neon tables (`user`, `session`, `account`, `verification`) created via `pnpm dlx @better-auth/cli migrate`. `better-auth/react` not used — it calls `React.useRef` at module-init time and crashes Next.js static prerendering; replaced with a direct HTTP client calling `/api/auth/*` endpoints. `better-auth` pinned to `1.2.7` (1.6.x has a broken kysely adapter export). `serverExternalPackages: ['pg', 'better-auth']` added to `next.config.mjs`. No new tests — 637 Jest total across 33 suites maintained. Key engineering decision: Postgres for relational auth (sessions, users), DynamoDB for all app data — right tool for the right job.
 - ✅ **Auth-gated Claude routes + guest DB-only mode** — `/api/scan-ingredients`, `/api/macros`, and `/api/recipe-brief` now return 401 for unauthenticated requests via `requireAuth()` + `AuthRequiredError` pattern in `lib/get-user-id.ts`. `/api/generate-recipe` returns a community DB fallback with `guestMode: true` for guests (no Claude call, no rate limit consumed). `/api/substitutes` skips the Claude explanation step for guests. Frontend: camera button shows inline "Sign in" prompt for guests; macros toggle in Settings shows "Sign in to see nutritional information."; recipe screen shows a warm amber "community recipe" banner for guest mode; substitute cards show "Sign in to see why this substitution works." in place of explanations; tutorial slide 4 updated to mention guest mode. Auth overlay portal in `FableAppContent` (opens from inline prompts, auto-closes on sign-in). 10 new tests (637 Jest total across 33 suites)
+- ✅ **Recipe sharing** — every generated recipe has a public share URL (`/recipe/${recipeId}`); Share button on recipe cards and history entries; `navigator.share` on mobile, clipboard copy + Sonner toast on desktop; `fable-recipe-shares` DynamoDB table (PK: recipeId, 90-day TTL); shared page renders full recipe with drink pairings (no allergen filter) and Fable branding footer; `generateMetadata` for OG link previews; available to guests and authenticated users alike; `handleViewHistoryRecipe` and `handleViewSavedRecipe` fixed to carry the original stable recipeId through to the share URL. 5 new tests (714 Jest total across 42 suites)
+- ✅ **3-way theme toggle** — replaced boolean `darkMode` toggle with `colorMode: 'light' | 'dark' | 'system'`; header button cycles through all three modes (Sun → Moon → Monitor); full segmented control (Light · Auto · Dark) in Allergen Settings; `next-themes` `enableSystem={true}` + `defaultTheme="system"` for new users; automatic migration of legacy boolean `darkMode` field on first GET; `colorMode` persisted to DynamoDB. 2 new tests (714 Jest total)
 
 ### In Progress
 
@@ -388,7 +405,6 @@ In-memory (loaded at server startup)
 - [ ] Health platform integration — Garmin Connect, Apple HealthKit, Google Health for activity-aware suggestions
 - [ ] Recipe cost calculator — grocery API integration (Tesco, Sainsbury's, Kroger)
 - [ ] Push notifications — expiring ingredient alerts
-- [ ] Recipe sharing — share generated recipes with friends
 - [ ] Native mobile app — iOS and Android for camera/barcode features
 
 ### Research & Future

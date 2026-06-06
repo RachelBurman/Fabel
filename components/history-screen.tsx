@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { type HistoryEntry, type GeneratedRecipe } from '@/lib/types'
-import { Clock, Users, History } from 'lucide-react'
+import { type HistoryEntry } from '@/lib/types'
+import { Clock, Users, History, Share2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RecipeGradient } from '@/components/recipe-gradient'
+import { shareRecipe } from '@/lib/share-recipe'
 
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts
@@ -19,18 +21,31 @@ function relativeTime(ts: number): string {
 interface HistoryCardProps {
   entry: HistoryEntry
   index: number
-  onView: (recipe: GeneratedRecipe) => void
+  onView: (entry: HistoryEntry) => void
 }
 
 function HistoryCard({ entry, index, onView }: HistoryCardProps) {
   const { recipe, timestamp } = entry
+  const [sharing, setSharing] = useState(false)
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (sharing) return
+    setSharing(true)
+    try {
+      await shareRecipe(entry.id, recipe)
+    } finally {
+      setSharing(false)
+    }
+  }
+
   return (
-    <motion.button
+    <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.25 }}
-      onClick={() => onView(recipe)}
-      className="w-full text-left bg-card border border-border rounded-2xl overflow-hidden hover:shadow-md hover:border-primary/30 transition-all duration-200 group"
+      onClick={() => onView(entry)}
+      className="w-full text-left bg-card border border-border rounded-2xl overflow-hidden hover:shadow-md hover:border-primary/30 transition-all duration-200 cursor-pointer"
     >
       {/* Gradient thumbnail */}
       <RecipeGradient title={recipe.title} className="w-full h-32">
@@ -49,24 +64,34 @@ function HistoryCard({ entry, index, onView }: HistoryCardProps) {
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
           {recipe.description}
         </p>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Clock className="w-3.5 h-3.5" />
-            <span>{recipe.cookTime}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{recipe.cookTime}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" />
+              <span>{recipe.servings} servings</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5" />
-            <span>{recipe.servings} servings</span>
-          </div>
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+            aria-label="Share recipe"
+          >
+            {sharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Share2 className="w-3.5 h-3.5" />}
+          </button>
         </div>
       </div>
-    </motion.button>
+    </motion.div>
   )
 }
 
 interface HistoryScreenProps {
   history: HistoryEntry[]
-  onViewRecipe: (recipe: GeneratedRecipe) => void
+  onViewRecipe: (entry: HistoryEntry) => void
   onGenerateNew: () => void
 }
 
