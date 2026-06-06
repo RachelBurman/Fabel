@@ -44,6 +44,20 @@ pnpm seed:insights
 pnpm dev
 ```
 
+### Regenerating PWA icons
+
+If you update `public/icons/fable-leaf.svg`, regenerate the PNG icons with either script:
+
+```bash
+# Node.js (requires sharp)
+node scripts/generate-icons.mjs
+
+# Python (requires cairosvg)
+python scripts/generate-icons.py
+```
+
+Both produce `public/icons/icon-512.png`, `public/icons/icon-192.png`, and `public/apple-icon.png`.
+
 ### Environment Variables
 
 | Variable | Description |
