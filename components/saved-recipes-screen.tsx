@@ -23,6 +23,8 @@ interface SavedRecipeCardProps {
 
 function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, removeIcon = 'trash' }: SavedRecipeCardProps) {
   const canView = Boolean(recipe.fullRecipe)
+  const { collections } = useFable()
+  const isInAnyCollection = collections.some(c => c.recipeIds.includes(recipe.id))
 
   return (
     <motion.div
@@ -55,9 +57,9 @@ function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, r
             <button
               onClick={e => { e.stopPropagation(); onAddToCollection(recipe.id) }}
               className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm text-white/80 hover:bg-primary hover:text-white flex items-center justify-center transition-all duration-200"
-              aria-label="Add to collection"
+              aria-label={isInAnyCollection ? 'Edit collections' : 'Add to collection'}
             >
-              <Bookmark className="w-3.5 h-3.5" />
+              <Bookmark className={cn('w-3.5 h-3.5', isInAnyCollection && 'fill-current')} />
             </button>
           )}
           <button

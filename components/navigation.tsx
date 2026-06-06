@@ -315,7 +315,11 @@ export function Header({ onSettingsClick }: HeaderProps) {
                     <X className="w-4 h-4" style={{ color: isDark ? '#fafaf9' : '#374151' }} />
                   </button>
                   <div className="flex-1 flex items-center justify-center p-6">
-                    <div className="w-full max-w-sm bg-card border border-border rounded-xl shadow-xl">
+                    <div
+                      className="w-full max-w-sm bg-card border border-border rounded-xl shadow-xl"
+                      onMouseDown={e => e.stopPropagation()}
+                      onTouchStart={e => e.stopPropagation()}
+                    >
                       <AuthForm onSuccess={() => setGuestOpen(false)} />
                     </div>
                   </div>
