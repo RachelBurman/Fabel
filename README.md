@@ -241,6 +241,7 @@ One-tap diet restriction setup above the EU Big 14 allergen grid.
 A 5-slide introductory slideshow that appears on first launch and is re-launchable from settings.
 
 - Shown automatically on first app load by checking `fable-onboarding-complete` in `localStorage`; never shown again once dismissed
+- `onboardingComplete` flag also persisted to `fable-users` in DynamoDB for authenticated users — tutorial state carries across devices; on sign-in, `false` is written only if the `localStorage` flag is absent (no regression for users who have already seen it)
 - Full-screen overlay with a dark backdrop dimming the app behind it; slides animate left/right via Framer Motion
 - **Slide 1 — Welcome**: Fable logo, food-gradient hero, brand positioning copy
 - **Slide 2 — Allergens**: EU Big 14 allergen picker illustration with active state previews
@@ -384,7 +385,7 @@ In-memory (loaded at server startup)
 - ✅ Servings stepper — scale recipe quantities for 1–12 people (default 2)
 - ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
 - ✅ Dark mode → Theme — 3-way toggle (Light / Auto / Dark) in header and allergen settings; `colorMode` persisted to DynamoDB; backward-migration from old boolean `darkMode` field
-- ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings
+- ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings; `onboardingComplete` persisted to DynamoDB for authenticated users so tutorial state carries across devices
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
 - ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence. UUID persists in `localStorage['fable_user_id']` until the user signs in, at which point guest data is migrated to the Clerk account automatically
 - ✅ `fable-ingredient-insights` table — aggregate trending data by allergen profile; seeded with 14 realistic records across 7 profiles × 2 time windows
@@ -409,7 +410,6 @@ In-memory (loaded at server startup)
 ### In Progress
 
 ### Near Term
-- [ ] Onboarding state in DynamoDB — `onboardingComplete` flag currently lives in `localStorage` only. Add `onboardingComplete: boolean` to `fable-users` schema for authenticated users, so tutorial state persists across devices. Migration path: on auth, write `onboardingComplete: false` only if the `localStorage` flag is absent.
 - [ ] Nutritional database integration — USDA FoodData Central for accurate macros
 - [ ] Barcode/QR scanning — scan food products, auto-populate kitchen via Open Food Facts API
 - [ ] Ingredient substitutes improvements — better functional category matching
