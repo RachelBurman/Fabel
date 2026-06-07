@@ -21,7 +21,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner · Open Food Facts barcode scanner |
-| Testing | Jest 29, ts-jest, React Testing Library — 716 tests across 42 suites; 35 Lambda tests (node:test) |
+| Testing | Jest 29, ts-jest, React Testing Library — 742 tests across 43 suites; 35 Lambda tests (node:test) |
 
 ---
 
@@ -459,12 +459,12 @@ In-memory (loaded at server startup)
 - ✅ **Barcode scanning** — same camera button auto-routes to `fable-barcode-scanner` Lambda when a numeric EAN/UPC barcode is detected client-side via `@zxing/browser` (cross-platform: iOS Safari, desktop Chrome, Android Chrome); Lambda queries Open Food Facts, extracts and sanitises ingredient names, runs three-tier Epicure fuzzy matching identical to the Vision Lambda, returns `inferredArea: cupboard`; non-barcode images fall through silently to Vision; same review screen for both paths; security rules enforced at Lambda (numeric-only barcodes, sanitised names, no QR URL following); `@zxing/browser` replaces the patchy native `BarcodeDetector` API. 7 new tests (716 Jest total across 42 suites + 23 Lambda tests)
 - ✅ **Substitution engine — role-aware context scoring** — three improvements to the scoring logic and Claude prompt, all contained to `/api/substitutes`: (1) co-ingredient hard exclusion drops any candidate whose Epicure key exactly matches a key already in the dish context (pasta cannot substitute for cheese in a pasta bake); (2) relative co-ingredient penalty replaces the fixed context-fit weight — when `averageContextFit > similarityToOriginal + 0.15` a −0.2 penalty applies instead of the context contribution (self-calibrating against the embedding space rather than a fixed threshold, no cliff artefact at the boundary); formula rebalanced to `0.6 × similarity + (0.3 × contextFit or −0.2 co-ingredient penalty) + category adj`; (3) role-aware Claude prompt instructs Haiku to reason about the ingredient's functional role in the specific dish (fat, protein, binding, acidity, texture, or flavour) before explaining each substitute — explanations are now dish-specific rather than generic ingredient comparisons. No changes to API shape, response format, frontend, DynamoDB, allergen filtering, Safe Foods Mode, or guest/auth behaviour.
 - ✅ **Demo seed accounts** — Maya (`maya@demo.fable.app`) and Seren (`seren@demo.fable.app`); seeded via `pnpm seed:demo`; Maya demonstrates allergen filtering (gluten + dairy) with full preference history; Seren demonstrates Safe Foods Mode with a 10-ingredient restricted diet.
+- ✅ **Spice tolerance + culinary adventurousness** — two new user preferences (`spiceTolerance: none|mild|medium|hot`, `adventurousness: familiar|occasional|adventurous`) collected in a new onboarding slide ("Your cooking style", step 3) and adjustable from a "Cooking style" section in settings; both persisted to `fable-users`; `spiceTolerance` injected as prose into the Claude Sonnet recipe generation prompt (none/mild/hot only; medium = no injection); `adventurousness` steers the Claude Haiku brief (noveltyNote aggressiveness, heat-forward direction suppression/encouragement) and adjusts substitution scoring (familiar = hard 0.7 similarity filter; adventurous = category adjustment neutralised so cross-category candidates surface); demo accounts updated (Maya: hot/adventurous, Seren: none/familiar). 26 new tests (742 total across 43 suites)
 
 ### In Progress
-- 🔄 Spice tolerance onboarding — preference question during onboarding, persisted to `fable-users`, injected into recipe generation prompt
+- 🔄 **"Why is this safe?" explainer** — Claude Haiku call explaining in plain English why a recipe or ingredient is safe for the user's specific allergen profile; trust feature for severe allergy and MCAS users
 
 ### Near Term
-- [ ] "Why is this safe?" explainer — Claude Haiku call explaining in plain English why a recipe or ingredient is safe for the user's specific allergen profile; trust feature for severe allergy and MCAS users
 - [ ] **Editable brief direction** — `direction` field editable after brief card appears; user nudges it before generation fires, brief re-sent as updated creative direction
 - [ ] High histamine preset — dietary filter excluding known high-histamine ingredients; same pattern as existing vegan/low-FODMAP presets; framed as a filter, not a medical tool, with disclaimer
 - [ ] **Multi-turn brief refinement** — "go vegetarian instead" updates direction and regenerates; brief card animates to new direction
@@ -520,7 +520,7 @@ TTL enabled on `fable-saved-recipes` in AWS console. Unsaved recipes expire afte
 
 - **250 million+** people worldwide live with food allergies
 - **MCAS** affects an estimated 17% of the population, many with severely restricted diets
-- **716** passing automated tests across 42 suites (+ 35 Lambda tests) ensuring allergen safety and filter accuracy
+- **742** passing automated tests across 43 suites (+ 35 Lambda tests) ensuring allergen safety and filter accuracy
 - Existing recipe apps are built for abundance — Fable is built for restriction
 - Safe Foods Mode is the only known consumer recipe tool that constrains generation to a user-defined safe ingredient list, with server-side validation to catch anything the model adds outside it
 - Lactose intolerance include/exclude modes with medication reminders
