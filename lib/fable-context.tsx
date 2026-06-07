@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, type SpiceTolerance, type Adventurousness, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
+import { ALCOHOL_INGREDIENT_KEYS } from '@/lib/alcohol-ingredients'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 import { markTutorialComplete } from '@/lib/tutorial'
 
@@ -30,6 +31,7 @@ interface FableContextType {
   togglePreset: (presetId: string) => void
   setLactoseIntolerant: (active: boolean) => void
   setLactoseMode: (mode: 'include' | 'exclude') => void
+  setAlcoholMode: (mode: 'none' | 'no_cooking' | 'exclude_entirely') => void
   setKitchenEquipment: (equipment: string[]) => void
   toggleKitchenEquipment: (item: string) => void
   setColorMode: (mode: 'light' | 'dark' | 'system') => void
@@ -72,6 +74,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     activePresets: [],
     lactoseIntolerant: false,
     lactoseMode: 'include' as const,
+    alcoholMode: 'none' as const,
     kitchenEquipment: ['hob', 'oven'],
     colorMode: 'system' as const,
     discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
@@ -115,6 +118,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
           activePresets?: string[]
           lactoseIntolerant?: boolean
           lactoseMode?: 'include' | 'exclude'
+          alcoholMode?: 'none' | 'no_cooking' | 'exclude_entirely'
           kitchenEquipment?: string[]
           colorMode?: string
           discoverSettings?: DiscoverSettings
@@ -127,7 +131,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
           profile.allergens !== undefined ||
           profile.ingredients !== undefined ||
           profile.activePresets !== undefined ||
-          profile.lactoseIntolerant !== undefined
+          profile.lactoseIntolerant !== undefined ||
+          profile.alcoholMode !== undefined
         ) {
           setPreferences(prev => ({
             ...prev,
@@ -140,6 +145,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             activePresets: profile.activePresets ?? prev.activePresets,
             lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
             lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
+            alcoholMode: profile.alcoholMode ?? prev.alcoholMode,
             kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
             colorMode: (profile.colorMode as 'light' | 'dark' | 'system' | undefined) ?? prev.colorMode,
             discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
@@ -227,6 +233,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         activePresets: [],
         lactoseIntolerant: false,
         lactoseMode: 'include',
+        alcoholMode: 'none',
         kitchenEquipment: ['hob', 'oven'],
         colorMode: 'system',
         discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
@@ -263,6 +270,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
             activePresets: preferences.activePresets,
             lactoseIntolerant: preferences.lactoseIntolerant,
             lactoseMode: preferences.lactoseMode,
+            alcoholMode: preferences.alcoholMode,
             kitchenEquipment: preferences.kitchenEquipment,
             colorMode: preferences.colorMode,
             discoverSettings: preferences.discoverSettings,
@@ -279,7 +287,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, tutorialComplete])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.alcoholMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, tutorialComplete])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -388,6 +396,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setLactoseMode = useCallback((mode: 'include' | 'exclude') => {
     setPreferences(prev => ({ ...prev, lactoseMode: mode }))
+  }, [])
+
+  const setAlcoholMode = useCallback((mode: 'none' | 'no_cooking' | 'exclude_entirely') => {
+    setPreferences(prev => ({ ...prev, alcoholMode: mode }))
   }, [])
 
   const setKitchenEquipment = useCallback((equipment: string[]) => {
@@ -565,7 +577,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const effectiveCustomAllergens: string[] = (() => {
     const presetIngredients = preferences.activePresets.flatMap(id => DIET_PRESETS[id]?.ingredients ?? [])
-    return [...new Set([...preferences.customAllergens, ...presetIngredients])]
+    const alcoholIngredients = preferences.alcoholMode === 'exclude_entirely' ? [...ALCOHOL_INGREDIENT_KEYS] : []
+    return [...new Set([...preferences.customAllergens, ...presetIngredients, ...alcoholIngredients])]
   })()
 
   // ── Onboarding ───────────────────────────────────────────────────────────────
@@ -603,6 +616,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         togglePreset,
         setLactoseIntolerant,
         setLactoseMode,
+        setAlcoholMode,
         setKitchenEquipment,
         toggleKitchenEquipment,
         setColorMode,

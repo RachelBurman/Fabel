@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
     recipeBrief?: unknown;
     spiceTolerance?: unknown;
     adventurousness?: unknown;
+    alcoholMode?: unknown;
   };
   try {
     body = await req.json();
@@ -437,9 +438,19 @@ export async function POST(req: NextRequest) {
       ? `Push into less familiar territory. Unusual ingredient combinations, less common cuisines, and novel techniques are all encouraged.\n\n`
       : "";
 
+  const alcoholMode =
+    typeof body.alcoholMode === "string" &&
+    (body.alcoholMode === "no_cooking" || body.alcoholMode === "exclude_entirely")
+      ? body.alcoholMode
+      : null;
+
+  const noAlcoholClause = alcoholMode
+    ? `This user does not consume alcohol. Do not use any alcoholic ingredients in this recipe — no wine, beer, spirits, mirin, or cooking wines. Where a recipe would traditionally use alcohol (e.g. white wine in a risotto, mirin in a teriyaki), substitute with a non-alcoholic alternative (stock, rice vinegar, apple juice, or similar). Do not mention alcohol in the recipe at all.\n\n`
+    : "";
+
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -456,7 +467,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +

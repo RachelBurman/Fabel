@@ -52,6 +52,7 @@ export async function GET(req: NextRequest) {
     activePresets,
     lactoseIntolerant,
     lactoseMode,
+    alcoholMode,
     kitchenEquipment,
     colorMode,
     darkMode,
@@ -76,6 +77,7 @@ export async function GET(req: NextRequest) {
     activePresets,
     lactoseIntolerant,
     lactoseMode,
+    alcoholMode,
     kitchenEquipment,
     colorMode: resolvedColorMode,
     discoverSettings,
@@ -98,6 +100,7 @@ export async function PUT(req: NextRequest) {
     activePresets?: string[];
     lactoseIntolerant?: boolean;
     lactoseMode?: "include" | "exclude";
+    alcoholMode?: "none" | "no_cooking" | "exclude_entirely";
     kitchenEquipment?: string[];
     colorMode?: "light" | "dark" | "system";
     discoverSettings?: DiscoverSettings;
@@ -122,6 +125,7 @@ export async function PUT(req: NextRequest) {
     activePresets,
     lactoseIntolerant,
     lactoseMode,
+    alcoholMode,
     kitchenEquipment,
     colorMode,
     discoverSettings,
@@ -152,6 +156,7 @@ export async function PUT(req: NextRequest) {
         activePresets: activePresets ?? [],
         lactoseIntolerant: lactoseIntolerant ?? false,
         lactoseMode: lactoseMode ?? "include",
+        alcoholMode: alcoholMode ?? "none",
         kitchenEquipment: kitchenEquipment ?? ["hob", "oven"],
         colorMode: colorMode ?? "system",
         discoverSettings: discoverSettings ?? DEFAULT_DISCOVER_SETTINGS,

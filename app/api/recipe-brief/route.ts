@@ -122,6 +122,11 @@ export async function POST(req: NextRequest) {
       typeof prefs.spiceTolerance === "string" ? prefs.spiceTolerance : "medium";
     const adventurousness =
       typeof prefs.adventurousness === "string" ? prefs.adventurousness : "occasional";
+    const alcoholMode =
+      typeof prefs.alcoholMode === "string" &&
+      (prefs.alcoholMode === "no_cooking" || prefs.alcoholMode === "exclude_entirely")
+        ? prefs.alcoholMode
+        : null;
 
     const kitchenIngredients = Array.isArray(body.kitchenIngredients)
       ? (body.kitchenIngredients as unknown[])
@@ -156,6 +161,10 @@ export async function POST(req: NextRequest) {
         ? `Cooking style guidance:\n${adventurousnessInstruction}${spiceInstruction}\n`
         : "";
 
+    const noAlcoholNote = alcoholMode
+      ? `This user does not consume alcohol. Do not suggest alcohol-forward directions or cuisines where alcohol is central to the dish (e.g. no coq au vin, sake-braised dishes, or beer-based stews).\n\n`
+      : "";
+
     const userMessage =
       `Taste profile:\n` +
       `- Top loved ingredients: ${preferred.join(", ") || "not enough data yet"}\n` +
@@ -170,6 +179,7 @@ export async function POST(req: NextRequest) {
       `- Occasion: ${occasion}\n` +
       `- Kitchen includes: ${kitchenIngredients.join(", ") || "not specified"}\n\n` +
       cookingStyleNote +
+      noAlcoholNote +
       `Write a recipe brief. Identify what flavour territory this user hasn't explored yet that aligns with their taste profile. If cuisine is 'Surprise me', choose something genuinely novel for them. Be specific — name a dish direction, not just a cuisine.\n\n` +
       `Respond with this exact JSON shape:\n` +
       `{\n` +

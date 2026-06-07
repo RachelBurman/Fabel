@@ -9,6 +9,7 @@ import {
 } from "@/lib/epicure";
 import { checkRateLimit, incrementRateLimit } from "@/lib/rate-limiter";
 import { getUserId } from "@/lib/get-user-id";
+import { ALCOHOL_INGREDIENT_KEYS } from "@/lib/alcohol-ingredients";
 
 // Grain ingredients must never substitute for these categories
 const GRAIN_INCOMPATIBLE = new Set(["fat", "dairy_alternative", "cheese", "liquid"]);
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     safeIngredients?: unknown;
     userId?: unknown;
     adventurousness?: unknown;
+    alcoholMode?: unknown;
   };
   try {
     body = await req.json();
@@ -85,14 +87,22 @@ export async function POST(req: NextRequest) {
       )
     : null;
 
+  const alcoholMode =
+    typeof body.alcoholMode === "string" &&
+    (body.alcoholMode === "no_cooking" || body.alcoholMode === "exclude_entirely")
+      ? body.alcoholMode
+      : null;
+  const alcoholKeySet = alcoholMode ? new Set(ALCOHOL_INGREDIENT_KEYS) : null;
+
   // a. Top 50 similar — rankSimilar already excludes the target itself
   const ranked = rankSimilar(ingredient).slice(0, 50);
 
   const originalCategory = getCategoryForIngredient(ingredient);
 
-  // b+c. Filter allergens, safe-foods list, and hard category rules
+  // b+c. Filter allergens, alcohol, safe-foods list, and hard category rules
   let candidates = ranked.filter(({ name }) => {
     if (safeSet && !safeSet.has(name)) return false;
+    if (alcoholKeySet && alcoholKeySet.has(name)) return false;
     const codes = getAllergensForIngredient(name);
     if (codes.some((c) => allergens.includes(c))) return false;
     // Hard rule: grain ingredients must not substitute for fat/dairy/cheese/liquid

@@ -19,7 +19,7 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, onOpenAuth }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setColorMode, setDiscoverSettings, setVisibleTabs, setSpiceTolerance, setAdventurousness, isLoadingProfile } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setAlcoholMode, setColorMode, setDiscoverSettings, setVisibleTabs, setSpiceTolerance, setAdventurousness, isLoadingProfile } = useFable()
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
@@ -33,7 +33,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
   }
 
   const activePresetLabels = preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id)
-  const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant
+  const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none'
 
   const [isDietExpanded, setIsDietExpanded] = useState(false)
 
@@ -51,6 +51,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
     const parts: string[] = []
     if (activePresetLabels.length > 0) parts.push(activePresetLabels.join(', '))
     if (preferences.lactoseIntolerant) parts.push('Lactose intolerance')
+    if (preferences.alcoholMode !== 'none') parts.push('No alcohol')
     if (allergenCount > 0) parts.push(`${allergenCount} allergen${allergenCount > 1 ? 's' : ''}`)
     if (parts.length === 0) return 'No restrictions selected'
     return `${parts.join(' + ')} active`
@@ -83,7 +84,11 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               </h2>
               <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
                 {anyDietActive
-                  ? [...activePresetLabels, ...(preferences.lactoseIntolerant ? ['Lactose'] : [])].join(', ') + ' active'
+                  ? [
+                      ...activePresetLabels,
+                      ...(preferences.lactoseIntolerant ? ['Lactose'] : []),
+                      ...(preferences.alcoholMode !== 'none' ? ['No Alcohol'] : []),
+                    ].join(', ') + ' active'
                   : 'None active'}
                 <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
               </span>
@@ -198,6 +203,84 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                                     preferences.lactoseMode === value ? 'border-amber-500 bg-amber-500' : 'border-muted-foreground'
                                   )}>
                                     {preferences.lactoseMode === value && (
+                                      <span className="w-1.5 h-1.5 rounded-full bg-white block" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium text-foreground">{label}</p>
+                                    <p className="text-xs text-muted-foreground">{desc}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* No Alcohol */}
+                    <div className={cn(
+                      'rounded-xl border transition-colors',
+                      preferences.alcoholMode !== 'none' ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                    )}>
+                      <div className="flex items-center justify-between gap-4 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">🍷</span>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">No Alcohol</p>
+                            <p className="text-xs text-muted-foreground">
+                              {preferences.alcoholMode === 'no_cooking'
+                                ? 'Alcohol-free cooking — drink pairings hidden'
+                                : preferences.alcoholMode === 'exclude_entirely'
+                                ? 'Alcohol excluded from all results'
+                                : 'Remove or exclude alcohol from recipes and pairings'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          role="switch"
+                          aria-checked={preferences.alcoholMode !== 'none'}
+                          onClick={() => setAlcoholMode(preferences.alcoholMode !== 'none' ? 'none' : 'no_cooking')}
+                          className={cn(
+                            'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                            preferences.alcoholMode !== 'none' ? 'bg-amber-500' : 'bg-secondary'
+                          )}
+                        >
+                          <span className={cn(
+                            'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                            preferences.alcoholMode !== 'none' ? 'translate-x-5' : 'translate-x-0'
+                          )} />
+                        </button>
+                      </div>
+
+                      <AnimatePresence initial={false}>
+                        {preferences.alcoholMode !== 'none' && (
+                          <motion.div
+                            key="alcohol-mode"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.18, ease: 'easeInOut' }}
+                            className="overflow-hidden"
+                          >
+                            <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
+                              {([
+                                { value: 'no_cooking' as const, label: '🍷 Alcohol-free cooking', desc: 'Alcohol removed from recipes — cooking wine, beer, and spirits replaced with non-alcoholic alternatives. Alcoholic drink pairings hidden.' },
+                                { value: 'exclude_entirely' as const, label: '🚫 Exclude entirely', desc: 'Treats alcohol like an allergen — filtered from all results including marinades, sauces, and flavourings. Alcoholic drink pairings hidden.' },
+                              ]).map(({ value, label, desc }) => (
+                                <button
+                                  key={value}
+                                  onClick={() => setAlcoholMode(value)}
+                                  className={cn(
+                                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
+                                    preferences.alcoholMode === value ? 'bg-amber-500/10' : 'hover:bg-amber-500/5'
+                                  )}
+                                >
+                                  <div className={cn(
+                                    'mt-0.5 w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center',
+                                    preferences.alcoholMode === value ? 'border-amber-500 bg-amber-500' : 'border-muted-foreground'
+                                  )}>
+                                    {preferences.alcoholMode === value && (
                                       <span className="w-1.5 h-1.5 rounded-full bg-white block" />
                                     )}
                                   </div>

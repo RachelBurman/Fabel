@@ -240,6 +240,7 @@ function FableAppContent() {
                   useKitchenOnly: filters.kitchenOnly,
                   spiceTolerance: preferences.spiceTolerance,
                   adventurousness: preferences.adventurousness,
+                  ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
                 },
                 kitchenIngredients: kitchenDisplayNames,
               }),
@@ -292,6 +293,7 @@ function FableAppContent() {
           spiceTolerance: preferences.spiceTolerance,
           adventurousness: preferences.adventurousness,
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...(uid ? { userId: uid } : {}),
@@ -399,6 +401,7 @@ function FableAppContent() {
           spiceTolerance: preferences.spiceTolerance,
           adventurousness: preferences.adventurousness,
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
           ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
           ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
           ...(uid ? { userId: uid } : {}),
@@ -498,6 +501,7 @@ function FableAppContent() {
           spiceTolerance: preferences.spiceTolerance,
           adventurousness: preferences.adventurousness,
           ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
           ...(recipeContext ? { recipeContext } : {}),
         }),
       })
@@ -803,6 +807,7 @@ function FableAppContent() {
                 onFindSubstitute={handleFindSubstitute}
                 lactoseIntolerant={preferences.lactoseIntolerant}
                 lactoseMode={preferences.lactoseMode}
+                alcoholMode={preferences.alcoholMode}
                 rateLimitInfo={rateLimitInfo}
                 macrosRateLimitMsg={macrosRateLimitMsg}
                 guestMode={guestMode}

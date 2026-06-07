@@ -83,6 +83,7 @@ export interface UserPreferences {
   activePresets: string[]   // active diet preset IDs
   lactoseIntolerant: boolean
   lactoseMode: 'include' | 'exclude' // 'include' = dairy allowed with Lactaid reminder; 'exclude' = treat dairy as allergen
+  alcoholMode: 'none' | 'no_cooking' | 'exclude_entirely' // 'none' = off; 'no_cooking' = prompt substitution + hide pairings; 'exclude_entirely' = hard filter like allergen
   kitchenEquipment: string[] // equipment the user has available (persisted)
   colorMode: 'light' | 'dark' | 'system' // theme preference; 'system' follows OS
   discoverSettings: DiscoverSettings

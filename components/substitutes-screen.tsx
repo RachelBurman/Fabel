@@ -184,7 +184,8 @@ async function fetchTopSubstitute(
   allergens: string[],
   safeIngredients?: string[],
   userId?: string | null,
-  adventurousness?: string
+  adventurousness?: string,
+  alcoholMode?: string
 ): Promise<SubstituteResult | null> {
   try {
     const res = await fetch('/api/substitutes', {
@@ -197,6 +198,7 @@ async function fetchTopSubstitute(
         ...(safeIngredients && safeIngredients.length > 0 ? { safeIngredients } : {}),
         ...(userId ? { userId } : {}),
         ...(adventurousness ? { adventurousness } : {}),
+        ...(alcoholMode && alcoholMode !== 'none' ? { alcoholMode } : {}),
       }),
     })
     if (!res.ok) return null
@@ -258,7 +260,7 @@ export function SubstitutesScreen({
 
           if (allergenLabel) {
             const context = ingredients.filter((i) => i !== key)
-            const sub = await fetchTopSubstitute(key, context, preferences.allergens, kitchenIngredients, null, preferences.adventurousness)
+            const sub = await fetchTopSubstitute(key, context, preferences.allergens, kitchenIngredients, null, preferences.adventurousness, preferences.alcoholMode)
             // Only accept substitutes that are a reasonable match (≥45 combined score).
             // Below this threshold the swap is too dissimilar to suggest.
             const acceptedSub = sub && sub.combinedScore >= 45 ? sub : null
@@ -323,6 +325,7 @@ export function SubstitutesScreen({
               ? { safeIngredients: preferences.safeIngredients }
               : {}),
             ...(uid ? { userId: uid } : {}),
+            ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
           }),
         })
         if (res.status === 429) {

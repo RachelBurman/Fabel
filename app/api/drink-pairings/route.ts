@@ -7,6 +7,7 @@ import {
   type AllergenCode,
 } from "@/lib/epicure";
 import { resolveToEpicureKey } from "@/lib/drink-pairing-utils";
+import { ALCOHOL_INGREDIENT_KEYS } from "@/lib/alcohol-ingredients";
 
 // Keys verified to exist in data/epicure-core.json
 const BEVERAGE_KEYS = new Set([
@@ -44,7 +45,7 @@ const epicureKeySet = new Set(allIngredients);
 export async function POST(req: NextRequest) {
   console.log("[drink-pairings] POST received");
 
-  let body: { ingredients?: unknown; allergens?: unknown };
+  let body: { ingredients?: unknown; allergens?: unknown; alcoholMode?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -52,6 +53,23 @@ export async function POST(req: NextRequest) {
   }
 
   const { ingredients, allergens } = body;
+
+  const alcoholMode =
+    typeof body.alcoholMode === "string" &&
+    (body.alcoholMode === "no_cooking" || body.alcoholMode === "exclude_entirely")
+      ? body.alcoholMode
+      : null;
+
+  const alcoholKeySet = new Set(ALCOHOL_INGREDIENT_KEYS);
+
+  const NON_ALCOHOLIC_FALLBACKS = [
+    "ginger_beer",       // non-alcoholic soft drink
+    "sparkling_water",
+    "green_tea",
+    "mint_tea",
+    "elderflower_cordial",
+    "apple_juice",       // deliberately apple_juice not apple_cider (UK cider = alcoholic)
+  ];
 
   const inputIngredients: string[] = Array.isArray(ingredients)
     ? (ingredients as unknown[]).filter((i): i is string => typeof i === "string")
@@ -94,14 +112,25 @@ export async function POST(req: NextRequest) {
     allBeverageScores.length > 0 ? allBeverageScores.join(", ") : "NONE — all ingredients unresolved"
   );
 
-  const pairings = Array.from(scoreMap.entries())
+  let pairings = Array.from(scoreMap.entries())
     .filter(([name]) => {
+      if (alcoholMode && alcoholKeySet.has(name)) return false;
       const allergenList = getAllergensForIngredient(name);
       return !allergenList.some((a) => blockedSet.has(a));
     })
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([drink, score]) => ({ drink, score: Math.round(score * 10000) / 10000 }));
+
+  // If alcohol filter removed all candidates, return safe non-alcoholic fallbacks
+  if (alcoholMode && pairings.length === 0) {
+    pairings = NON_ALCOHOLIC_FALLBACKS
+      .filter(key => {
+        const allergenList = getAllergensForIngredient(key);
+        return !allergenList.some((a) => blockedSet.has(a));
+      })
+      .map(drink => ({ drink, score: 0 }));
+  }
 
   console.log("[drink-pairings] returning:", pairings.map((p) => p.drink).join(", ") || "EMPTY");
 

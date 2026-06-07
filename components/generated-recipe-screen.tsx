@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief } from '@/lib/types'
 import { shareRecipe } from '@/lib/share-recipe'
+import { ALCOHOL_INGREDIENT_KEYS } from '@/lib/alcohol-ingredients'
 import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, ArrowLeftRight, Share2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -59,6 +60,7 @@ interface GeneratedRecipeScreenProps {
   onFindSubstitute?: (ingredient: string, context: string[]) => void
   lactoseIntolerant?: boolean
   lactoseMode?: 'include' | 'exclude'
+  alcoholMode?: 'none' | 'no_cooking' | 'exclude_entirely'
   rateLimitInfo?: { hourRemaining: number; dayRemaining: number; resetAt: string } | null
   macrosRateLimitMsg?: string | null
   guestMode?: boolean
@@ -211,6 +213,7 @@ export function GeneratedRecipeScreen({
   onFindSubstitute,
   lactoseIntolerant = false,
   lactoseMode,
+  alcoholMode = 'none',
   rateLimitInfo,
   macrosRateLimitMsg,
   guestMode = false,
@@ -262,7 +265,7 @@ export function GeneratedRecipeScreen({
     fetch('/api/drink-pairings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ingredients: top3, allergens }),
+      body: JSON.stringify({ ingredients: top3, allergens, ...(alcoholMode !== 'none' ? { alcoholMode } : {}) }),
       signal: controller.signal,
     })
       .then(res => res.json())
@@ -605,6 +608,17 @@ export function GeneratedRecipeScreen({
                   <span className="text-base shrink-0">🥛</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     <span className="font-medium">Contains dairy</span> — consider taking Lactaid before eating.
+                  </p>
+                </div>
+              )}
+
+              {alcoholMode === 'no_cooking' && recipe.ingredients.some(ing =>
+                ALCOHOL_INGREDIENT_KEYS.includes(ing.name.toLowerCase().replace(/\s+/g, '_'))
+              ) && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-base shrink-0">⚠️</span>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">This recipe may contain alcohol</span> — check ingredients before cooking.
                   </p>
                 </div>
               )}
