@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat } from 'lucide-react'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientInsightsRecord, type RecipeSuggestion } from '@/lib/types'
+import { useInsights } from '@/lib/hooks/use-insights'
 
 const ALLERGEN_LABELS: Record<string, string> = {
   milk: 'Milk', eggs: 'Eggs', gluten: 'Gluten', peanuts: 'Peanuts',
@@ -64,20 +65,15 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
   const { preferences } = useFable()
   const { discoverSettings } = preferences
 
-  const [data, setData] = useState<InsightsData | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
+  const [userId, setUserId] = useState('')
   useEffect(() => {
-    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
-    if (!uid) return
-
-    setIsLoading(true)
-    fetch(`/api/insights?userId=${uid}`)
-      .then(res => res.ok ? res.json() : null)
-      .then((d: InsightsData | null) => { if (d) setData(d) })
-      .catch(() => {})
-      .finally(() => setIsLoading(false))
+    const uid = localStorage.getItem('fable_user_id') ?? ''
+    setUserId(uid)
   }, [])
+
+  const insightsQuery = useInsights(userId)
+  const data = insightsQuery.data as InsightsData | undefined
+  const isLoading = insightsQuery.isLoading
 
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background">

@@ -8,6 +8,7 @@ import { Search, X, Plus, ChevronDown } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { displayName } from '@/components/ingredients-screen'
+import { useIngredientSearch } from '@/lib/hooks/use-ingredient-search'
 
 export function CustomAllergenSearch() {
   const { preferences, toggleCustomAllergen } = useFable()
@@ -15,7 +16,7 @@ export function CustomAllergenSearch() {
   // Auto-expand if the user already has custom allergens selected
   const [isExpanded, setIsExpanded] = useState(() => preferences.customAllergens.length > 0)
   const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<string[]>([])
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
   const inputWrapperRef = useRef<HTMLDivElement>(null)
@@ -24,6 +25,11 @@ export function CustomAllergenSearch() {
 
   useEffect(() => { setIsMounted(true) }, [])
 
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(query.trim()), 150)
+    return () => clearTimeout(id)
+  }, [query])
+
   const recomputeCoords = useCallback(() => {
     if (inputWrapperRef.current) {
       const r = inputWrapperRef.current.getBoundingClientRect()
@@ -31,21 +37,12 @@ export function CustomAllergenSearch() {
     }
   }, [])
 
+  const ingredientSearch = useIngredientSearch(debouncedQuery)
+  const searchResults = ingredientSearch.data ?? []
+
   useEffect(() => {
-    const q = query.trim()
-    if (!q) { setSearchResults([]); return }
-    const id = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/ingredients?q=${encodeURIComponent(q)}`)
-        if (res.ok) {
-          const data: { results: string[] } = await res.json()
-          setSearchResults(data.results)
-          recomputeCoords()
-        }
-      } catch { /* silently ignore */ }
-    }, 150)
-    return () => clearTimeout(id)
-  }, [query, recomputeCoords])
+    if (searchResults.length > 0) recomputeCoords()
+  }, [searchResults, recomputeCoords])
 
   useEffect(() => {
     if (showDropdown) recomputeCoords()
@@ -56,7 +53,6 @@ export function CustomAllergenSearch() {
       toggleCustomAllergen(ingredient)
     }
     setQuery('')
-    setSearchResults([])
     setShowDropdown(false)
   }, [preferences.customAllergens, toggleCustomAllergen])
 

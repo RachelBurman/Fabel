@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { displayName } from '@/components/ingredients-screen'
+import { useIngredientSearch } from '@/lib/hooks/use-ingredient-search'
 
 interface SafeFoodsScreenProps {
   onDone: () => void
@@ -27,13 +28,18 @@ export function SafeFoodsScreen({
   const { preferences, addSafeIngredient, removeSafeIngredient } = useFable()
 
   const [inputValue, setInputValue] = useState('')
+  const [debouncedInput, setDebouncedInput] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const [searchResults, setSearchResults] = useState<string[]>([])
   const inputWrapperRef = useRef<HTMLDivElement>(null)
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => { setIsMounted(true) }, [])
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedInput(inputValue.trim()), 150)
+    return () => clearTimeout(id)
+  }, [inputValue])
 
   const recomputeCoords = useCallback(() => {
     if (inputWrapperRef.current) {
@@ -42,26 +48,16 @@ export function SafeFoodsScreen({
     }
   }, [])
 
+  const ingredientSearch = useIngredientSearch(debouncedInput)
+  const searchResults = ingredientSearch.data ?? []
+
   useEffect(() => {
-    const q = inputValue.trim()
-    if (!q) { setSearchResults([]); return }
-    const id = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/ingredients?q=${encodeURIComponent(q)}`)
-        if (res.ok) {
-          const data: { results: string[] } = await res.json()
-          setSearchResults(data.results)
-          recomputeCoords()
-        }
-      } catch { /* silently ignore */ }
-    }, 150)
-    return () => clearTimeout(id)
-  }, [inputValue, recomputeCoords])
+    if (searchResults.length > 0) recomputeCoords()
+  }, [searchResults, recomputeCoords])
 
   const handleAdd = useCallback((ingredient: string) => {
     addSafeIngredient(ingredient)
     setInputValue('')
-    setSearchResults([])
     setShowDropdown(false)
   }, [addSafeIngredient])
 

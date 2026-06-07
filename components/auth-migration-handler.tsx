@@ -3,11 +3,13 @@
 import { useEffect } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { toast } from 'sonner'
+import { useMigrateGuest } from '@/lib/hooks/use-migrate-guest'
 
 export function AuthMigrationHandler() {
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
   const userId = session?.user?.id
+  const migrateGuest = useMigrateGuest()
 
   useEffect(() => {
     if (!isSignedIn || !userId) return
@@ -17,23 +19,19 @@ export function AuthMigrationHandler() {
 
     if (!guestId || alreadyMigrated === userId) return
 
-    fetch('/api/user/migrate-guest', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    migrateGuest
+      .mutateAsync({
         guestId,
         onboardingComplete: localStorage.getItem('fable-onboarding-complete') !== null,
-      }),
-    })
-      .then(res => res.json())
-      .then((data: { merged?: boolean }) => {
+      })
+      .then((data) => {
         if (data.merged) {
           toast.success('Your guest kitchen has been added to your account')
           localStorage.setItem('fable-guest-migrated', userId)
         }
       })
       .catch(() => {})
-  }, [isSignedIn, userId])
+  }, [isSignedIn, userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null
 }

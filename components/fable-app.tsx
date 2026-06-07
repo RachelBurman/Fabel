@@ -12,6 +12,13 @@ import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief, type RecipeSuggestion } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
+import { useDislikedPatterns } from '@/lib/hooks/use-disliked-patterns'
+import { useRecipePairings } from '@/lib/hooks/use-recipe-pairings'
+import { useRecipeBrief } from '@/lib/hooks/use-recipe-brief'
+import { useGenerateRecipe } from '@/lib/hooks/use-generate-recipe'
+import { useMacros } from '@/lib/hooks/use-macros'
+import { useSubmitFeedback } from '@/lib/hooks/use-submit-feedback'
+import { useSubmitSurvey } from '@/lib/hooks/use-submit-survey'
 import { OnboardingScreen } from '@/components/onboarding-screen'
 import { IngredientsScreen, type RecipeFilters } from '@/components/ingredients-screen'
 import { AllergenScreen } from '@/components/allergen-screen'
@@ -42,6 +49,23 @@ function FableAppContent() {
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
+
+  const [userId, setUserId] = useState('')
+  useEffect(() => {
+    const uid = localStorage.getItem('fable_user_id') ?? ''
+    setUserId(uid)
+  }, [])
+
+  // Mutations
+  const recipePairingsMutation = useRecipePairings()
+  const recipeBriefMutation = useRecipeBrief()
+  const generateRecipeMutation = useGenerateRecipe()
+  const macrosMutation = useMacros()
+  const submitFeedbackMutation = useSubmitFeedback()
+  const submitSurveyMutation = useSubmitSurvey()
+
+  // Queries
+  const dislikedPatternsQuery = useDislikedPatterns(userId)
 
   // All hooks must be declared before any early return (Rules of Hooks)
   const [showTutorial, setShowTutorial] = useState(false)
@@ -122,20 +146,13 @@ function FableAppContent() {
     }
   }, [isLoadingProfile]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load recent disliked patterns to influence future generation
+  // Populate disliked patterns from query
   useEffect(() => {
-    if (isLoadingProfile) return
-    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
-    if (!uid) return
-    fetch(`/api/feedback?userId=${uid}&liked=false&limit=5`)
-      .then(res => res.ok ? res.json() : null)
-      .then((data: { patterns?: string[]; ingredients?: string[] } | null) => {
-        if (!data) return
-        setDislikedPatterns(data.patterns ?? [])
-        setDislikedIngredients(data.ingredients ?? [])
-      })
-      .catch(() => {})
-  }, [isLoadingProfile])
+    const data = dislikedPatternsQuery.data
+    if (!data) return
+    setDislikedPatterns(data.patterns)
+    setDislikedIngredients(data.ingredients)
+  }, [dislikedPatternsQuery.data])
 
   const navigate = useCallback((screen: Screen) => {
     setPrevScreen(prev => (prev !== screen ? currentScreen : prev))
@@ -155,22 +172,16 @@ function FableAppContent() {
       : {}
 
     try {
-      const res = await fetch('/api/recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: preferences.ingredients,
-          allergens: effectiveAllergens,
-          customAllergens: effectiveCustomAllergens,
-          mode: 'avoid',
-          mealType: filters.mealType,
-          cookTime: filters.cookTime,
-          kitchenOnly: filters.kitchenOnly,
-          ...sfPayload,
-        }),
+      const data = await recipePairingsMutation.mutateAsync({
+        ingredients: preferences.ingredients,
+        allergens: effectiveAllergens,
+        customAllergens: effectiveCustomAllergens,
+        mode: 'avoid',
+        mealType: filters.mealType,
+        cookTime: filters.cookTime,
+        kitchenOnly: filters.kitchenOnly,
+        ...sfPayload,
       })
-      if (!res.ok) throw new Error(`API error: ${res.status}`)
-      const data: { suggestions: PairingSuggestion[] } = await res.json()
       setPairings(data.suggestions)
     } catch (error) {
       console.error('Error fetching pairings:', error)
@@ -178,7 +189,7 @@ function FableAppContent() {
     } finally {
       setIsLoadingPairings(false)
     }
-  }, [preferences, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preferences, navigate, recipePairingsMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Generate Recipe from scratch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGenerateRecipe = useCallback(async (filters: RecipeFilters) => {
@@ -192,7 +203,6 @@ function FableAppContent() {
     setLoadingStep('pairings')
     navigate('generated')
 
-    // Snapshot safe-foods state at call time to guarantee consistency across both fetches
     const sfPayload = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
       ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
       : {}
@@ -207,7 +217,7 @@ function FableAppContent() {
       .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
 
     try {
-      // Run brief fetch + Epicure pairings in parallel (brief feeds into generate-recipe).
+      // Run brief fetch + Epicure pairings in parallel.
       // When a pre-computed suggestion is available from the Discover tab, skip the
       // /api/recipe-brief call and resolve immediately with the stored suggestion.
       const [briefResult, pairingsResult] = await Promise.allSettled([
@@ -225,43 +235,32 @@ function FableAppContent() {
                 ],
               } satisfies RecipeBrief,
             })
-          : fetch('/api/recipe-brief', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId: uid,
-                preferences: {
-                  mealType: filters.mealType,
-                  cookTime: filters.cookTime,
-                  cuisine: filters.cuisine,
-                  occasion: filters.occasion,
-                  servings: filters.servings,
-                  equipment: preferences.kitchenEquipment,
-                  useKitchenOnly: filters.kitchenOnly,
-                  spiceTolerance: preferences.spiceTolerance,
-                  adventurousness: preferences.adventurousness,
-                  ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
-                },
-                kitchenIngredients: kitchenDisplayNames,
-              }),
-            }).then(res => res.json() as Promise<{ brief: RecipeBrief }>),
-
-        !filters.kitchenOnly
-          ? fetch('/api/recipes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                ingredients: preferences.ingredients,
-                allergens: effectiveAllergens,
-                customAllergens: effectiveCustomAllergens,
-                mode: 'avoid',
+          : recipeBriefMutation.mutateAsync({
+              userId: uid,
+              preferences: {
                 mealType: filters.mealType,
                 cookTime: filters.cookTime,
-                ...sfPayload,
-              }),
-            }).then(res => {
-              if (!res.ok) throw new Error(`Pairings error: ${res.status}`)
-              return res.json() as Promise<{ suggestions: PairingSuggestion[] }>
+                cuisine: filters.cuisine,
+                occasion: filters.occasion,
+                servings: filters.servings,
+                equipment: preferences.kitchenEquipment,
+                useKitchenOnly: filters.kitchenOnly,
+                spiceTolerance: preferences.spiceTolerance,
+                adventurousness: preferences.adventurousness,
+                ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+              },
+              kitchenIngredients: kitchenDisplayNames,
+            }),
+
+        !filters.kitchenOnly
+          ? recipePairingsMutation.mutateAsync({
+              ingredients: preferences.ingredients,
+              allergens: effectiveAllergens,
+              customAllergens: effectiveCustomAllergens,
+              mode: 'avoid',
+              mealType: filters.mealType,
+              cookTime: filters.cookTime,
+              ...sfPayload,
             })
           : Promise.resolve({ suggestions: [] } as { suggestions: PairingSuggestion[] }),
       ])
@@ -274,44 +273,35 @@ function FableAppContent() {
       setBrief(fetchedBrief)
       setLoadingStep('recipe')
 
-      const recipeRes = await fetch('/api/generate-recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: preferences.ingredients,
-          suggestions: suggestionNames,
-          allergens: effectiveAllergens,
-          customAllergens: effectiveCustomAllergens,
-          mealType: filters.mealType,
-          cookTime: filters.cookTime,
-          kitchenOnly: filters.kitchenOnly,
-          cuisine: filters.cuisine,
-          occasion: filters.occasion,
-          servings: filters.servings,
-          kitchenEquipment: preferences.kitchenEquipment,
-          showMacros: preferences.showMacros,
-          spiceTolerance: preferences.spiceTolerance,
-          adventurousness: preferences.adventurousness,
-          ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
-          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
-          ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
-          ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
-          ...(uid ? { userId: uid } : {}),
-          ...(seeds.length > 0 ? { seedIngredients: seeds } : {}),
-          ...sfPayload,
-          ...(fetchedBrief?.direction ? {
-            recipeBrief: {
-              direction: fetchedBrief.direction,
-              keyIngredients: fetchedBrief.keyIngredients,
-            },
-          } : {}),
-        }),
+      const recipeData = await generateRecipeMutation.mutateAsync({
+        ingredients: preferences.ingredients,
+        suggestions: suggestionNames,
+        allergens: effectiveAllergens,
+        customAllergens: effectiveCustomAllergens,
+        mealType: filters.mealType,
+        cookTime: filters.cookTime,
+        kitchenOnly: filters.kitchenOnly,
+        cuisine: filters.cuisine,
+        occasion: filters.occasion,
+        servings: filters.servings,
+        kitchenEquipment: preferences.kitchenEquipment,
+        showMacros: preferences.showMacros,
+        spiceTolerance: preferences.spiceTolerance,
+        adventurousness: preferences.adventurousness,
+        ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+        ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+        ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
+        ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
+        ...(uid ? { userId: uid } : {}),
+        ...(seeds.length > 0 ? { seedIngredients: seeds } : {}),
+        ...sfPayload,
+        ...(fetchedBrief?.direction ? {
+          recipeBrief: {
+            direction: fetchedBrief.direction,
+            keyIngredients: fetchedBrief.keyIngredients,
+          },
+        } : {}),
       })
-      if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
-      const recipeData = await recipeRes.json() as GeneratedRecipe & {
-        rateLimited?: boolean; guestMode?: boolean; recipe?: GeneratedRecipe;
-        hourRemaining?: number; dayRemaining?: number; resetAt?: string
-      }
       const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
@@ -333,7 +323,7 @@ function FableAppContent() {
     } finally {
       setLoadingStep(null)
     }
-  }, [preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preferences, navigate, addToHistory, recipeBriefMutation, recipePairingsMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Generate Recipe from existing pairings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleGenerateFromPairings = useCallback(async () => {
@@ -356,10 +346,9 @@ function FableAppContent() {
 
     try {
       // Fetch brief then generate — pairings are already loaded
-      const briefRes = await fetch('/api/recipe-brief', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let fetchedBrief: RecipeBrief | null = null
+      try {
+        const briefResult = await recipeBriefMutation.mutateAsync({
           userId: uid,
           preferences: {
             mealType: recipeFilters.mealType,
@@ -373,52 +362,41 @@ function FableAppContent() {
             adventurousness: preferences.adventurousness,
           },
           kitchenIngredients: kitchenDisplayNames,
-        }),
-      })
-      const fetchedBrief: RecipeBrief | null = briefRes.ok
-        ? ((await briefRes.json()) as { brief: RecipeBrief }).brief
-        : null
+        })
+        fetchedBrief = briefResult.brief
+      } catch { /* brief is optional */ }
 
       setBrief(fetchedBrief)
       setLoadingStep('recipe')
 
-      const recipeRes = await fetch('/api/generate-recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: preferences.ingredients,
-          suggestions: pairings.map(s => s.ingredient),
-          allergens: effectiveAllergens,
-          customAllergens: effectiveCustomAllergens,
-          mealType: recipeFilters.mealType,
-          cookTime: recipeFilters.cookTime,
-          kitchenOnly: recipeFilters.kitchenOnly,
-          cuisine: recipeFilters.cuisine,
-          occasion: recipeFilters.occasion,
-          servings: recipeFilters.servings,
-          kitchenEquipment: preferences.kitchenEquipment,
-          showMacros: preferences.showMacros,
-          spiceTolerance: preferences.spiceTolerance,
-          adventurousness: preferences.adventurousness,
-          ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
-          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
-          ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
-          ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
-          ...(uid ? { userId: uid } : {}),
-          ...sfPayload,
-          ...(fetchedBrief?.direction ? {
-            recipeBrief: {
-              direction: fetchedBrief.direction,
-              keyIngredients: fetchedBrief.keyIngredients,
-            },
-          } : {}),
-        }),
+      const recipeData = await generateRecipeMutation.mutateAsync({
+        ingredients: preferences.ingredients,
+        suggestions: pairings.map(s => s.ingredient),
+        allergens: effectiveAllergens,
+        customAllergens: effectiveCustomAllergens,
+        mealType: recipeFilters.mealType,
+        cookTime: recipeFilters.cookTime,
+        kitchenOnly: recipeFilters.kitchenOnly,
+        cuisine: recipeFilters.cuisine,
+        occasion: recipeFilters.occasion,
+        servings: recipeFilters.servings,
+        kitchenEquipment: preferences.kitchenEquipment,
+        showMacros: preferences.showMacros,
+        spiceTolerance: preferences.spiceTolerance,
+        adventurousness: preferences.adventurousness,
+        ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+        ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+        ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
+        ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
+        ...(uid ? { userId: uid } : {}),
+        ...sfPayload,
+        ...(fetchedBrief?.direction ? {
+          recipeBrief: {
+            direction: fetchedBrief.direction,
+            keyIngredients: fetchedBrief.keyIngredients,
+          },
+        } : {}),
       })
-      if (!recipeRes.ok) throw new Error(`Generate error: ${recipeRes.status}`)
-      const recipeData = await recipeRes.json() as GeneratedRecipe & {
-        rateLimited?: boolean; guestMode?: boolean; recipe?: GeneratedRecipe;
-        hourRemaining?: number; dayRemaining?: number; resetAt?: string
-      }
       const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
@@ -440,7 +418,7 @@ function FableAppContent() {
     } finally {
       setLoadingStep(null)
     }
-  }, [pairings, preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pairings, preferences, navigate, addToHistory, recipeBriefMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {
@@ -486,30 +464,21 @@ function FableAppContent() {
     }))
 
     try {
-      const res = await fetch('/api/generate-recipe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ingredients: items,
-          suggestions: [],
-          allergens: effectiveAllergens,
-          customAllergens: effectiveCustomAllergens,
-          mealType: 'main',
-          cookTime: 'medium',
-          kitchenOnly: true,
-          showMacros: preferences.showMacros,
-          spiceTolerance: preferences.spiceTolerance,
-          adventurousness: preferences.adventurousness,
-          ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
-          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
-          ...(recipeContext ? { recipeContext } : {}),
-        }),
+      const recipeData = await generateRecipeMutation.mutateAsync({
+        ingredients: items,
+        suggestions: [],
+        allergens: effectiveAllergens,
+        customAllergens: effectiveCustomAllergens,
+        mealType: 'main',
+        cookTime: 'medium',
+        kitchenOnly: true,
+        showMacros: preferences.showMacros,
+        spiceTolerance: preferences.spiceTolerance,
+        adventurousness: preferences.adventurousness,
+        ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+        ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+        ...(recipeContext ? { recipeContext } : {}),
       })
-      if (!res.ok) throw new Error(`Generate error: ${res.status}`)
-      const recipeData = await res.json() as GeneratedRecipe & {
-        rateLimited?: boolean; guestMode?: boolean; recipe?: GeneratedRecipe;
-        hourRemaining?: number; dayRemaining?: number; resetAt?: string
-      }
       const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
@@ -531,7 +500,7 @@ function FableAppContent() {
     } finally {
       setLoadingStep(null)
     }
-  }, [preferences, navigate, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preferences, navigate, addToHistory, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Open substitutes (from ingredients screen or recipe screen) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleOpenSubstitutes = useCallback(() => {
@@ -554,37 +523,27 @@ function FableAppContent() {
       return
     }
     setMacrosRateLimitMsg(null)
-    let cancelled = false
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
-    fetch('/api/macros', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    macrosMutation
+      .mutateAsync({
         title: generatedRecipe.title,
         ingredients: generatedRecipe.ingredients,
         servings: generatedRecipe.servings,
         ...(uid ? { userId: uid } : {}),
-      }),
-    })
-      .then(async (res) => {
-        if (res.status === 429) {
-          const data = await res.json().catch(() => ({})) as { resetAt?: string }
-          if (!cancelled) {
-            const time = data.resetAt
-              ? new Date(data.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-              : 'soon'
-            setMacrosRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
-          }
-          return null
-        }
-        return res.ok ? res.json() : null
       })
-      .then((macros: import('@/lib/types').RecipeMacros | null) => {
-        if (cancelled || !macros) return
-        setGeneratedRecipe(prev => prev ? { ...prev, macros } : prev)
+      .then((result) => {
+        if (result.error === 'rate_limited') {
+          const time = result.resetAt
+            ? new Date(result.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+            : 'soon'
+          setMacrosRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          return
+        }
+        if (result.macros) {
+          setGeneratedRecipe(prev => prev ? { ...prev, macros: result.macros } : prev)
+        }
       })
       .catch(() => {})
-    return () => { cancelled = true }
   }, [preferences.showMacros, generatedRecipeId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ View a recipe from history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -600,12 +559,10 @@ function FableAppContent() {
   const handleSurveySubmit = useCallback((surveyResponse: SurveyResponse) => {
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     if (!uid || !generatedRecipeId) return
-    fetch('/api/feedback', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: uid, recipeId: generatedRecipeId, surveyResponse }),
-    }).catch(err => console.error('Failed to submit survey:', err))
-  }, [generatedRecipeId])
+    submitSurveyMutation
+      .mutateAsync({ userId: uid, recipeId: generatedRecipeId, surveyResponse })
+      .catch(err => console.error('Failed to submit survey:', err))
+  }, [generatedRecipeId, submitSurveyMutation])
 
   const handleViewSavedRecipe = useCallback((recipe: import('@/lib/types').Recipe) => {
     if (!recipe.fullRecipe) return
@@ -622,10 +579,8 @@ function FableAppContent() {
     if (!uid || !generatedRecipeId || !generatedRecipe) return
 
     const allergenProfile = getInsightProfileKey(effectiveAllergens, preferences.activePresets)
-    fetch('/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    submitFeedbackMutation
+      .mutateAsync({
         userId: uid,
         recipeId: generatedRecipeId,
         liked,
@@ -634,8 +589,8 @@ function FableAppContent() {
         recipeTitle: generatedRecipe.title,
         recipeIngredients: generatedRecipe.ingredients.map(i => i.name),
         allergenProfile,
-      }),
-    }).catch(err => console.error('Failed to submit feedback:', err))
+      })
+      .catch(err => console.error('Failed to submit feedback:', err))
 
     if (!liked) {
       setDislikedPatterns(prev => [...new Set([...prev, ...reasons])].slice(0, 10))
@@ -643,7 +598,7 @@ function FableAppContent() {
         [...new Set([...prev, ...generatedRecipe.ingredients.map(i => i.name)])].slice(0, 20)
       )
     }
-  }, [generatedRecipeId, generatedRecipe]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [generatedRecipeId, generatedRecipe, submitFeedbackMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { recipeHistory } = useFable()
 

@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
 import { useFable } from '@/lib/fable-context'
 import { type SurveyResponse } from '@/lib/survey-signals'
+import { useDrinkPairings } from '@/lib/hooks/use-drink-pairings'
+import { useRecipeSafeExplain } from '@/lib/hooks/use-recipe-safe-explain'
 
 export type LoadingStep = 'pairings' | 'recipe'
 
@@ -223,11 +225,12 @@ export function GeneratedRecipeScreen({
   const isLoading = loadingStep !== null
   const missingEquipment = recipe ? detectMissingEquipment(recipe.steps, preferences.kitchenEquipment) : []
 
+  const drinkPairingsMutation = useDrinkPairings()
+  const safeExplainMutation = useRecipeSafeExplain()
+
   const [drinkPairings, setDrinkPairings] = useState<DrinkPairing[]>([])
-  const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
   const [sharing, setSharing] = useState(false)
 
-  const [safeExplainLoading, setSafeExplainLoading] = useState(false)
   const [safeExplainText, setSafeExplainText] = useState<string | null>(null)
   const [safeExplainOpen, setSafeExplainOpen] = useState(false)
 
@@ -258,23 +261,14 @@ export function GeneratedRecipeScreen({
       .slice(0, 3)
       .map(i => i.name)
 
-    const controller = new AbortController()
-    setDrinkPairingsLoading(true)
     setDrinkPairings([])
-
-    fetch('/api/drink-pairings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ingredients: top3, allergens, ...(alcoholMode !== 'none' ? { alcoholMode } : {}) }),
-      signal: controller.signal,
-    })
-      .then(res => res.json())
-      .then((data: { pairings: DrinkPairing[] }) => setDrinkPairings(data.pairings ?? []))
+    drinkPairingsMutation
+      .mutateAsync({ ingredients: top3, allergens, ...(alcoholMode !== 'none' ? { alcoholMode } : {}) })
+      .then(data => setDrinkPairings(data.pairings ?? []))
       .catch(() => {})
-      .finally(() => setDrinkPairingsLoading(false))
-
-    return () => controller.abort()
   }, [recipe]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const drinkPairingsLoading = drinkPairingsMutation.isPending
 
   const handleSafeExplain = async () => {
     if (guestMode) {
@@ -285,34 +279,25 @@ export function GeneratedRecipeScreen({
       setSafeExplainOpen(prev => !prev)
       return
     }
-    if (safeExplainLoading || !recipe) return
-    setSafeExplainLoading(true)
+    if (safeExplainMutation.isPending || !recipe) return
     try {
       const lactoseModeBody =
         lactoseIntolerant && lactoseMode === 'include' ? 'reminder' :
         lactoseIntolerant && lactoseMode === 'exclude' ? 'exclude' :
         undefined
-      const res = await fetch('/api/recipe-safe-explain', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          recipeTitle: recipe.title,
-          ingredients: recipe.ingredients.map(i => i.name),
-          allergens,
-          dietPresets: preferences.activePresets,
-          safeFoodsMode: preferences.safeFoodsMode,
-          safeFoods: preferences.safeFoodsMode ? preferences.safeIngredients : undefined,
-          lactoseMode: lactoseModeBody,
-        }),
+      const data = await safeExplainMutation.mutateAsync({
+        recipeTitle: recipe.title,
+        ingredients: recipe.ingredients.map(i => i.name),
+        allergens,
+        dietPresets: preferences.activePresets,
+        safeFoodsMode: preferences.safeFoodsMode,
+        safeFoods: preferences.safeFoodsMode ? preferences.safeIngredients : undefined,
+        lactoseMode: lactoseModeBody,
       })
-      if (!res.ok) return
-      const data = await res.json() as { explanation: string }
       setSafeExplainText(data.explanation)
       setSafeExplainOpen(true)
     } catch {
       // silently fail
-    } finally {
-      setSafeExplainLoading(false)
     }
   }
 
@@ -457,7 +442,7 @@ export function GeneratedRecipeScreen({
             {!isLoading && recipe && (
               <button
                 onClick={handleSafeExplain}
-                disabled={safeExplainLoading}
+                disabled={safeExplainMutation.isPending}
                 className={cn(
                   'shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-card border transition-all duration-200 disabled:opacity-50',
                   guestMode
@@ -467,7 +452,7 @@ export function GeneratedRecipeScreen({
                 aria-label={guestMode ? 'Sign in to see why this recipe is safe for you' : 'Why is this safe for me?'}
                 title={guestMode ? 'Sign in to see why this recipe is safe for you' : 'Why is this safe for me?'}
               >
-                {safeExplainLoading
+                {safeExplainMutation.isPending
                   ? <Loader2 className="w-4 h-4 animate-spin" />
                   : <ShieldCheck className="w-4 h-4" />}
               </button>

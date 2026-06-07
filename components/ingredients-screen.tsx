@@ -17,6 +17,9 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { VisionReviewScreen } from '@/components/vision-review-screen'
 import allergenMapData from '@/data/allergen-map.json'
+import { useIngredientSearch } from '@/lib/hooks/use-ingredient-search'
+import { useScanBarcode } from '@/lib/hooks/use-scan-barcode'
+import { useScanIngredients } from '@/lib/hooks/use-scan-ingredients'
 
 const allergenMap = allergenMapData as Record<string, string[]>
 
@@ -240,8 +243,8 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
 
   const [inputValue, setInputValue] = useState('')
+  const [debouncedInput, setDebouncedInput] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
-  const [searchResults, setSearchResults] = useState<string[]>([])
 
   // Step navigation
   const [step, setStep] = useState<1 | 2>(1)
@@ -278,6 +281,11 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
   useEffect(() => { setIsMounted(true) }, [])
 
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedInput(inputValue.trim()), 150)
+    return () => clearTimeout(id)
+  }, [inputValue])
+
   const recomputeCoords = useCallback(() => {
     if (inputWrapperRef.current) {
       const r = inputWrapperRef.current.getBoundingClientRect()
@@ -285,25 +293,19 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     }
   }, [])
 
+  const ingredientSearch = useIngredientSearch(debouncedInput)
+  const searchResults = ingredientSearch.data ?? []
+
   useEffect(() => {
-    const q = inputValue.trim()
-    if (!q) { setSearchResults([]); return }
-    const id = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/ingredients?q=${encodeURIComponent(q)}`)
-        if (res.ok) {
-          const data: { results: string[] } = await res.json()
-          setSearchResults(data.results)
-          recomputeCoords()
-        }
-      } catch { /* silently ignore */ }
-    }, 150)
-    return () => clearTimeout(id)
-  }, [inputValue, recomputeCoords])
+    if (searchResults.length > 0) recomputeCoords()
+  }, [searchResults, recomputeCoords])
 
   useEffect(() => {
     if (showDropdown) recomputeCoords()
   }, [showDropdown, recomputeCoords])
+
+  const scanBarcodeMutation = useScanBarcode()
+  const scanIngredientsMutation = useScanIngredients()
 
   // Scroll to top when changing steps
   useEffect(() => {
@@ -324,7 +326,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const handleCameraInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    // Reset so the same file can be re-selected if needed
     e.target.value = ''
 
     setVisionLoading(true)
@@ -334,51 +335,38 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
       // Step 1: attempt barcode detection — fast, in-browser, no server call needed
       const barcode = await detectBarcodeFromFile(file)
       if (barcode) {
-        const barcodeRes = await fetch('/api/scan-barcode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barcode, ...(uid ? { userId: uid } : {}) }),
-        })
-        if (barcodeRes.ok) {
-          const data: VisionResult = await barcodeRes.json()
-          if (data.ingredients && data.ingredients.length > 0) {
-            setVisionResult(data)
-            return
-          }
+        const data = await scanBarcodeMutation.mutateAsync({ barcode, userId: uid })
+        if (data.ingredients && data.ingredients.length > 0) {
+          setVisionResult(data as unknown as VisionResult)
+          return
         }
-        // Barcode found but product lookup failed or returned no ingredients —
-        // fall through to vision scan as a best-effort fallback
+        // Barcode found but product lookup failed — fall through to vision scan
       }
 
       // Step 2: vision scan
       const base64 = await compressImageToBase64(file, 1200, 0.82)
-      const res = await fetch('/api/scan-ingredients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64, mediaType: 'image/jpeg', ...(uid ? { userId: uid } : {}) }),
-      })
+      const result = await scanIngredientsMutation.mutateAsync({ image: base64, mediaType: 'image/jpeg', userId: uid })
 
-      if (!res.ok) {
-        const err: { error?: string; resetAt?: string } = await res.json().catch(() => ({}))
-        if (res.status === 429) {
-          const time = err.resetAt
-            ? new Date(err.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-            : 'soon'
-          toast.error(`You've used your AI calls for this hour. Resets at ${time}.`)
-        } else if (err.error === 'Vision Lambda not configured') {
+      if (result.statusCode === 429) {
+        const time = result.resetAt
+          ? new Date(result.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+          : 'soon'
+        toast.error(`You've used your AI calls for this hour. Resets at ${time}.`)
+        return
+      }
+      if (result.error) {
+        if (result.error === 'Vision Lambda not configured') {
           toast.error("Photo recognition isn't set up yet")
         } else {
           toast.error("Couldn't read that photo — try better lighting or a closer shot")
         }
         return
       }
-
-      const data: VisionResult = await res.json()
-      if (!data.ingredients || data.ingredients.length === 0) {
+      if (!result.ingredients || result.ingredients.length === 0) {
         toast.error("No ingredients found — try a clearer photo")
         return
       }
-      setVisionResult(data)
+      setVisionResult({ ingredients: result.ingredients } as unknown as VisionResult)
     } catch (err) {
       if (err instanceof Error && err.message === 'heic-unsupported') {
         toast.error("HEIC photos aren't supported on desktop — use your phone camera or convert to JPEG first")
@@ -388,7 +376,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     } finally {
       setVisionLoading(false)
     }
-  }, [])
+  }, [scanBarcodeMutation, scanIngredientsMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleVisionConfirm = useCallback((newItems: IngredientItem[]) => {
     setIngredients([...preferences.ingredients, ...newItems])
@@ -406,7 +394,6 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
     setPendingDate('')
     setPendingBoughtDate('')
     setInputValue('')
-    setSearchResults([])
     setShowDropdown(false)
   }, [])
 

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthMigrationHandler } from '@/components/auth-migration-handler'
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
+import { QueryProvider } from '@/components/query-provider'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -62,10 +63,12 @@ export default function RootLayout({
     <html lang="en" className="bg-background" suppressHydrationWarning>
       <body className={`${dmSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
-          {children}
-          <Toaster />
-          <AuthMigrationHandler />
-          <ServiceWorkerRegistration />
+          <QueryProvider>
+            {children}
+            <Toaster />
+            <AuthMigrationHandler />
+            <ServiceWorkerRegistration />
+          </QueryProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

@@ -13,6 +13,8 @@ import { getEffectiveUseByDate } from '@/lib/shelf-life'
 import { normaliseCandidates } from '@/lib/ingredient-utils'
 import { cn } from '@/lib/utils'
 import allergenMapData from '@/data/allergen-map.json'
+import { useSubstitutes, type SubstitutesInput } from '@/lib/hooks/use-substitutes'
+import { useExtractIngredients } from '@/lib/hooks/use-extract-ingredients'
 
 const allergenMap = allergenMapData as Record<string, string[]>
 
@@ -132,24 +134,6 @@ async function resolveIngredientKeyRobust(rawName: string): Promise<string | nul
   return null
 }
 
-async function extractViaClause(
-  text: string,
-  userId: string | null
-): Promise<{ ingredients: string[]; rateLimitResetAt?: string }> {
-  const res = await fetch('/api/extract-ingredients', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, ...(userId ? { userId } : {}) }),
-  })
-  if (res.status === 429) {
-    const data = await res.json().catch(() => ({})) as { resetAt?: string }
-    return { ingredients: [], rateLimitResetAt: data.resetAt }
-  }
-  if (!res.ok) return { ingredients: [] }
-  const data: { ingredients: string[] } = await res.json()
-  return { ingredients: data.ingredients }
-}
-
 /** Parse lines to Epicure keys while preserving the original text for quantity display. */
 async function parseIngredientLines(
   lines: string[]
@@ -178,37 +162,6 @@ async function parseIngredientLines(
   })
 }
 
-async function fetchTopSubstitute(
-  ingredient: string,
-  context: string[],
-  allergens: string[],
-  safeIngredients?: string[],
-  userId?: string | null,
-  adventurousness?: string,
-  alcoholMode?: string
-): Promise<SubstituteResult | null> {
-  try {
-    const res = await fetch('/api/substitutes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ingredient,
-        context,
-        allergens,
-        ...(safeIngredients && safeIngredients.length > 0 ? { safeIngredients } : {}),
-        ...(userId ? { userId } : {}),
-        ...(adventurousness ? { adventurousness } : {}),
-        ...(alcoholMode && alcoholMode !== 'none' ? { alcoholMode } : {}),
-      }),
-    })
-    if (!res.ok) return null
-    const data: { substitutes: SubstituteResult[] } = await res.json()
-    return data.substitutes[0] ?? null
-  } catch {
-    return null
-  }
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function SubstitutesScreen({
@@ -221,6 +174,10 @@ export function SubstitutesScreen({
   const { preferences } = useFable()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
+
+  const singleSubstituteMutation = useSubstitutes()
+  const substitutesListMutation = useSubstitutes()
+  const extractIngredientsMutation = useExtractIngredients()
 
   const [mode, setMode] = useState<Mode>('from-kitchen')
   const [inputMode, setInputMode] = useState<InputMode>('full-recipe')
@@ -247,7 +204,11 @@ export function SubstitutesScreen({
   // ── Recipe analysis ─────────────────────────────────────────────────────────
 
   const runAnalysis = useCallback(
-    async (ingredients: string[], originalMap: Record<string, string>) => {
+    async (
+      ingredients: string[],
+      originalMap: Record<string, string>,
+      mutateAsync: (input: SubstitutesInput) => Promise<{ substitutes: SubstituteResult[] }>
+    ) => {
       if (ingredients.length === 0) return
       setIsAnalysing(true)
       setAnalysis(null)
@@ -260,7 +221,17 @@ export function SubstitutesScreen({
 
           if (allergenLabel) {
             const context = ingredients.filter((i) => i !== key)
-            const sub = await fetchTopSubstitute(key, context, preferences.allergens, kitchenIngredients, null, preferences.adventurousness, preferences.alcoholMode)
+            let sub: SubstituteResult | null = null
+            try {
+              const data = await mutateAsync({
+                ingredient: key,
+                context,
+                allergens: preferences.allergens,
+                adventurousness: preferences.adventurousness,
+                ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+              })
+              sub = data.substitutes[0] ?? null
+            } catch { /* silently ignore */ }
             // Only accept substitutes that are a reasonable match (≥45 combined score).
             // Below this threshold the swap is too dissimilar to suggest.
             const acceptedSub = sub && sub.combinedScore >= 45 ? sub : null
@@ -292,7 +263,7 @@ export function SubstitutesScreen({
       setAnalysis(rows)
       setIsAnalysing(false)
     },
-    [preferences.allergens, kitchenIngredients]
+    [preferences.allergens, preferences.adventurousness, preferences.alcoholMode, kitchenIngredients]
   )
 
   // ── Kitchen substitute fetch ─────────────────────────────────────────────────
@@ -313,31 +284,17 @@ export function SubstitutesScreen({
           : kitchenIngredients.filter((i) => i !== ingredient))
 
       try {
-        const res = await fetch('/api/substitutes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ingredient,
-            context,
-            allergens: preferences.allergens,
-            adventurousness: preferences.adventurousness,
-            ...(preferences.safeFoodsMode && preferences.safeIngredients.length > 0
-              ? { safeIngredients: preferences.safeIngredients }
-              : {}),
-            ...(uid ? { userId: uid } : {}),
-            ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
-          }),
+        const data = await substitutesListMutation.mutateAsync({
+          ingredient,
+          context,
+          allergens: preferences.allergens,
+          adventurousness: preferences.adventurousness,
+          ...(preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+            ? { safeIngredients: preferences.safeIngredients }
+            : {}),
+          userId: uid,
+          ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
         })
-        if (res.status === 429) {
-          const data = await res.json().catch(() => ({})) as { resetAt?: string }
-          const time = data.resetAt
-            ? new Date(data.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
-            : 'soon'
-          setRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
-          return
-        }
-        if (!res.ok) throw new Error('API error')
-        const data: { substitutes: SubstituteResult[] } = await res.json()
 
         const enriched: EnrichedResult[] = data.substitutes.map((sub) => {
           const kitchenItem =
@@ -359,13 +316,21 @@ export function SubstitutesScreen({
         })
         enriched.sort((a, b) => b.boostedScore - a.boostedScore)
         setResults(enriched)
-      } catch {
-        setResults([])
+      } catch (err) {
+        const rateLimitErr = err as { resetAt?: string }
+        if (rateLimitErr?.resetAt !== undefined || (err instanceof Error && err.message === 'rate_limited')) {
+          const time = rateLimitErr.resetAt
+            ? new Date(rateLimitErr.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+            : 'soon'
+          setRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+        } else {
+          setResults([])
+        }
       } finally {
         setIsLoadingResults(false)
       }
     },
-    [preferences, initialContext, mode, kitchenIngredients]
+    [preferences, initialContext, mode, kitchenIngredients, substitutesListMutation] // eslint-disable-line react-hooks/exhaustive-deps
   )
 
   useEffect(() => {
@@ -390,7 +355,7 @@ export function SubstitutesScreen({
     try {
       let ingredientNames: string[]
       if (inputMode === 'full-recipe') {
-        const extracted = await extractViaClause(fullRecipeText, uid)
+        const extracted = await extractIngredientsMutation.mutateAsync({ text: fullRecipeText, userId: uid })
         if (extracted.rateLimitResetAt !== undefined) {
           const time = extracted.rateLimitResetAt
             ? new Date(extracted.rateLimitResetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
@@ -408,7 +373,7 @@ export function SubstitutesScreen({
       for (const p of pairs) origMap[p.key] = p.original
       setParsedIngredients(keys)
       setParsedOriginalMap(origMap)
-      await runAnalysis(keys, origMap)
+      await runAnalysis(keys, origMap, singleSubstituteMutation.mutateAsync)
     } finally {
       setIsParsing(false)
     }

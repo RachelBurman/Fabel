@@ -6,6 +6,17 @@ import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEn
 import { ALCOHOL_INGREDIENT_KEYS } from '@/lib/alcohol-ingredients'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 import { markTutorialComplete } from '@/lib/tutorial'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { useSavedRecipes } from '@/lib/hooks/use-saved-recipes'
+import { useCollections } from '@/lib/hooks/use-collections'
+import { useUpdateProfile } from '@/lib/hooks/use-update-profile'
+import { useCompleteOnboarding } from '@/lib/hooks/use-complete-onboarding'
+import { useSaveRecipe } from '@/lib/hooks/use-save-recipe'
+import { useUnsaveRecipe } from '@/lib/hooks/use-unsave-recipe'
+import { useAddToHistory } from '@/lib/hooks/use-add-to-history'
+import { useCreateCollection } from '@/lib/hooks/use-create-collection'
+import { useDeleteCollection } from '@/lib/hooks/use-delete-collection'
+import { useUpdateCollection } from '@/lib/hooks/use-update-collection'
 
 interface FableContextType {
   preferences: UserPreferences
@@ -60,34 +71,34 @@ interface FableContextType {
 
 const FableContext = createContext<FableContextType | undefined>(undefined)
 
-// migrateIngredients, itemToCollection, itemToRecipe imported from @/lib/data-mappers
+const BLANK_PREFERENCES: UserPreferences = {
+  allergens: [],
+  customAllergens: [],
+  ingredients: [],
+  savedRecipes: [],
+  safeIngredients: [],
+  safeFoodsMode: false,
+  showMacros: false,
+  activePresets: [],
+  lactoseIntolerant: false,
+  lactoseMode: 'include',
+  alcoholMode: 'none',
+  kitchenEquipment: ['hob', 'oven'],
+  colorMode: 'system',
+  discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
+  visibleTabs: [...ALL_TABS],
+  spiceTolerance: 'medium',
+  adventurousness: 'occasional',
+}
 
 export function FableProvider({ children }: { children: ReactNode }) {
-  const [preferences, setPreferences] = useState<UserPreferences>({
-    allergens: [],
-    customAllergens: [],
-    ingredients: [] as IngredientItem[],
-    savedRecipes: [],
-    safeIngredients: [],
-    safeFoodsMode: false,
-    showMacros: false,
-    activePresets: [],
-    lactoseIntolerant: false,
-    lactoseMode: 'include' as const,
-    alcoholMode: 'none' as const,
-    kitchenEquipment: ['hob', 'oven'],
-    colorMode: 'system' as const,
-    discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
-    visibleTabs: [...ALL_TABS], // includes 'discover' by default
-    spiceTolerance: 'medium' as const,
-    adventurousness: 'occasional' as const,
-  })
+  const [preferences, setPreferences] = useState<UserPreferences>({ ...BLANK_PREFERENCES })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false)
   const [tutorialComplete, setTutorialComplete] = useState(false)
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [collections, setCollections] = useState<Collection[]>([])
+  const [userId, setUserId] = useState('')
 
   const { data: session, isPending } = useSession()
   const isSignedIn = !!session?.user
@@ -97,104 +108,88 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const collectionsRef = useRef<Collection[]>([])
   useEffect(() => { collectionsRef.current = collections }, [collections])
 
-  // ── Shared profile loader — used by init and auth-state watcher ─────────────
-  const loadProfile = useCallback(async (uid: string) => {
-    setIsLoadingProfile(true)
-    try {
-      const [profileRes, savedRes, collectionsRes] = await Promise.all([
-        fetch(`/api/user/profile?userId=${uid}`),
-        fetch(`/api/user/saved-recipes?userId=${uid}`),
-        fetch(`/api/user/collections?userId=${uid}`),
-      ])
+  // ── Mutations ────────────────────────────────────────────────────────────────
+  const updateProfileMutation = useUpdateProfile()
+  const completeOnboardingMutation = useCompleteOnboarding()
+  const saveRecipeMutation = useSaveRecipe()
+  const unsaveRecipeMutation = useUnsaveRecipe()
+  const addToHistoryMutation = useAddToHistory()
+  const createCollectionMutation = useCreateCollection()
+  const deleteCollectionMutation = useDeleteCollection()
+  const updateCollectionMutation = useUpdateCollection()
 
-      if (profileRes.ok) {
-        const profile: {
-          allergens?: string[]
-          customAllergens?: string[]
-          ingredients?: (string | IngredientItem)[]
-          safeIngredients?: string[]
-          safeFoodsMode?: boolean
-          showMacros?: boolean
-          activePresets?: string[]
-          lactoseIntolerant?: boolean
-          lactoseMode?: 'include' | 'exclude'
-          alcoholMode?: 'none' | 'no_cooking' | 'exclude_entirely'
-          kitchenEquipment?: string[]
-          colorMode?: string
-          discoverSettings?: DiscoverSettings
-          visibleTabs?: string[]
-          onboardingComplete?: boolean
-          spiceTolerance?: SpiceTolerance
-          adventurousness?: Adventurousness
-        } = await profileRes.json()
-        if (
-          profile.allergens !== undefined ||
-          profile.ingredients !== undefined ||
-          profile.activePresets !== undefined ||
-          profile.lactoseIntolerant !== undefined ||
-          profile.alcoholMode !== undefined
-        ) {
-          setPreferences(prev => ({
-            ...prev,
-            allergens: profile.allergens ?? prev.allergens,
-            customAllergens: profile.customAllergens ?? prev.customAllergens,
-            ingredients: migrateIngredients(profile.ingredients) ?? prev.ingredients,
-            safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
-            safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
-            showMacros: profile.showMacros ?? prev.showMacros,
-            activePresets: profile.activePresets ?? prev.activePresets,
-            lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
-            lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
-            alcoholMode: profile.alcoholMode ?? prev.alcoholMode,
-            kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
-            colorMode: (profile.colorMode as 'light' | 'dark' | 'system' | undefined) ?? prev.colorMode,
-            discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
-            visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
-            spiceTolerance: profile.spiceTolerance ?? prev.spiceTolerance,
-            adventurousness: profile.adventurousness ?? prev.adventurousness,
-          }))
-          setHasCompletedOnboarding(true)
-        }
-        if (profile.onboardingComplete === true) {
-          markTutorialComplete()
-          setTutorialComplete(true)
-        }
-      }
+  // ── Queries — only enabled once userId is set ────────────────────────────────
+  const profileQuery = useProfile(userId, isSignedIn)
+  const savedRecipesQuery = useSavedRecipes(userId, isSignedIn)
+  const collectionsQuery = useCollections(userId, isSignedIn)
 
-      if (savedRes.ok) {
-        const data: { recipes: Record<string, unknown>[] } = await savedRes.json()
-        const recipes = data.recipes?.length ? data.recipes.map(itemToRecipe) : []
-        setSavedRecipes(recipes)
-        setPreferences(prev => ({
-          ...prev,
-          savedRecipes: recipes.map(r => r.id),
-        }))
-      }
+  // Derive isLoadingProfile from the three queries
+  const isLoadingProfile = !userId || profileQuery.isLoading || savedRecipesQuery.isLoading || collectionsQuery.isLoading
 
-      if (collectionsRes.ok) {
-        const data: { collections: Record<string, unknown>[] } = await collectionsRes.json()
-        setCollections(data.collections?.length ? data.collections.map(itemToCollection) : [])
-      }
-    } catch (err) {
-      console.error('Failed to load profile from DynamoDB:', err)
-    } finally {
-      setIsLoadingProfile(false)
-    }
-  }, [])
-
-  // ── Initialise: load userId + fetch profile ──────────────────────────────────
+  // ── Initialise: load userId from localStorage ────────────────────────────────
   useEffect(() => {
     let uid = localStorage.getItem('fable_user_id')
     if (!uid) {
       uid = crypto.randomUUID()
       localStorage.setItem('fable_user_id', uid)
-      userIdRef.current = uid
-      setIsLoadingProfile(false)
-      return
     }
     userIdRef.current = uid
-    void loadProfile(uid)
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    setUserId(uid)
+  }, [])
+
+  // ── Populate preferences from profile query ──────────────────────────────────
+  useEffect(() => {
+    const profile = profileQuery.data
+    if (!profile) return
+    if (
+      profile.allergens !== undefined ||
+      profile.ingredients !== undefined ||
+      profile.activePresets !== undefined ||
+      profile.lactoseIntolerant !== undefined ||
+      profile.alcoholMode !== undefined
+    ) {
+      setPreferences(prev => ({
+        ...prev,
+        allergens: profile.allergens ?? prev.allergens,
+        customAllergens: profile.customAllergens ?? prev.customAllergens,
+        ingredients: migrateIngredients(profile.ingredients) ?? prev.ingredients,
+        safeIngredients: profile.safeIngredients ?? prev.safeIngredients,
+        safeFoodsMode: profile.safeFoodsMode ?? prev.safeFoodsMode,
+        showMacros: profile.showMacros ?? prev.showMacros,
+        activePresets: profile.activePresets ?? prev.activePresets,
+        lactoseIntolerant: profile.lactoseIntolerant ?? prev.lactoseIntolerant,
+        lactoseMode: profile.lactoseMode ?? prev.lactoseMode,
+        alcoholMode: profile.alcoholMode ?? prev.alcoholMode,
+        kitchenEquipment: profile.kitchenEquipment ?? prev.kitchenEquipment,
+        colorMode: (profile.colorMode as 'light' | 'dark' | 'system' | undefined) ?? prev.colorMode,
+        discoverSettings: (profile.discoverSettings as DiscoverSettings | undefined) ?? prev.discoverSettings,
+        visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
+        spiceTolerance: (profile.spiceTolerance as SpiceTolerance | undefined) ?? prev.spiceTolerance,
+        adventurousness: (profile.adventurousness as Adventurousness | undefined) ?? prev.adventurousness,
+      }))
+      setHasCompletedOnboarding(true)
+    }
+    if (profile.onboardingComplete === true) {
+      markTutorialComplete()
+      setTutorialComplete(true)
+    }
+  }, [profileQuery.data])
+
+  // ── Populate savedRecipes from query ─────────────────────────────────────────
+  useEffect(() => {
+    const data = savedRecipesQuery.data
+    if (!data) return
+    const recipes = data.recipes?.length ? data.recipes.map(itemToRecipe) : []
+    setSavedRecipes(recipes)
+    setPreferences(prev => ({ ...prev, savedRecipes: recipes.map(r => r.id) }))
+  }, [savedRecipesQuery.data])
+
+  // ── Populate collections from query ──────────────────────────────────────────
+  useEffect(() => {
+    const data = collectionsQuery.data
+    if (!data) return
+    setCollections(data.collections?.length ? data.collections.map(itemToCollection) : [])
+  }, [collectionsQuery.data])
 
   // ── React to sign-in / sign-out after initial load ───────────────────────────
   useEffect(() => {
@@ -202,7 +197,6 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
     const nowSignedIn = isSignedIn === true
 
-    // First time Clerk reports its state — just record it, don't react
     if (prevSignedInRef.current === undefined) {
       prevSignedInRef.current = nowSignedIn
       return
@@ -211,44 +205,25 @@ export function FableProvider({ children }: { children: ReactNode }) {
     if (prevSignedInRef.current === nowSignedIn) return
     prevSignedInRef.current = nowSignedIn
 
-    if (nowSignedIn) {
-      // Signed in: reload profile — server routes use Clerk session, so the
-      // correct auth profile (including migrated guest data) is returned
-      void loadProfile(userIdRef.current)
-    } else {
+    if (!nowSignedIn) {
       // Signed out: reset to blank guest state immediately
-      const newGuestId = localStorage.getItem('fable_user_id') ?? crypto.randomUUID()
+      const guestId = localStorage.getItem('fable_user_id') ?? crypto.randomUUID()
       if (!localStorage.getItem('fable_user_id')) {
-        localStorage.setItem('fable_user_id', newGuestId)
+        localStorage.setItem('fable_user_id', guestId)
       }
-      userIdRef.current = newGuestId
-      setPreferences({
-        allergens: [],
-        customAllergens: [],
-        ingredients: [],
-        savedRecipes: [],
-        safeIngredients: [],
-        safeFoodsMode: false,
-        showMacros: false,
-        activePresets: [],
-        lactoseIntolerant: false,
-        lactoseMode: 'include',
-        alcoholMode: 'none',
-        kitchenEquipment: ['hob', 'oven'],
-        colorMode: 'system',
-        discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
-        visibleTabs: [...ALL_TABS],
-        spiceTolerance: 'medium',
-        adventurousness: 'occasional',
-      })
+      userIdRef.current = guestId
+      setPreferences({ ...BLANK_PREFERENCES })
       setSavedRecipes([])
       setRecipeHistory([])
       setCollections([])
       setHasCompletedOnboarding(false)
+      setTutorialComplete(false)
+      // userId state stays the same (same guest UUID) — queries refetch with isSignedIn=false
     }
-  }, [isSignedIn, isPending, loadProfile])
+    // Sign-in: queries with [userId, true] fire automatically due to isSignedIn change
+  }, [isSignedIn, isPending])
 
-  // ── Debounced auto-save: persist the full profile whenever it changes ────────
+  // ── Debounced auto-save: persist the full profile whenever it changes ─────────
   const syncingRef = useRef(false)
   useEffect(() => {
     if (isLoadingProfile || !userIdRef.current) return
@@ -256,29 +231,25 @@ export function FableProvider({ children }: { children: ReactNode }) {
       if (syncingRef.current) return
       syncingRef.current = true
       try {
-        await fetch('/api/user/profile', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: userIdRef.current,
-            allergens: preferences.allergens,
-            customAllergens: preferences.customAllergens,
-            ingredients: preferences.ingredients,
-            safeIngredients: preferences.safeIngredients,
-            safeFoodsMode: preferences.safeFoodsMode,
-            showMacros: preferences.showMacros,
-            activePresets: preferences.activePresets,
-            lactoseIntolerant: preferences.lactoseIntolerant,
-            lactoseMode: preferences.lactoseMode,
-            alcoholMode: preferences.alcoholMode,
-            kitchenEquipment: preferences.kitchenEquipment,
-            colorMode: preferences.colorMode,
-            discoverSettings: preferences.discoverSettings,
-            visibleTabs: preferences.visibleTabs,
-            spiceTolerance: preferences.spiceTolerance,
-            adventurousness: preferences.adventurousness,
-            onboardingComplete: tutorialComplete,
-          }),
+        await updateProfileMutation.mutateAsync({
+          userId: userIdRef.current,
+          allergens: preferences.allergens,
+          customAllergens: preferences.customAllergens,
+          ingredients: preferences.ingredients,
+          safeIngredients: preferences.safeIngredients,
+          safeFoodsMode: preferences.safeFoodsMode,
+          showMacros: preferences.showMacros,
+          activePresets: preferences.activePresets,
+          lactoseIntolerant: preferences.lactoseIntolerant,
+          lactoseMode: preferences.lactoseMode,
+          alcoholMode: preferences.alcoholMode,
+          kitchenEquipment: preferences.kitchenEquipment,
+          colorMode: preferences.colorMode,
+          discoverSettings: preferences.discoverSettings,
+          visibleTabs: preferences.visibleTabs,
+          spiceTolerance: preferences.spiceTolerance,
+          adventurousness: preferences.adventurousness,
+          onboardingComplete: tutorialComplete,
         })
       } catch (err) {
         console.error('Failed to sync profile:', err)
@@ -287,7 +258,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.alcoholMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, tutorialComplete])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.alcoholMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, tutorialComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -436,7 +407,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     setPreferences(prev => ({ ...prev, adventurousness: v }))
   }, [])
 
-  // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
+  // ── Saved recipes ─────────────────────────────────────────────────────────────
 
   const saveRecipe = useCallback((recipe: Recipe) => {
     setSavedRecipes(prev => {
@@ -449,15 +420,12 @@ export function FableProvider({ children }: { children: ReactNode }) {
         ? prev.savedRecipes
         : [...prev.savedRecipes, recipe.id],
     }))
-    // Persist to DynamoDB — isSaved: true so the route omits TTL (never expires)
     if (userIdRef.current) {
-      fetch('/api/user/saved-recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userIdRef.current, recipe: { ...recipe, isSaved: true } }),
-      }).catch(err => console.error('Failed to persist saved recipe:', err))
+      saveRecipeMutation
+        .mutateAsync({ userId: userIdRef.current, recipe: { ...recipe, isSaved: true } as unknown as Record<string, unknown> })
+        .catch(err => console.error('Failed to persist saved recipe:', err))
     }
-  }, [])
+  }, [saveRecipeMutation])
 
   const unsaveRecipe = useCallback((recipeId: string) => {
     setSavedRecipes(prev => prev.filter(r => r.id !== recipeId))
@@ -465,14 +433,12 @@ export function FableProvider({ children }: { children: ReactNode }) {
       ...prev,
       savedRecipes: prev.savedRecipes.filter(id => id !== recipeId),
     }))
-    // Delete from DynamoDB (fire and forget)
     if (userIdRef.current) {
-      fetch(
-        `/api/user/saved-recipes/${encodeURIComponent(recipeId)}?userId=${userIdRef.current}`,
-        { method: 'DELETE' }
-      ).catch(err => console.error('Failed to delete saved recipe:', err))
+      unsaveRecipeMutation
+        .mutateAsync({ recipeId, userId: userIdRef.current })
+        .catch(err => console.error('Failed to delete saved recipe:', err))
     }
-  }, [])
+  }, [unsaveRecipeMutation])
 
   const isRecipeSaved = useCallback((recipeId: string) => {
     return savedRecipes.some(r => r.id === recipeId)
@@ -486,21 +452,19 @@ export function FableProvider({ children }: { children: ReactNode }) {
     const collectionId = crypto.randomUUID()
     const now = new Date().toISOString()
     setCollections(prev => [...prev, { id: collectionId, name: name.trim(), recipeIds: [], createdAt: now, updatedAt: now }])
-    fetch('/api/user/collections', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: uid, collectionId, name: name.trim() }),
-    }).catch(err => console.error('Failed to create collection:', err))
-  }, [])
+    createCollectionMutation
+      .mutateAsync({ userId: uid, collectionId, name: name.trim() })
+      .catch(err => console.error('Failed to create collection:', err))
+  }, [createCollectionMutation])
 
   const deleteCollection = useCallback((collectionId: string) => {
     const uid = userIdRef.current
     if (!uid) return
     setCollections(prev => prev.filter(c => c.id !== collectionId))
-    fetch(`/api/user/collections/${encodeURIComponent(collectionId)}?userId=${uid}`, {
-      method: 'DELETE',
-    }).catch(err => console.error('Failed to delete collection:', err))
-  }, [])
+    deleteCollectionMutation
+      .mutateAsync({ collectionId, userId: uid })
+      .catch(err => console.error('Failed to delete collection:', err))
+  }, [deleteCollectionMutation])
 
   const addToCollection = useCallback((collectionId: string, recipeId: string) => {
     const uid = userIdRef.current
@@ -512,12 +476,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
       ? { ...c, recipeIds: newRecipeIds, updatedAt: new Date().toISOString() }
       : c
     ))
-    fetch(`/api/user/collections/${encodeURIComponent(collectionId)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: uid, recipeIds: newRecipeIds }),
-    }).catch(err => console.error('Failed to update collection:', err))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    updateCollectionMutation
+      .mutateAsync({ collectionId, userId: uid, recipeIds: newRecipeIds })
+      .catch(err => console.error('Failed to update collection:', err))
+  }, [updateCollectionMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeFromCollection = useCallback((collectionId: string, recipeId: string) => {
     const uid = userIdRef.current
@@ -529,25 +491,18 @@ export function FableProvider({ children }: { children: ReactNode }) {
       ? { ...c, recipeIds: newRecipeIds, updatedAt: new Date().toISOString() }
       : c
     ))
-    fetch(`/api/user/collections/${encodeURIComponent(collectionId)}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: uid, recipeIds: newRecipeIds }),
-    }).catch(err => console.error('Failed to update collection:', err))
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    updateCollectionMutation
+      .mutateAsync({ collectionId, userId: uid, recipeIds: newRecipeIds })
+      .catch(err => console.error('Failed to remove from collection:', err))
+  }, [updateCollectionMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── History (session-only) ───────────────────────────────────────────────────
+  // ── History ───────────────────────────────────────────────────────────────────
 
   const addToHistory = useCallback((entry: HistoryEntry) => {
     setRecipeHistory(prev => [entry, ...prev])
-    // Persist to DynamoDB with isSaved: false so the route attaches a 90-day TTL.
-    // If the user later saves the recipe, the PUT with the same recipeId and
-    // isSaved: true will overwrite this record and clear the TTL.
     if (userIdRef.current) {
-      fetch('/api/user/saved-recipes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      addToHistoryMutation
+        .mutateAsync({
           userId: userIdRef.current,
           recipe: {
             id: entry.id,
@@ -562,14 +517,12 @@ export function FableProvider({ children }: { children: ReactNode }) {
             isSaved: false,
             fullRecipe: entry.recipe,
           },
-        }),
-      }).catch(err => console.error('Failed to persist history entry:', err))
+        })
+        .catch(err => console.error('Failed to persist history entry:', err))
     }
-  }, [])
+  }, [addToHistoryMutation])
 
-  // ── Computed effective restriction sets ─────────────────────────────────────
-  // Merges user-explicit + preset-derived exclusions so API calls and UI
-  // filtering use a single consistent set without mutating stored preferences.
+  // ── Computed effective restriction sets ──────────────────────────────────────
 
   const effectiveAllergens: string[] = preferences.lactoseIntolerant && preferences.lactoseMode === 'exclude' && !preferences.allergens.includes('milk')
     ? [...preferences.allergens, 'milk']
@@ -581,7 +534,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
     return [...new Set([...preferences.customAllergens, ...presetIngredients, ...alcoholIngredients])]
   })()
 
-  // ── Onboarding ───────────────────────────────────────────────────────────────
+  // ── Onboarding ────────────────────────────────────────────────────────────────
 
   const completeOnboarding = useCallback(() => {
     setHasCompletedOnboarding(true)
@@ -590,14 +543,12 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const completeTutorial = useCallback(() => {
     markTutorialComplete()
     setTutorialComplete(true)
-    if (isSignedIn) {
-      void fetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userIdRef.current, onboardingComplete: true }),
-      })
+    if (isSignedIn && userIdRef.current) {
+      completeOnboardingMutation
+        .mutateAsync({ userId: userIdRef.current, onboardingComplete: true })
+        .catch(err => console.error('Failed to mark onboarding complete:', err))
     }
-  }, [isSignedIn])
+  }, [isSignedIn, completeOnboardingMutation])
 
   return (
     <FableContext.Provider
