@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { VisionReviewScreen } from '@/components/vision-review-screen'
 import allergenMapData from '@/data/allergen-map.json'
 import { useIngredientSearch } from '@/lib/hooks/use-ingredient-search'
+import { CUISINES } from '@/lib/cuisines'
 import { useScanBarcode } from '@/lib/hooks/use-scan-barcode'
 import { useScanIngredients } from '@/lib/hooks/use-scan-ingredients'
 
@@ -55,22 +56,6 @@ const COOK_TIMES: { value: CookTime; label: string }[] = [
   { value: 'slow',   label: 'Slow Cook (60m+)' },
 ]
 
-const CUISINES: { value: string; label: string }[] = [
-  { value: 'chinese',  label: '🇨🇳 Chinese' },
-  { value: 'korean',   label: '🇰🇷 Korean' },
-  { value: 'spanish',  label: '🇪🇸 Spanish' },
-  { value: 'italian',  label: '🇮🇹 Italian' },
-  { value: 'japanese', label: '🇯🇵 Japanese' },
-  { value: 'indian',   label: '🇮🇳 Indian' },
-  { value: 'mexican',  label: '🇲🇽 Mexican' },
-  { value: 'french',   label: '🇫🇷 French' },
-  { value: 'moroccan', label: '🇲🇦 Moroccan' },
-  { value: 'thai',     label: '🇹🇭 Thai' },
-  { value: 'british',  label: '🇬🇧 British' },
-  { value: 'greek',    label: '🇬🇷 Greek' },
-  { value: 'turkish',  label: '🇹🇷 Turkish' },
-  { value: 'surprise', label: '🌍 Surprise me' },
-]
 
 const CUISINES_INITIAL_COUNT = 4 // shown collapsed before "More cuisines +"
 

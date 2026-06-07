@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query'
 import { type GeneratedRecipe } from '@/lib/types'
 
-export type GenerateRecipeInput = Record<string, unknown>
+// _signal is extracted before serialisation and never sent to the server
+export type GenerateRecipeInput = { _signal?: AbortSignal } & Record<string, unknown>
 
 export type GenerateRecipeResult = GeneratedRecipe & {
   rateLimited?: boolean
@@ -12,11 +13,12 @@ export type GenerateRecipeResult = GeneratedRecipe & {
   resetAt?: string
 }
 
-async function generateRecipe(input: GenerateRecipeInput): Promise<GenerateRecipeResult> {
+async function generateRecipe({ _signal, ...body }: GenerateRecipeInput): Promise<GenerateRecipeResult> {
   const res = await fetch('/api/generate-recipe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
+    body: JSON.stringify(body),
+    ...(_signal ? { signal: _signal } : {}),
   })
   if (!res.ok) throw new Error(`Generate error: ${res.status}`)
   return res.json() as Promise<GenerateRecipeResult>

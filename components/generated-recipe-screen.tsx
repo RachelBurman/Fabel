@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief } from '@/lib/types'
+import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief, type NudgeType } from '@/lib/types'
+import { CUISINES } from '@/lib/cuisines'
 import { shareRecipe } from '@/lib/share-recipe'
 import { ALCOHOL_INGREDIENT_KEYS } from '@/lib/alcohol-ingredients'
 import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, ArrowLeftRight, Share2, X } from 'lucide-react'
@@ -67,6 +68,12 @@ interface GeneratedRecipeScreenProps {
   macrosRateLimitMsg?: string | null
   guestMode?: boolean
   onOpenAuth?: () => void
+  // Nudge props
+  isAuthenticated?: boolean
+  onNudge?: (type: NudgeType, forcedCuisine?: string) => void
+  activeNudge?: NudgeType | null
+  isNudging?: boolean
+  currentFilters?: { spiceTolerance?: string; dietaryPresets?: string[]; cookTime?: string; cuisine?: string }
 }
 
 
@@ -124,23 +131,73 @@ function getDrinkEmoji(key: string): string {
 
 // ─── Recipe Brief Card ────────────────────────────────────────────────────────
 
-function RecipeBriefCard({ brief }: { brief: RecipeBrief }) {
-  const hints = brief.loadingHints.length > 0 ? brief.loadingHints : [
+const NUDGE_BUTTONS: {
+  type: NudgeType
+  emoji: string
+  label: string
+  hiddenWhen: (p: { spiceTolerance?: string; dietaryPresets?: string[]; cookTime?: string }) => boolean
+}[] = [
+  { type: 'spicier',    emoji: '🌶️', label: 'Make it spicier',   hiddenWhen: p => p.spiceTolerance === 'hot' },
+  { type: 'vegetarian', emoji: '🥗', label: 'Make it vegetarian', hiddenWhen: p => !!(p.dietaryPresets?.includes('vegetarian') || p.dietaryPresets?.includes('vegan')) },
+  { type: 'quicker',    emoji: '⚡', label: 'Make it quicker',    hiddenWhen: p => p.cookTime === 'quick' },
+  { type: 'cuisine',    emoji: '🌍', label: 'Different cuisine',  hiddenWhen: () => false },
+  { type: 'surprise',   emoji: '🔄', label: 'Surprise me',        hiddenWhen: () => false },
+]
+
+interface RecipeBriefCardProps {
+  brief: RecipeBrief
+  isAuthenticated?: boolean
+  onNudge?: (type: NudgeType) => void
+  onNudgeCuisine?: () => void
+  activeNudge?: NudgeType | null
+  isNudging?: boolean
+  spiceTolerance?: string
+  dietaryPresets?: string[]
+  cookTime?: string
+}
+
+function RecipeBriefCard({
+  brief,
+  isAuthenticated = false,
+  onNudge,
+  onNudgeCuisine,
+  activeNudge,
+  isNudging = false,
+  spiceTolerance,
+  dietaryPresets,
+  cookTime,
+}: RecipeBriefCardProps) {
+  const fallbackHints = [
     "Safe ingredients. Bold flavours. Food for everyone.",
     "Fable uses Epicure — the largest multilingual food embedding model ever built.",
     "The more you cook with Fable, the better it knows your taste.",
   ]
-  const [hintIndex, setHintIndex] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Keep hints in a ref so the rotation timer never resets when the brief updates
+  const hintsRef = useRef(brief.loadingHints.length > 0 ? brief.loadingHints : fallbackHints)
+  hintsRef.current = brief.loadingHints.length > 0 ? brief.loadingHints : fallbackHints
 
+  const [hintIndex, setHintIndex] = useState(0)
+  const currentHint = hintsRef.current[hintIndex % hintsRef.current.length] ?? hintsRef.current[0]
+
+  // Timer starts once on mount and never resets — hints rotate continuously
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setHintIndex(i => (i + 1) % hints.length)
+    const id = setInterval(() => {
+      setHintIndex(i => (i + 1) % hintsRef.current.length)
     }, 3000)
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+    return () => clearInterval(id)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const visibleNudges = isAuthenticated && onNudge
+    ? NUDGE_BUTTONS.filter(b => !b.hiddenWhen({ spiceTolerance, dietaryPresets, cookTime }))
+    : []
+
+  const handleNudgeClick = (type: NudgeType) => {
+    if (type === 'cuisine') {
+      onNudgeCuisine?.()
+    } else {
+      onNudge?.(type)
     }
-  }, [hints.length])
+  }
 
   return (
     <motion.div
@@ -158,9 +215,13 @@ function RecipeBriefCard({ brief }: { brief: RecipeBrief }) {
           I&apos;m thinking…
         </p>
         {brief.direction ? (
-          <p className="relative text-white text-base font-semibold leading-snug drop-shadow">
+          <motion.p
+            animate={{ opacity: isNudging ? 0.6 : 1 }}
+            transition={{ duration: 0.3 }}
+            className="relative text-white text-base font-semibold leading-snug drop-shadow"
+          >
             {brief.direction}
-          </p>
+          </motion.p>
         ) : (
           <Loader2 className="relative w-5 h-5 text-white/60 animate-spin mt-1" />
         )}
@@ -170,17 +231,23 @@ function RecipeBriefCard({ brief }: { brief: RecipeBrief }) {
       <div className="bg-card px-5 py-4 space-y-4">
         {brief.direction && (
           <>
-            {brief.reasoning && (
-              <p className="text-sm text-foreground leading-relaxed">{brief.reasoning}</p>
-            )}
-            {brief.noveltyNote && (
-              <p className="text-xs text-muted-foreground">··· {brief.noveltyNote}</p>
-            )}
+            <motion.div
+              animate={{ opacity: isNudging ? 0.6 : 1 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-1.5"
+            >
+              {brief.reasoning && (
+                <p className="text-sm text-foreground leading-relaxed">{brief.reasoning}</p>
+              )}
+              {brief.noveltyNote && (
+                <p className="text-xs text-muted-foreground">··· {brief.noveltyNote}</p>
+              )}
+            </motion.div>
             <div className="border-t border-border" />
           </>
         )}
 
-        {/* Rotating hint */}
+        {/* Rotating hint — timer never resets during nudge */}
         <AnimatePresence mode="wait">
           <motion.p
             key={hintIndex}
@@ -190,9 +257,33 @@ function RecipeBriefCard({ brief }: { brief: RecipeBrief }) {
             transition={{ duration: 0.3 }}
             className="text-xs text-muted-foreground leading-relaxed"
           >
-            <span className="mr-1.5">💡</span>{hints[hintIndex]}
+            <span className="mr-1.5">💡</span>{currentHint}
           </motion.p>
         </AnimatePresence>
+
+        {/* Nudge buttons — authenticated users only, shown when brief has direction */}
+        {visibleNudges.length > 0 && brief.direction && (
+          <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+            {visibleNudges.map(btn => (
+              <button
+                key={btn.type}
+                onClick={() => handleNudgeClick(btn.type)}
+                disabled={isNudging && activeNudge !== btn.type}
+                className={cn(
+                  'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all duration-200 shrink-0',
+                  activeNudge === btn.type
+                    ? 'bg-primary/15 text-primary border-primary/30'
+                    : 'bg-secondary text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary',
+                  isNudging && activeNudge !== btn.type ? 'opacity-40 pointer-events-none' : '',
+                )}
+              >
+                <span>{btn.emoji}</span>
+                <span>{btn.label}</span>
+                {activeNudge === btn.type && <span className="ml-0.5">✓</span>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   )
@@ -220,9 +311,16 @@ export function GeneratedRecipeScreen({
   macrosRateLimitMsg,
   guestMode = false,
   onOpenAuth,
+  isAuthenticated = false,
+  onNudge,
+  activeNudge,
+  isNudging = false,
+  currentFilters,
 }: GeneratedRecipeScreenProps) {
   const { preferences } = useFable()
   const isLoading = loadingStep !== null
+
+  const [cuisinePickerOpen, setCuisinePickerOpen] = useState(false)
   const missingEquipment = recipe ? detectMissingEquipment(recipe.steps, preferences.kitchenEquipment) : []
 
   const drinkPairingsMutation = useDrinkPairings()
@@ -434,6 +532,53 @@ export function GeneratedRecipeScreen({
 
   return (
     <div className="bg-background">
+      {/* Cuisine picker bottom sheet — opens when user taps "Different cuisine" nudge */}
+      <AnimatePresence>
+        {cuisinePickerOpen && (
+          <>
+            <motion.div
+              key="cuisine-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-black/40 z-40"
+              onClick={() => setCuisinePickerOpen(false)}
+            />
+            <motion.div
+              key="cuisine-sheet"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl px-6 pt-6 pb-10 max-h-[70vh] overflow-y-auto"
+            >
+              <div className="w-10 h-1 rounded-full bg-border mx-auto mb-5" />
+              <h3 className="text-base font-semibold text-foreground mb-4">Choose a cuisine</h3>
+              <div className="flex flex-wrap gap-2">
+                {CUISINES.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      setCuisinePickerOpen(false)
+                      onNudge?.('cuisine', value)
+                    }}
+                    className={cn(
+                      'px-3 py-1.5 text-sm rounded-full transition-colors',
+                      currentFilters?.cuisine === value
+                        ? 'bg-primary/15 text-primary border border-primary/30'
+                        : 'bg-secondary text-secondary-foreground hover:bg-primary/10 hover:text-primary',
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto">
 
@@ -507,7 +652,17 @@ export function GeneratedRecipeScreen({
           {/* Loading */}
           {isLoading && (
             loadingStep === 'recipe' && brief ? (
-              <RecipeBriefCard brief={brief} />
+              <RecipeBriefCard
+                brief={brief}
+                isAuthenticated={isAuthenticated}
+                onNudge={onNudge ? (type) => onNudge(type) : undefined}
+                onNudgeCuisine={onNudge ? () => setCuisinePickerOpen(true) : undefined}
+                activeNudge={activeNudge}
+                isNudging={isNudging}
+                spiceTolerance={currentFilters?.spiceTolerance}
+                dietaryPresets={currentFilters?.dietaryPresets}
+                cookTime={currentFilters?.cookTime}
+              />
             ) : (
               <motion.div
                 initial={{ opacity: 0, y: 16 }}

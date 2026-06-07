@@ -44,12 +44,25 @@ export async function POST(req: NextRequest) {
     userId?: unknown;
     preferences?: unknown;
     kitchenIngredients?: unknown;
+    nudge?: unknown;
+    forcedCuisine?: unknown;
   };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ brief: GUEST_BRIEF });
   }
+
+  const VALID_NUDGES = ['spicier', 'vegetarian', 'quicker', 'surprise'] as const;
+  type NudgeValue = (typeof VALID_NUDGES)[number];
+  const nudge: NudgeValue | null =
+    typeof body.nudge === 'string' && (VALID_NUDGES as readonly string[]).includes(body.nudge)
+      ? (body.nudge as NudgeValue)
+      : null;
+  const forcedCuisine: string | null =
+    typeof body.forcedCuisine === 'string' && body.forcedCuisine.trim()
+      ? body.forcedCuisine.trim()
+      : null;
 
   // Rate limit check
   const rateLimit = await checkRateLimit(uid, true);
@@ -165,6 +178,18 @@ export async function POST(req: NextRequest) {
       ? `This user does not consume alcohol. Do not suggest alcohol-forward directions or cuisines where alcohol is central to the dish (e.g. no coq au vin, sake-braised dishes, or beer-based stews).\n\n`
       : "";
 
+    const nudgeInstruction = forcedCuisine
+      ? `The user has selected ${forcedCuisine} cuisine. Build the direction around ${forcedCuisine} cooking. Acknowledge naturally in the reasoning — e.g. "Taking this in a ${forcedCuisine} direction as requested."\n\n`
+      : nudge === 'spicier'
+      ? `The user has requested a spicier direction. Adjust the direction toward bolder, hotter flavours. Acknowledge this naturally in the reasoning — e.g. "Taking this in a spicier direction as requested."\n\n`
+      : nudge === 'vegetarian'
+      ? `The user has requested a vegetarian direction. Remove any meat or fish from the direction and keyIngredients. Acknowledge naturally in the reasoning.\n\n`
+      : nudge === 'quicker'
+      ? `The user has requested a quicker recipe. Adjust the direction toward dishes that can be prepared in under 30 minutes. Acknowledge naturally in the reasoning.\n\n`
+      : nudge === 'surprise'
+      ? `The user wants something completely different from their recent history. Choose a direction that contrasts with what they have made before — an unexplored cuisine or unusual combination that still respects their allergens and restrictions.\n\n`
+      : '';
+
     const userMessage =
       `Taste profile:\n` +
       `- Top loved ingredients: ${preferred.join(", ") || "not enough data yet"}\n` +
@@ -175,11 +200,12 @@ export async function POST(req: NextRequest) {
       `Current request:\n` +
       `- Meal type: ${mealType}\n` +
       `- Cook time: ${cookTime}\n` +
-      `- Cuisine: ${cuisine}\n` +
+      `- Cuisine: ${forcedCuisine ?? cuisine}\n` +
       `- Occasion: ${occasion}\n` +
       `- Kitchen includes: ${kitchenIngredients.join(", ") || "not specified"}\n\n` +
       cookingStyleNote +
       noAlcoholNote +
+      nudgeInstruction +
       `Write a recipe brief. Identify what flavour territory this user hasn't explored yet that aligns with their taste profile. If cuisine is 'Surprise me', choose something genuinely novel for them. Be specific — name a dish direction, not just a cuisine.\n\n` +
       `Respond with this exact JSON shape:\n` +
       `{\n` +

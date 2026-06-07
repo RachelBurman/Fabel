@@ -223,6 +223,8 @@ export interface RecipeBrief {
   loadingHints: string[]
 }
 
+export type NudgeType = 'spicier' | 'vegetarian' | 'quicker' | 'surprise' | 'cuisine'
+
 export interface InsightIngredient {
   key: string
   likeCount: number

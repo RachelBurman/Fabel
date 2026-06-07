@@ -10,7 +10,7 @@ import { AuthForm } from '@/components/auth-form'
 import { FableProvider, useFable } from '@/lib/fable-context'
 import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
-import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief, type RecipeSuggestion } from '@/lib/types'
+import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief, type RecipeSuggestion, type NudgeType } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
 import { useDislikedPatterns } from '@/lib/hooks/use-disliked-patterns'
 import { useRecipePairings } from '@/lib/hooks/use-recipe-pairings'
@@ -93,6 +93,10 @@ function FableAppContent() {
       setSubstituteContext(undefined)
       discoverSeedIngredientsRef.current = []
       discoverSuggestionRef.current = null
+      setActiveNudge(null)
+      setIsNudging(false)
+      generateAbortRef.current?.abort()
+      generateAbortRef.current = null
     }
   }, [isSignedIn])
   const openAuth = useCallback(() => setAuthOverlayOpen(true), [])
@@ -132,6 +136,10 @@ function FableAppContent() {
 
   const discoverSeedIngredientsRef = useRef<string[]>([])
   const discoverSuggestionRef = useRef<RecipeSuggestion | null>(null)
+  const generateAbortRef = useRef<AbortController | null>(null)
+
+  const [activeNudge, setActiveNudge] = useState<NudgeType | null>(null)
+  const [isNudging, setIsNudging] = useState(false)
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -276,6 +284,9 @@ function FableAppContent() {
       setBrief(fetchedBrief)
       setLoadingStep('recipe')
 
+      const genController = new AbortController()
+      generateAbortRef.current = genController
+
       const recipeData = await generateRecipeMutation.mutateAsync({
         ingredients: preferences.ingredients,
         suggestions: suggestionNames,
@@ -305,6 +316,7 @@ function FableAppContent() {
             keyIngredients: fetchedBrief.keyIngredients,
           },
         } : {}),
+        _signal: genController.signal,
       })
       if (recipeData.guestMode) {
         setGuestMode(true)
@@ -329,6 +341,7 @@ function FableAppContent() {
       setGeneratedRecipeId(recipeId)
       addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
       console.error('Error generating recipe:', error)
       setGeneratedRecipe(null)
     } finally {
@@ -383,6 +396,9 @@ function FableAppContent() {
       setBrief(fetchedBrief)
       setLoadingStep('recipe')
 
+      const genController = new AbortController()
+      generateAbortRef.current = genController
+
       const recipeData = await generateRecipeMutation.mutateAsync({
         ingredients: preferences.ingredients,
         suggestions: pairings.map(s => s.ingredient),
@@ -411,6 +427,7 @@ function FableAppContent() {
             keyIngredients: fetchedBrief.keyIngredients,
           },
         } : {}),
+        _signal: genController.signal,
       })
       if (recipeData.guestMode) {
         setGuestMode(true)
@@ -434,12 +451,125 @@ function FableAppContent() {
       setGeneratedRecipeId(recipeId)
       addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
       console.error('Error generating recipe from pairings:', error)
       setGeneratedRecipe(null)
     } finally {
       setLoadingStep(null)
     }
   }, [pairings, preferences, isSignedIn, navigate, addToHistory, recipeBriefMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Nudge: abort current generation, refetch brief with override, restart generation ──────────────────────────────────
+  const handleNudge = useCallback(async (nudgeType: NudgeType, forcedCuisine?: string) => {
+    if (!isSignedIn) return
+
+    generateAbortRef.current?.abort()
+    setActiveNudge(nudgeType)
+    setIsNudging(true)
+    setLoadingStep('recipe')
+
+    const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
+    const kitchenDisplayNames = preferences.ingredients.map(i => i.displayName ?? i.name.replace(/_/g, ' '))
+
+    let newBrief: RecipeBrief | null = brief
+    try {
+      const res = await fetch('/api/recipe-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: uid,
+          preferences: {
+            mealType: recipeFilters.mealType,
+            cookTime: recipeFilters.cookTime,
+            cuisine: forcedCuisine ?? recipeFilters.cuisine,
+            occasion: recipeFilters.occasion,
+            servings: recipeFilters.servings,
+            spiceTolerance: preferences.spiceTolerance,
+            adventurousness: preferences.adventurousness,
+            ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+          },
+          kitchenIngredients: kitchenDisplayNames,
+          ...(nudgeType !== 'cuisine' ? { nudge: nudgeType } : {}),
+          ...(forcedCuisine ? { forcedCuisine } : {}),
+        }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { brief: RecipeBrief }
+        if (data.brief?.direction) newBrief = data.brief
+      }
+    } catch {
+      // Brief fetch failed — keep existing brief
+    }
+
+    setBrief(newBrief)
+    setIsNudging(false)
+
+    const sfPayload = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+      ? { safeFoodsMode: true, safeIngredients: preferences.safeIngredients }
+      : {}
+
+    const controller = new AbortController()
+    generateAbortRef.current = controller
+
+    let abortedByNewerNudge = false
+    try {
+      const recipeData = await generateRecipeMutation.mutateAsync({
+        ingredients: preferences.ingredients,
+        suggestions: pairings.map(s => s.ingredient),
+        allergens: effectiveAllergens,
+        customAllergens: effectiveCustomAllergens,
+        mealType: recipeFilters.mealType,
+        cookTime: recipeFilters.cookTime,
+        kitchenOnly: recipeFilters.kitchenOnly,
+        cuisine: forcedCuisine ?? recipeFilters.cuisine,
+        occasion: recipeFilters.occasion,
+        servings: recipeFilters.servings,
+        kitchenEquipment: preferences.kitchenEquipment,
+        showMacros: preferences.showMacros,
+        spiceTolerance: preferences.spiceTolerance,
+        adventurousness: preferences.adventurousness,
+        ...(preferences.activePresets.length > 0 ? { activePresets: preferences.activePresets } : {}),
+        ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
+        ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+        ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
+        ...(dislikedIngredients.length > 0 ? { dislikedIngredients } : {}),
+        ...(uid ? { userId: uid } : {}),
+        ...sfPayload,
+        ...(newBrief?.direction ? { recipeBrief: { direction: newBrief.direction, keyIngredients: newBrief.keyIngredients } } : {}),
+        _signal: controller.signal,
+      })
+      if (recipeData.guestMode) {
+        setGuestMode(true)
+        if (!recipeData.recipe) { setGeneratedRecipe(null); return }
+      }
+      const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
+        ? recipeData.recipe
+        : recipeData as GeneratedRecipe
+      if (recipeData.rateLimited) {
+        setRateLimitInfo({
+          hourRemaining: recipeData.hourRemaining ?? 0,
+          dayRemaining: recipeData.dayRemaining ?? 0,
+          resetAt: recipeData.resetAt ?? '',
+        })
+      }
+      const recipeId = Date.now().toString()
+      setGeneratedRecipe(recipe)
+      setGeneratedRecipeId(recipeId)
+      addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        abortedByNewerNudge = true
+        return
+      }
+      console.error('Error generating recipe after nudge:', error)
+      setGeneratedRecipe(null)
+    } finally {
+      if (!abortedByNewerNudge) {
+        setActiveNudge(null)
+        setLoadingStep(null)
+      }
+    }
+  }, [preferences, isSignedIn, recipeFilters, brief, pairings, effectiveAllergens, effectiveCustomAllergens, dislikedPatterns, dislikedIngredients, generateRecipeMutation, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {
@@ -788,6 +918,16 @@ function FableAppContent() {
                 macrosRateLimitMsg={macrosRateLimitMsg}
                 guestMode={guestMode}
                 onOpenAuth={openAuth}
+                isAuthenticated={isSignedIn}
+                onNudge={isSignedIn ? handleNudge : undefined}
+                activeNudge={activeNudge}
+                isNudging={isNudging}
+                currentFilters={{
+                  spiceTolerance: preferences.spiceTolerance,
+                  dietaryPresets: preferences.activePresets,
+                  cookTime: recipeFilters.cookTime,
+                  cuisine: recipeFilters.cuisine,
+                }}
               />
             </motion.div>
           )}

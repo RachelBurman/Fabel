@@ -1,0 +1,16 @@
+export const CUISINES: { value: string; label: string }[] = [
+  { value: 'chinese',  label: '🇨🇳 Chinese' },
+  { value: 'korean',   label: '🇰🇷 Korean' },
+  { value: 'spanish',  label: '🇪🇸 Spanish' },
+  { value: 'italian',  label: '🇮🇹 Italian' },
+  { value: 'japanese', label: '🇯🇵 Japanese' },
+  { value: 'indian',   label: '🇮🇳 Indian' },
+  { value: 'mexican',  label: '🇲🇽 Mexican' },
+  { value: 'french',   label: '🇫🇷 French' },
+  { value: 'moroccan', label: '🇲🇦 Moroccan' },
+  { value: 'thai',     label: '🇹🇭 Thai' },
+  { value: 'british',  label: '🇬🇧 British' },
+  { value: 'greek',    label: '🇬🇷 Greek' },
+  { value: 'turkish',  label: '🇹🇷 Turkish' },
+  { value: 'surprise', label: '🌍 Surprise me' },
+]
