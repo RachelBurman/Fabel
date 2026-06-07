@@ -92,7 +92,7 @@ export function RecipeResultsScreen({ recipes, isLoading, onBack }: RecipeResult
   const { preferences } = useFable()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

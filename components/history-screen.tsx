@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { type HistoryEntry } from '@/lib/types'
-import { Clock, Users, History, Share2, Loader2 } from 'lucide-react'
+import { Clock, Users, History, Share2, Loader2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RecipeGradient } from '@/components/recipe-gradient'
 import { shareRecipe } from '@/lib/share-recipe'
@@ -96,6 +96,27 @@ interface HistoryScreenProps {
 }
 
 export function HistoryScreen({ history, onViewRecipe, onGenerateNew }: HistoryScreenProps) {
+  if (history.length === 0) {
+    return (
+      <div className="bg-background">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
+        >
+          <div className="text-5xl mb-6">📖</div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">No recipes yet</h2>
+          <p className="text-muted-foreground max-w-xs mx-auto mb-8">
+            Generate your first recipe to see your history here.
+          </p>
+          <Button onClick={onGenerateNew} className="rounded-full gap-2">
+            Generate a recipe <ArrowRight className="w-4 h-4" />
+          </Button>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-background">
       <div className="px-6 py-8 md:py-12">
@@ -108,41 +129,20 @@ export function HistoryScreen({ history, onViewRecipe, onGenerateNew }: HistoryS
               <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Recipe History</h1>
             </div>
             <p className="text-muted-foreground text-sm">
-              {history.length === 0
-                ? 'No recipes generated yet this session'
-                : `${history.length} recipe${history.length > 1 ? 's' : ''} generated this session`}
+              {`${history.length} recipe${history.length > 1 ? 's' : ''} generated this session`}
             </p>
           </div>
 
-          {history.length > 0 ? (
-            <div className="space-y-4">
-              {history.map((entry, index) => (
-                <HistoryCard
-                  key={entry.id}
-                  entry={entry}
-                  index={index}
-                  onView={onViewRecipe}
-                />
-              ))}
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
-              <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-                <History className="w-10 h-10 text-muted-foreground" />
-              </div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">No history yet</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-                Generated recipes will appear here so you can revisit them anytime during this session.
-              </p>
-              <Button onClick={onGenerateNew} className="rounded-full">
-                Generate a Recipe
-              </Button>
-            </motion.div>
-          )}
+          <div className="space-y-4">
+            {history.map((entry, index) => (
+              <HistoryCard
+                key={entry.id}
+                entry={entry}
+                index={index}
+                onView={onViewRecipe}
+              />
+            ))}
+          </div>
 
         </div>
       </div>

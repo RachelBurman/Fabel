@@ -138,11 +138,12 @@ function CollectionCard({ collection, previewRecipes, onClick }: CollectionCardP
 interface CollectionDetailProps {
   collection: Collection
   onBack: () => void
+  onBrowseSaved: () => void
   onViewRecipe: (recipe: Recipe) => void
   onDelete: () => void
 }
 
-function CollectionDetail({ collection, onBack, onViewRecipe, onDelete }: CollectionDetailProps) {
+function CollectionDetail({ collection, onBack, onBrowseSaved, onViewRecipe, onDelete }: CollectionDetailProps) {
   const { savedRecipes, removeFromCollection } = useFable()
   const recipes = savedRecipes.filter(r => collection.recipeIds.includes(r.id))
 
@@ -190,15 +191,16 @@ function CollectionDetail({ collection, onBack, onViewRecipe, onDelete }: Collec
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center py-16"
+          className="flex flex-col items-center justify-center min-h-[calc(100dvh-16rem)] text-center"
         >
-          <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-            <FolderOpen className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground mb-2">Collection is empty</h3>
-          <p className="text-muted-foreground max-w-xs mx-auto">
-            Go to All Saved and use the bookmark icon to add recipes here.
+          <div className="text-5xl mb-6">📋</div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">This collection is empty</h3>
+          <p className="text-muted-foreground max-w-xs mx-auto mb-8">
+            Save recipes here to build your collection.
           </p>
+          <Button onClick={onBrowseSaved} variant="outline" className="rounded-full gap-2">
+            Browse saved recipes <ArrowRight className="w-4 h-4" />
+          </Button>
         </motion.div>
       )}
     </div>
@@ -271,6 +273,7 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
             <CollectionDetail
               collection={currentCollection}
               onBack={() => setSelectedCollection(null)}
+              onBrowseSaved={() => { setSelectedCollection(null); setActiveTab('saved') }}
               onViewRecipe={onViewRecipe}
               onDelete={() => handleDeleteCollection(currentCollection)}
             />
