@@ -136,7 +136,7 @@ async function queryDBFallback(
         FilterExpression: "isSaved = :t",
         ExpressionAttributeValues: { ":t": true },
         ProjectionExpression:
-          "recipeId, title, description, cookTime, servings, allergenFree, ingredients, #st",
+          "recipeId, title, description, cookTime, servings, allergenFree, ingredients, #st, fullRecipe",
         ExpressionAttributeNames: { "#st": "steps" },
       })
     );
@@ -192,19 +192,25 @@ async function queryDBFallback(
     candidates.sort((a, b) => b.score - a.score);
     const best = candidates[0].item;
 
+    // Prefer fullRecipe.ingredients — it has proper {name, amount, unit} objects.
+    // best.ingredients is a string[] saved for allergen-checking and must not be
+    // used directly as GeneratedRecipeIngredient[].
+    const fullRecipe = best.fullRecipe as GeneratedRecipe | undefined;
+    const ingredients: GeneratedRecipe["ingredients"] = Array.isArray(fullRecipe?.ingredients)
+      ? (fullRecipe!.ingredients as GeneratedRecipe["ingredients"])
+      : [];
+
     return {
       id: String(best.recipeId ?? crypto.randomUUID()),
-      title: String(best.title ?? "Community Recipe"),
-      description: String(best.description ?? ""),
-      cookTime: String(best.cookTime ?? "30 minutes"),
-      servings: typeof best.servings === "number" ? best.servings : 2,
+      title: String(fullRecipe?.title ?? best.title ?? "Community Recipe"),
+      description: String(fullRecipe?.description ?? best.description ?? ""),
+      cookTime: String(fullRecipe?.cookTime ?? best.cookTime ?? "30 minutes"),
+      servings: typeof fullRecipe?.servings === "number" ? fullRecipe.servings
+        : typeof best.servings === "number" ? best.servings : 2,
       allergenFree: true,
-      ingredients: Array.isArray(best.ingredients)
-        ? (best.ingredients as GeneratedRecipe["ingredients"])
-        : [],
-      steps: Array.isArray(best.steps)
-        ? (best.steps as string[])
-        : [],
+      ingredients,
+      steps: Array.isArray(fullRecipe?.steps) ? (fullRecipe!.steps as string[])
+        : Array.isArray(best.steps) ? (best.steps as string[]) : [],
     };
   } catch (err) {
     console.error("[community-recipe-fallback] DB scan failed:", err);
