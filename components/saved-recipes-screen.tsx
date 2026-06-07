@@ -153,7 +153,7 @@ function CollectionDetail({ collection, onBack, onBrowseSaved, onViewRecipe, onD
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 md:hidden"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>

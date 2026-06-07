@@ -101,7 +101,7 @@ export function RecipeResultsScreen({ recipes, isLoading, onBack }: RecipeResult
               variant="ghost"
               size="icon"
               onClick={onBack}
-              className="shrink-0 rounded-full"
+              className="shrink-0 rounded-full md:hidden"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>

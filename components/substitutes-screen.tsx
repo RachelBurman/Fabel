@@ -471,7 +471,7 @@ export function SubstitutesScreen({
 
           {/* Header */}
           <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 rounded-full">
+            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 rounded-full md:hidden">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
@@ -739,12 +739,14 @@ export function SubstitutesScreen({
               )}
 
               {mode === 'from-kitchen' && kitchenIngredients.length === 0 && (
-                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
-                  <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-                    <ChefHat className="w-10 h-10 text-muted-foreground" />
-                  </div>
-                  <h2 className="text-lg font-semibold text-foreground mb-2">No ingredients yet</h2>
-                  <p className="text-muted-foreground max-w-sm mx-auto">
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex flex-col items-center justify-center text-center min-h-[calc(100dvh-20rem)]"
+                >
+                  <div className="text-5xl mb-6">🧑‍🍳</div>
+                  <h2 className="text-xl font-semibold text-foreground mb-2">No ingredients yet</h2>
+                  <p className="text-muted-foreground max-w-xs mx-auto">
                     Add ingredients to your kitchen first, then come back to find substitutes.
                   </p>
                 </motion.div>
