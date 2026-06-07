@@ -193,12 +193,21 @@ async function queryDBFallback(
     const best = candidates[0].item;
 
     // Prefer fullRecipe.ingredients — it has proper {name, amount, unit} objects.
-    // best.ingredients is a string[] saved for allergen-checking and must not be
-    // used directly as GeneratedRecipeIngredient[].
+    // best.ingredients is a string[] saved for allergen-checking; if fullRecipe is
+    // absent (older saves / demo seeds), normalise the strings into objects so the
+    // recipe screen always receives the correct shape.
     const fullRecipe = best.fullRecipe as GeneratedRecipe | undefined;
-    const ingredients: GeneratedRecipe["ingredients"] = Array.isArray(fullRecipe?.ingredients)
-      ? (fullRecipe!.ingredients as GeneratedRecipe["ingredients"])
-      : [];
+    const fullIngredients = fullRecipe?.ingredients;
+    const ingredients: GeneratedRecipe["ingredients"] =
+      Array.isArray(fullIngredients) && fullIngredients.length > 0
+        ? (fullIngredients as GeneratedRecipe["ingredients"])
+        : Array.isArray(best.ingredients)
+        ? (best.ingredients as unknown[]).map((ing) =>
+            typeof ing === "string"
+              ? ({ name: ing, amount: 1, unit: "serving" } as GeneratedRecipe["ingredients"][number])
+              : (ing as GeneratedRecipe["ingredients"][number])
+          )
+        : [];
 
     return {
       id: String(best.recipeId ?? crypto.randomUUID()),
