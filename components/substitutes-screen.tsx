@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, ArrowRight, ArrowLeftRight, Loader2, RefreshCw, ChefHat,
+  ArrowRight, ArrowLeftRight, Loader2, RefreshCw, ChefHat,
   Utensils, X, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -491,17 +491,6 @@ export function SubstitutesScreen({
     <div className="bg-background">
       <div className="px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto">
-
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <Button variant="ghost" size="icon" onClick={onBack} className="back-btn shrink-0 rounded-full">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl md:text-2xl font-semibold text-foreground">Substitutes</h1>
-              <p className="text-sm text-muted-foreground">Allergen-safe swaps matched to your dish</p>
-            </div>
-          </div>
 
           {/* Kitchen / Recipe mode tabs */}
           {!isOpenedFromRecipe && (
