@@ -839,6 +839,7 @@ function FableAppContent() {
               <SavedRecipesScreen
                 onBack={() => navigate('ingredients')}
                 onViewRecipe={handleViewSavedRecipe}
+                onGenerateRecipe={() => navigate('generated')}
               />
             </motion.div>
           )}

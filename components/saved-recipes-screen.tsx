@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { type Recipe, type Collection } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Clock, Users, Heart, Trash2, BookmarkX, Bookmark, ArrowLeft, FolderOpen, Plus, Folder } from 'lucide-react'
+import { Clock, Users, Heart, Trash2, BookmarkX, Bookmark, ArrowLeft, ArrowRight, FolderOpen, Plus, Folder } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
@@ -210,9 +210,10 @@ function CollectionDetail({ collection, onBack, onViewRecipe, onDelete }: Collec
 interface SavedRecipesScreenProps {
   onBack: () => void
   onViewRecipe: (recipe: Recipe) => void
+  onGenerateRecipe: () => void
 }
 
-export function SavedRecipesScreen({ onBack, onViewRecipe }: SavedRecipesScreenProps) {
+export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: SavedRecipesScreenProps) {
   const { savedRecipes, unsaveRecipe, collections, createCollection, deleteCollection } = useFable()
 
   const [activeTab, setActiveTab] = useState<'saved' | 'collections'>('saved')
@@ -237,6 +238,28 @@ export function SavedRecipesScreen({ onBack, onViewRecipe }: SavedRecipesScreenP
   const currentCollection = selectedCollection
     ? (collections.find(c => c.id === selectedCollection.id) ?? null)
     : null
+
+  // Full-page empty state when there are no saved recipes
+  if (savedRecipes.length === 0 && !currentCollection) {
+    return (
+      <div className="bg-background">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
+        >
+          <div className="text-5xl mb-6">🍽️</div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">No saved recipes yet</h2>
+          <p className="text-muted-foreground max-w-xs mx-auto mb-8">
+            Generate your first recipe and save ones you love.
+          </p>
+          <Button onClick={onGenerateRecipe} className="rounded-full gap-2">
+            Generate a recipe <ArrowRight className="w-4 h-4" />
+          </Button>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-background">
@@ -289,37 +312,20 @@ export function SavedRecipesScreen({ onBack, onViewRecipe }: SavedRecipesScreenP
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    {savedRecipes.length > 0 ? (
-                      <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <AnimatePresence>
-                          {savedRecipes.map((recipe, index) => (
-                            <SavedRecipeCard
-                              key={recipe.id}
-                              recipe={recipe}
-                              index={index}
-                              onRemove={unsaveRecipe}
-                              onView={onViewRecipe}
-                              onAddToCollection={setCollectionModalRecipeId}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-16"
-                      >
-                        <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-                          <BookmarkX className="w-10 h-10 text-muted-foreground" />
-                        </div>
-                        <h2 className="text-xl font-semibold text-foreground mb-2">No saved recipes yet</h2>
-                        <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-                          When you find recipes you love, save them here for quick access later
-                        </p>
-                        <Button onClick={onBack} className="rounded-full">Find Recipes</Button>
-                      </motion.div>
-                    )}
+                    <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      <AnimatePresence>
+                        {savedRecipes.map((recipe, index) => (
+                          <SavedRecipeCard
+                            key={recipe.id}
+                            recipe={recipe}
+                            index={index}
+                            onRemove={unsaveRecipe}
+                            onView={onViewRecipe}
+                            onAddToCollection={setCollectionModalRecipeId}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
                   </motion.div>
                 )}
 
@@ -385,15 +391,23 @@ export function SavedRecipesScreen({ onBack, onViewRecipe }: SavedRecipesScreenP
                       <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-center py-16"
+                        className="flex flex-col items-center justify-center min-h-[calc(100dvh-16rem)] text-center"
                       >
                         <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
                           <FolderOpen className="w-10 h-10 text-muted-foreground" />
                         </div>
                         <h2 className="text-xl font-semibold text-foreground mb-2">No collections yet</h2>
-                        <p className="text-muted-foreground max-w-sm mx-auto">
+                        <p className="text-muted-foreground max-w-xs mx-auto mb-8">
                           Create a collection to organise your saved recipes
                         </p>
+                        <Button
+                          variant="outline"
+                          onClick={() => setIsCreatingCollection(true)}
+                          className="rounded-full gap-1.5"
+                        >
+                          <Plus className="w-4 h-4" />
+                          New Collection
+                        </Button>
                       </motion.div>
                     )}
                   </motion.div>
