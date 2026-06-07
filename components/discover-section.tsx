@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat, ArrowLeft } from 'lucide-react'
+import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat } from 'lucide-react'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientInsightsRecord, type RecipeSuggestion } from '@/lib/types'
-import { Button } from '@/components/ui/button'
 
 const ALLERGEN_LABELS: Record<string, string> = {
   milk: 'Milk', eggs: 'Eggs', gluten: 'Gluten', peanuts: 'Peanuts',
@@ -55,14 +54,13 @@ interface InsightsData {
 }
 
 interface DiscoverSectionProps {
-  onBack?: () => void
   onSelectCuisine?: (cuisine: string) => void
   onSelectOccasion?: (occasion: string) => void
   onSeedIngredients?: (ingredients: string[]) => void
   onSelectSuggestion?: (suggestion: RecipeSuggestion) => void
 }
 
-export function DiscoverSection({ onBack, onSelectCuisine, onSelectOccasion, onSeedIngredients, onSelectSuggestion }: DiscoverSectionProps) {
+export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngredients, onSelectSuggestion }: DiscoverSectionProps) {
   const { preferences } = useFable()
   const { discoverSettings } = preferences
 
@@ -84,33 +82,6 @@ export function DiscoverSection({ onBack, onSelectCuisine, onSelectOccasion, onS
   return (
     <div className="min-h-[calc(100dvh-8rem)] bg-background">
       <div className="px-6 py-6 max-w-2xl mx-auto space-y-8">
-
-        {/* Page header */}
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            {onBack && (
-              <Button variant="ghost" size="icon" onClick={onBack} className="back-btn shrink-0 rounded-full">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            )}
-            <h1 className="text-2xl font-semibold text-foreground">Discover</h1>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {isLoading ? 'Loading trends…' : data ? (
-              data.allergens.length === 0 && data.customAllergens.length === 0
-                ? 'Trending this week · global'
-                : <>
-                    Trending this week · safe for you
-                    <span className="block text-xs mt-0.5">
-                      Excluding {[
-                        ...data.allergens.map(a => ALLERGEN_LABELS[a] ?? formatCustomAllergen(a)),
-                        ...data.customAllergens.map(formatCustomAllergen),
-                      ].join(', ')}
-                    </span>
-                  </>
-            ) : 'Trends load after your first recipe feedback.'}
-          </p>
-        </div>
 
         {/* Your taste profile */}
         {data?.tasteProfile && (

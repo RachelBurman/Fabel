@@ -854,7 +854,6 @@ function FableAppContent() {
               transition={{ duration: 0.3 }}
             >
               <DiscoverSection
-                onBack={() => navigate('ingredients')}
                 onSelectCuisine={(c) => setRecipeFilters((prev) => ({ ...prev, cuisine: c }))}
                 onSelectOccasion={(o) => {
                   setRecipeFilters((prev) => ({ ...prev, occasion: o }))
