@@ -13,6 +13,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Framer Motion |
+| Data fetching | TanStack Query v5 (`@tanstack/react-query`) — `useQuery` / `useMutation` hooks; one file per hook in `lib/hooks/`; `QueryProvider` wraps root layout |
 | Auth | Better Auth (`better-auth`) — email/password; Neon Postgres for session/user storage |
 | Deployment | Vercel |
 | Database | AWS DynamoDB |
@@ -112,7 +113,7 @@ Fable is fully usable without an account — guests get a meaningful experience,
   - **Recipe brief** (`/api/recipe-brief`) — returns 401 for guests; guest recipe generation proceeds without the personalised direction brief
   - **Macro estimation** (`/api/macros`) — returns 401 for guests; macros section hidden for guest sessions
 - **Modified for guests:**
-  - **Recipe generation** — guests receive a community DB recipe (same as rate-limited users) with an amber "You're seeing a community recipe — Sign in to generate a personalised recipe with AI." banner; no rate limit consumed; no Claude call made; `RecipeBriefCard` not shown
+  - **Recipe generation** — guests receive a community DB recipe (same as rate-limited users) with an amber "You're seeing a community recipe — Sign in to generate a personalised recipe with AI." banner; no rate limit consumed; no Claude call made; `RecipeBriefCard` not shown; client skips `/api/recipe-brief` entirely (no HTTP call, no 401); community fallback filters by the guest's diet presets (vegan, vegetarian hard filters) and `alcoholMode`; if no community recipe passes all hard filters, a clean empty state is shown: "We couldn't find a community recipe that matches your requirements — Sign in to generate a personalised recipe with AI."
   - **Substitute explanations** — Epicure similarity matching runs as normal; Claude explanation step is skipped; "Sign in to see why this substitution works." shown where the explanation would appear
 - Auth overlay rendered via a portal in `FableAppContent`; opened from inline guest prompts; auto-closes on successful sign-in
 - `AuthRequiredError` pattern in `lib/get-user-id.ts` — `requireAuth()` throws; callers catch and return `{ error: 'auth_required', message: '...' }` with status 401
@@ -194,6 +195,22 @@ For users with MCAS, severe allergies, or highly restricted therapeutic diets.
 - `colorMode: 'light' | 'dark' | 'system'` stored in DynamoDB, persisted across devices — replaces the old boolean `darkMode` field with automatic migration on first load
 - `next-themes` `enableSystem={true}` drives the system mode; `defaultTheme="system"` for new users
 - Full `dark:` variant support via Tailwind and the existing `.dark` CSS variable theme
+
+### Account Deletion (GDPR Right to Erasure)
+- "Delete my account and all data" button in Allergen Settings, shown only to authenticated users; guests see a sign-in prompt instead
+- Confirmation modal with title, body ("This cannot be undone."), Cancel button, and red "Delete permanently" button with loading spinner
+- `DELETE /api/user/account` — auth-required; deletes all personal data in order:
+  1. `fable-users` — profile deleted
+  2. `fable-saved-recipes` — all records for userId deleted
+  3. `fable-collections` — all records for userId deleted
+  4. `fable-feedback` — all records for userId deleted
+  5. `fable-rate-limits` — all records for userId deleted
+  6. `fable-recipe-shares` — already anonymous (no userId stored); nothing to do
+  7. `fable-ingredient-insights` — aggregate data only, no personal identifiers; not touched
+  8. Neon Postgres — `session`, `account`, `verification`, then `user` records deleted
+- Partial failures are caught individually, logged server-side, and returned in `errors[]` — partial deletion is better than no deletion; user is informed of any failures
+- On success: `localStorage.clear()`, sign out, Sonner toast: "Your account and all data have been permanently deleted."
+- On failure: error shown inside the modal; modal stays open; user can retry
 
 ### Recipe Sharing
 - Every generated recipe has a stable share URL: `${APP_URL}/recipe/${recipeId}`
@@ -326,7 +343,10 @@ Vercel — Next.js 16 (App Router)
        ├── profile               DynamoDB read/write (allergens, safe foods, ingredients, colorMode, …)
        ├── saved-recipes         DynamoDB read/write (full recipe objects + history)
        ├── collections           DynamoDB CRUD (GET, POST, PUT, DELETE)
-       └── migrate-guest         One-time guest-to-auth data merge (POST, auth-gated)
+       ├── migrate-guest         One-time guest-to-auth data merge (POST, auth-gated)
+       └── account               DELETE — GDPR right to erasure; deletes fable-users, saved-recipes,
+                                  collections, feedback, rate-limits per userId; Postgres session,
+                                  account, verification, user records; partial failures returned in errors[]
 
 External APIs (outbound from Lambda or Next.js route)
   ├── Anthropic Claude      claude-haiku-4-5 (Vision · brief · macros) · claude-sonnet-4-6 (recipes)
@@ -463,6 +483,10 @@ In-memory (loaded at server startup)
 - ✅ **Spice tolerance + culinary adventurousness** — two new user preferences (`spiceTolerance: none|mild|medium|hot`, `adventurousness: familiar|occasional|adventurous`) collected in a new onboarding slide ("Your cooking style", step 3) and adjustable from a "Cooking style" section in settings; both persisted to `fable-users`; `spiceTolerance` injected as prose into the Claude Sonnet recipe generation prompt (none/mild/hot only; medium = no injection); `adventurousness` steers the Claude Haiku brief (noveltyNote aggressiveness, heat-forward direction suppression/encouragement) and adjusts substitution scoring (familiar = hard 0.7 similarity filter; adventurous = category adjustment neutralised so cross-category candidates surface); demo accounts updated (Maya: hot/adventurous, Seren: none/familiar). 26 new tests (742 total across 43 suites)
 - ✅ **"Why is this safe?" explainer** — shield icon (ShieldCheck) on every generated recipe, in the action bar alongside share and save. Authenticated users tap to get a 2–3 sentence plain-English explanation from Claude Haiku 4.5 of exactly why the recipe is safe for their specific allergen profile, diet presets, Safe Foods Mode, and lactose setting. Explanation cached in component state — re-tapping toggles the card open/closed without re-fetching. Dismissed with ✕. Guests see a muted shield that opens the auth overlay. Rate-limited via `fable-rate-limits` (same window as other Claude routes). New route: `POST /api/recipe-safe-explain` (auth-gated, returns 401 for guests).
 - ✅ **No Alcohol dietary preset** — `alcoholMode: 'none' | 'no_cooking' | 'exclude_entirely'` field on `UserPreferences`; preset card in onboarding step 3 and allergen settings under "Diet & Lifestyle", same amber styling as Lactose Intolerance. `no_cooking` mode injects a no-alcohol Claude prompt clause into recipe generation and recipe brief (substitutes alcohol in cooking with stock/vinegar/juice), plus an amber safety banner if Claude returns a recipe containing alcohol keys. `exclude_entirely` mode also adds all alcohol ingredient keys to `effectiveCustomAllergens` for hard ingredient-level filtering. Alcoholic drink pairings filtered in both modes with a non-alcoholic fallback list (ginger beer, sparkling water, green tea, mint tea, elderflower cordial, apple juice) when all candidates are removed. Alcohol keys excluded from substitution candidates in both modes. `lib/alcohol-ingredients.ts` is the single source of truth: 50+ Epicure keys covering beer/cider/wine/spirits/liqueurs/Asian cooking wines; confirmed false positives absent (ginger_beer, apple_cider_vinegar, wine vinegars, sparkling_water). 36 new tests (778 Jest total).
+
+- ✅ **TanStack Query migration** — all `fetch()` calls in components replaced with `useQuery` / `useMutation` hooks from `@tanstack/react-query` v5; 28 hook files in `lib/hooks/` (one per hook); shared `QueryProvider` + `makeQueryClient` factory in root layout; `queryKeys` factory for cache key management; stale times per query type (profile 5 min, saved/collections 2 min, insights 1 hr, ingredient search 30 s); 150 ms debounce on ingredient search queries to avoid per-keystroke requests
+- ✅ **Guest 401 fix + community recipe preference matching** — client now skips `/api/recipe-brief` entirely for unauthenticated users (no HTTP call, no 401 in console); `activePresets` and `alcoholMode` passed to `/api/generate-recipe` for guest fallback; `findFallbackRecipe` hard-filters by alcohol ingredients and vegan/vegetarian presets; DB fallback skipped when strict presets require preset metadata; clean empty state shown when no community recipe matches: "No matching recipes found — sign in to generate a personalised recipe with AI."
+- ✅ **Account deletion (GDPR right to erasure)** — `DELETE /api/user/account` deletes all personal data across DynamoDB (fable-users, saved-recipes, collections, feedback, rate-limits) and Neon Postgres (session, account, verification, user); partial failures caught and reported; "Delete my account and all data" button in Allergen Settings with confirmation modal, loading spinner, Sonner toast on success; guest settings show sign-in prompt instead
 
 ### In Progress
 
