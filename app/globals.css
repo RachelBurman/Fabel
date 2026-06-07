@@ -152,14 +152,11 @@
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Back buttons: hidden in the desktop web app, visible on mobile and in
-   PWA standalone mode (where there is no browser back button). This is
-   unlayered CSS so it overrides Tailwind's @layer utilities (md:hidden). */
+/* Back buttons: only visible when running as an installed PWA (no browser
+   chrome means no browser back button). Hidden everywhere else. Unlayered
+   so it overrides Tailwind's @layer utilities. */
 .back-btn {
   display: none;
-}
-@media (max-width: 767px) {
-  .back-btn { display: flex; }
 }
 @media (display-mode: standalone) {
   .back-btn { display: flex; }
