@@ -38,7 +38,7 @@ type Screen =
   | 'discover'
 
 function FableAppContent() {
-  const { hasCompletedOnboarding, isLoadingProfile, completeTutorial, preferences, addIngredient, addToHistory, saveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
+  const { hasCompletedOnboarding, isLoadingProfile, completeTutorial, preferences, addIngredient, addToHistory, saveRecipe, unsaveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
@@ -442,6 +442,11 @@ function FableAppContent() {
   // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {
     if (!generatedRecipe) return
+    if (generatedRecipeSaved) {
+      unsaveRecipe(generatedRecipeId)
+      setGeneratedRecipeSaved(false)
+      return
+    }
     // Use generatedRecipeId (same as the history entry's id) so the DynamoDB PUT
     // overwrites the history record — replacing isSaved: false + ttl with
     // isSaved: true and no ttl, which clears the expiry.
@@ -458,7 +463,7 @@ function FableAppContent() {
       fullRecipe: generatedRecipe,
     })
     setGeneratedRecipeSaved(true)
-  }, [generatedRecipe, saveRecipe])
+  }, [generatedRecipe, generatedRecipeSaved, generatedRecipeId, saveRecipe, unsaveRecipe])
 
   // â”€â”€ Generate recipe from an adapted ingredient list (substitutes screen) â”€â”€â”€â”€â”€
   const handleAdaptAndCook = useCallback(async (adaptedIngredientNames: string[], recipeContext?: string) => {
