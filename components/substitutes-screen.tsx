@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  ArrowLeft, ArrowLeftRight, Loader2, RefreshCw, ChefHat,
+  ArrowLeft, ArrowRight, ArrowLeftRight, Loader2, RefreshCw, ChefHat,
   Utensils, X, Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -66,6 +66,7 @@ interface IngredientAnalysis {
 
 export interface SubstitutesScreenProps {
   onBack: () => void
+  onNavigateToKitchen: () => void
   initialIngredient?: string
   initialContext?: string[]
   onAdaptAndCook?: (adaptedIngredients: string[], recipeContext?: string) => void
@@ -210,6 +211,7 @@ async function fetchTopSubstitute(
 
 export function SubstitutesScreen({
   onBack,
+  onNavigateToKitchen,
   initialIngredient,
   initialContext,
   onAdaptAndCook,
@@ -463,6 +465,27 @@ export function SubstitutesScreen({
   const hasUnresolved  = analysis?.some((r) => r.status === 'allergen' && !r.substitute) ?? false
 
   // ─── Render ──────────────────────────────────────────────────────────────────
+
+  if (kitchenIngredients.length === 0 && !isOpenedFromRecipe) {
+    return (
+      <div className="bg-background">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
+        >
+          <div className="text-5xl mb-6">🧑‍🍳</div>
+          <h2 className="text-xl font-semibold text-foreground mb-2">No ingredients yet</h2>
+          <p className="text-muted-foreground max-w-xs mx-auto mb-8">
+            Add ingredients to your kitchen first, then come back to find substitutes.
+          </p>
+          <Button onClick={onNavigateToKitchen} className="rounded-full gap-2">
+            Add ingredients <ArrowRight className="w-4 h-4" />
+          </Button>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className="bg-background">
@@ -738,19 +761,6 @@ export function SubstitutesScreen({
                 </div>
               )}
 
-              {mode === 'from-kitchen' && kitchenIngredients.length === 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center justify-center text-center min-h-[calc(100dvh-20rem)]"
-                >
-                  <div className="text-5xl mb-6">🧑‍🍳</div>
-                  <h2 className="text-xl font-semibold text-foreground mb-2">No ingredients yet</h2>
-                  <p className="text-muted-foreground max-w-xs mx-auto">
-                    Add ingredients to your kitchen first, then come back to find substitutes.
-                  </p>
-                </motion.div>
-              )}
 
               {isLoadingResults && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-12 gap-4">

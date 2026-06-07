@@ -170,13 +170,11 @@ export function PairingsScreen({
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
+              className="flex flex-col items-center justify-center text-center min-h-[calc(100dvh-16rem)]"
             >
-              <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">🔍</span>
-              </div>
+              <div className="text-5xl mb-6">🔍</div>
               <h2 className="text-xl font-semibold text-foreground mb-2">No pairings found</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+              <p className="text-muted-foreground max-w-xs mx-auto mb-8">
                 Try adding more ingredients or adjusting your allergen restrictions.
               </p>
               <Button onClick={onBack} variant="outline" className="rounded-full">Go Back</Button>

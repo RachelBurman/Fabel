@@ -877,6 +877,7 @@ function FableAppContent() {
             >
               <SubstitutesScreen
                 onBack={() => navigate(prevScreen)}
+                onNavigateToKitchen={() => navigate('ingredients')}
                 initialIngredient={substituteIngredient}
                 initialContext={substituteContext}
                 onAdaptAndCook={handleAdaptAndCook}
