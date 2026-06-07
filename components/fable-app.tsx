@@ -781,9 +781,9 @@ function FableAppContent() {
           {currentScreen === 'generated' && (
             <motion.div
               key="generated"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
               <GeneratedRecipeScreen
@@ -814,15 +814,16 @@ function FableAppContent() {
           {currentScreen === 'history' && (
             <motion.div
               key="history"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
               <HistoryScreen
                 history={recipeHistory}
                 onViewRecipe={handleViewHistoryRecipe}
                 onGenerateNew={() => navigate('ingredients')}
+                onBack={() => navigate('ingredients')}
               />
 
             </motion.div>
@@ -831,9 +832,9 @@ function FableAppContent() {
           {currentScreen === 'saved' && (
             <motion.div
               key="saved"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
               <SavedRecipesScreen
@@ -847,12 +848,13 @@ function FableAppContent() {
           {currentScreen === 'discover' && (
             <motion.div
               key="discover"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
               <DiscoverSection
+                onBack={() => navigate('ingredients')}
                 onSelectCuisine={(c) => setRecipeFilters((prev) => ({ ...prev, cuisine: c }))}
                 onSelectOccasion={(o) => {
                   setRecipeFilters((prev) => ({ ...prev, occasion: o }))
@@ -870,9 +872,9 @@ function FableAppContent() {
           {currentScreen === 'substitutes' && (
             <motion.div
               key="substitutes"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
+              exit={{ opacity: 0, x: 20 }}
               transition={{ duration: 0.3 }}
             >
               <SubstitutesScreen

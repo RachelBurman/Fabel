@@ -97,7 +97,7 @@ export function PairingsScreen({
 
           {/* Header */}
           <div className="flex items-center gap-4 mb-2">
-            <Button variant="ghost" size="icon" onClick={onBack} className="shrink-0 rounded-full md:hidden">
+            <Button variant="ghost" size="icon" onClick={onBack} className="back-btn shrink-0 rounded-full">
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>

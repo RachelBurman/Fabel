@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { type HistoryEntry } from '@/lib/types'
-import { Clock, Users, History, Share2, Loader2, ArrowRight } from 'lucide-react'
+import { Clock, Users, History, Share2, Loader2, ArrowRight, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { RecipeGradient } from '@/components/recipe-gradient'
 import { shareRecipe } from '@/lib/share-recipe'
@@ -93,9 +93,10 @@ interface HistoryScreenProps {
   history: HistoryEntry[]
   onViewRecipe: (entry: HistoryEntry) => void
   onGenerateNew: () => void
+  onBack?: () => void
 }
 
-export function HistoryScreen({ history, onViewRecipe, onGenerateNew }: HistoryScreenProps) {
+export function HistoryScreen({ history, onViewRecipe, onGenerateNew, onBack }: HistoryScreenProps) {
   if (history.length === 0) {
     return (
       <div className="bg-background">
@@ -125,6 +126,11 @@ export function HistoryScreen({ history, onViewRecipe, onGenerateNew }: HistoryS
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-1">
+              {onBack && (
+                <Button variant="ghost" size="icon" onClick={onBack} className="back-btn shrink-0 rounded-full">
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+              )}
               <Clock className="w-6 h-6 text-primary" />
               <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Recipe History</h1>
             </div>

@@ -153,7 +153,7 @@ function CollectionDetail({ collection, onBack, onBrowseSaved, onViewRecipe, onD
       <div className="flex items-center gap-3 mb-8">
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0 md:hidden"
+          className="back-btn w-10 h-10 rounded-full items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -282,6 +282,9 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
               {/* Header */}
               <div className="mb-6">
                 <div className="flex items-center gap-3 mb-2">
+                  <Button variant="ghost" size="icon" onClick={onBack} className="back-btn shrink-0 rounded-full">
+                    <ArrowLeft className="w-5 h-5" />
+                  </Button>
                   <Heart className="w-6 h-6 text-primary fill-primary" />
                   <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Saved Recipes</h1>
                 </div>

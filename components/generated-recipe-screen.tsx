@@ -393,7 +393,7 @@ export function GeneratedRecipeScreen({
               size="icon"
               onClick={onBack}
               disabled={isLoading}
-              className="shrink-0 rounded-full"
+              className="back-btn shrink-0 rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
