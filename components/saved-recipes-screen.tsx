@@ -279,17 +279,6 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
             />
           ) : (
             <>
-              {/* Header */}
-              <div className="mb-6">
-                <div className="flex items-center gap-3 mb-2">
-                  <Button variant="ghost" size="icon" onClick={onBack} className="back-btn shrink-0 rounded-full">
-                    <ArrowLeft className="w-5 h-5" />
-                  </Button>
-                  <Heart className="w-6 h-6 text-primary fill-primary" />
-                  <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Saved Recipes</h1>
-                </div>
-              </div>
-
               {/* Tabs */}
               <div className="flex gap-1 p-1 bg-secondary rounded-xl mb-8 w-fit">
                 {(['saved', 'collections'] as const).map(tab => (
