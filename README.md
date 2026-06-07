@@ -316,6 +316,7 @@ Vercel — Next.js 16 (App Router)
   ├── /api/feedback              Recipe like/dislike write + preference pattern retrieval
   ├── /api/substitutes           Epicure similarity + category scoring · Claude explanation (auth only)
   ├── /api/macros                Auth-gated · Claude Haiku on-demand macro estimation
+  ├── /api/recipe-safe-explain   Auth-gated · Claude Haiku plain-English safety explainer
   ├── /api/extract-ingredients   Claude ingredient extraction from arbitrary recipe text
   ├── /api/insights              1h-cached · allergen-profile trends + taste profile + suggestions
   ├── /api/recipe-share          POST write share record to fable-recipe-shares (90-day TTL)
@@ -460,9 +461,9 @@ In-memory (loaded at server startup)
 - ✅ **Substitution engine — role-aware context scoring** — three improvements to the scoring logic and Claude prompt, all contained to `/api/substitutes`: (1) co-ingredient hard exclusion drops any candidate whose Epicure key exactly matches a key already in the dish context (pasta cannot substitute for cheese in a pasta bake); (2) relative co-ingredient penalty replaces the fixed context-fit weight — when `averageContextFit > similarityToOriginal + 0.15` a −0.2 penalty applies instead of the context contribution (self-calibrating against the embedding space rather than a fixed threshold, no cliff artefact at the boundary); formula rebalanced to `0.6 × similarity + (0.3 × contextFit or −0.2 co-ingredient penalty) + category adj`; (3) role-aware Claude prompt instructs Haiku to reason about the ingredient's functional role in the specific dish (fat, protein, binding, acidity, texture, or flavour) before explaining each substitute — explanations are now dish-specific rather than generic ingredient comparisons. No changes to API shape, response format, frontend, DynamoDB, allergen filtering, Safe Foods Mode, or guest/auth behaviour.
 - ✅ **Demo seed accounts** — Maya (`maya@demo.fable.app`) and Seren (`seren@demo.fable.app`); seeded via `pnpm seed:demo`; Maya demonstrates allergen filtering (gluten + dairy) with full preference history; Seren demonstrates Safe Foods Mode with a 10-ingredient restricted diet.
 - ✅ **Spice tolerance + culinary adventurousness** — two new user preferences (`spiceTolerance: none|mild|medium|hot`, `adventurousness: familiar|occasional|adventurous`) collected in a new onboarding slide ("Your cooking style", step 3) and adjustable from a "Cooking style" section in settings; both persisted to `fable-users`; `spiceTolerance` injected as prose into the Claude Sonnet recipe generation prompt (none/mild/hot only; medium = no injection); `adventurousness` steers the Claude Haiku brief (noveltyNote aggressiveness, heat-forward direction suppression/encouragement) and adjusts substitution scoring (familiar = hard 0.7 similarity filter; adventurous = category adjustment neutralised so cross-category candidates surface); demo accounts updated (Maya: hot/adventurous, Seren: none/familiar). 26 new tests (742 total across 43 suites)
+- ✅ **"Why is this safe?" explainer** — shield icon (ShieldCheck) on every generated recipe, in the action bar alongside share and save. Authenticated users tap to get a 2–3 sentence plain-English explanation from Claude Haiku 4.5 of exactly why the recipe is safe for their specific allergen profile, diet presets, Safe Foods Mode, and lactose setting. Explanation cached in component state — re-tapping toggles the card open/closed without re-fetching. Dismissed with ✕. Guests see a muted shield that opens the auth overlay. Rate-limited via `fable-rate-limits` (same window as other Claude routes). New route: `POST /api/recipe-safe-explain` (auth-gated, returns 401 for guests).
 
 ### In Progress
-- 🔄 **"Why is this safe?" explainer** — Claude Haiku call explaining in plain English why a recipe or ingredient is safe for the user's specific allergen profile; trust feature for severe allergy and MCAS users
 
 ### Near Term
 - [ ] **Editable brief direction** — `direction` field editable after brief card appears; user nudges it before generation fires, brief re-sent as updated creative direction
@@ -472,7 +473,6 @@ In-memory (loaded at server startup)
 - [ ] Mobile scrolling bugs — batch fix
 
 ### Post-Hackathon / Future
-- ✅ User authentication — shipped. Email/password via Better Auth 1.2.7, Neon Postgres for session storage, guest mode via UUID fallback, guest data migrated on first sign-in.
 - [ ] Better Auth + AWS RDS Postgres — replace Neon with RDS for a full AWS architecture story; schema identical, connection string swap
 - [ ] Social auth (Google + GitHub) — Better Auth config ready, Neon schema ready; needs OAuth app setup
 - [ ] Latency reduction on `/api/recipe-brief` — on-device AI when PWA limitations are resolved

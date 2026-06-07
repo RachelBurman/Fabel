@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { type GeneratedRecipe, type GeneratedRecipeIngredient, type RecipeBrief } from '@/lib/types'
 import { shareRecipe } from '@/lib/share-recipe'
-import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight, Share2 } from 'lucide-react'
+import { Clock, Users, ArrowLeft, Loader2, ShieldCheck, Heart, BookOpen, ArrowLeftRight, Share2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
@@ -224,6 +224,10 @@ export function GeneratedRecipeScreen({
   const [drinkPairingsLoading, setDrinkPairingsLoading] = useState(false)
   const [sharing, setSharing] = useState(false)
 
+  const [safeExplainLoading, setSafeExplainLoading] = useState(false)
+  const [safeExplainText, setSafeExplainText] = useState<string | null>(null)
+  const [safeExplainOpen, setSafeExplainOpen] = useState(false)
+
   const [feedbackGiven, setFeedbackGiven] = useState<'liked' | 'disliked' | null>(null)
   const [showSurveyPanel, setShowSurveyPanel] = useState(false)
   const [highlightedIngredients, setHighlightedIngredients] = useState<string[]>([])
@@ -238,6 +242,8 @@ export function GeneratedRecipeScreen({
     setSkippedIngredients([])
     setRecipePositives([])
     setRecipeNegatives([])
+    setSafeExplainText(null)
+    setSafeExplainOpen(false)
 
     if (!recipe) {
       setDrinkPairings([])
@@ -266,6 +272,46 @@ export function GeneratedRecipeScreen({
 
     return () => controller.abort()
   }, [recipe]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSafeExplain = async () => {
+    if (guestMode) {
+      onOpenAuth?.()
+      return
+    }
+    if (safeExplainText !== null) {
+      setSafeExplainOpen(prev => !prev)
+      return
+    }
+    if (safeExplainLoading || !recipe) return
+    setSafeExplainLoading(true)
+    try {
+      const lactoseModeBody =
+        lactoseIntolerant && lactoseMode === 'include' ? 'reminder' :
+        lactoseIntolerant && lactoseMode === 'exclude' ? 'exclude' :
+        undefined
+      const res = await fetch('/api/recipe-safe-explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipeTitle: recipe.title,
+          ingredients: recipe.ingredients.map(i => i.name),
+          allergens,
+          dietPresets: preferences.activePresets,
+          safeFoodsMode: preferences.safeFoodsMode,
+          safeFoods: preferences.safeFoodsMode ? preferences.safeIngredients : undefined,
+          lactoseMode: lactoseModeBody,
+        }),
+      })
+      if (!res.ok) return
+      const data = await res.json() as { explanation: string }
+      setSafeExplainText(data.explanation)
+      setSafeExplainOpen(true)
+    } catch {
+      // silently fail
+    } finally {
+      setSafeExplainLoading(false)
+    }
+  }
 
   const handleShare = async () => {
     if (!recipe || !recipeId || sharing) return
@@ -362,6 +408,25 @@ export function GeneratedRecipeScreen({
             {/* Spacer when recipe is shown (title lives in the gradient hero) */}
             {!isLoading && recipe && <div className="flex-1" />}
 
+            {!isLoading && recipe && (
+              <button
+                onClick={handleSafeExplain}
+                disabled={safeExplainLoading}
+                className={cn(
+                  'shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-card border transition-all duration-200 disabled:opacity-50',
+                  guestMode
+                    ? 'border-border text-muted-foreground/50 cursor-pointer'
+                    : 'border-border text-primary hover:border-primary/50'
+                )}
+                aria-label={guestMode ? 'Sign in to see why this recipe is safe for you' : 'Why is this safe for me?'}
+                title={guestMode ? 'Sign in to see why this recipe is safe for you' : 'Why is this safe for me?'}
+              >
+                {safeExplainLoading
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <ShieldCheck className="w-4 h-4" />}
+              </button>
+            )}
+
             {!isLoading && recipe && recipeId && (
               <button
                 onClick={handleShare}
@@ -426,6 +491,33 @@ export function GeneratedRecipeScreen({
               <p className="text-muted-foreground leading-relaxed text-pretty">
                 {recipe.description}
               </p>
+
+              {/* Safety explainer card */}
+              <AnimatePresence>
+                {safeExplainOpen && safeExplainText && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="rounded-2xl border border-border bg-card p-4">
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <p className="text-sm font-semibold text-foreground">Why this is safe for you 🛡️</p>
+                        <button
+                          onClick={() => setSafeExplainOpen(false)}
+                          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                          aria-label="Dismiss"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-sm text-foreground leading-relaxed">{safeExplainText}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {guestMode && (
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
