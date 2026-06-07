@@ -145,11 +145,18 @@ export async function GET(req: NextRequest) {
   const seedIngredients = resolvedPreferred.slice(0, 3);
 
   const profileWeekRecord = (profileWeekRes.Item ?? null) as IngredientInsightsRecord | null;
-  const trendingForYou = (profileWeekRecord?.trendingRecipeTypes ?? []).slice(0, 3).map((rt) => ({
-    cuisine: rt.cuisine,
-    occasion: rt.occasion,
-    seedIngredients,
-  }));
+  // Only surface "Trending for you" when the data is actually personalised:
+  // either the user has allergens/presets that give them a filtered profile,
+  // or they have enough feedback signals to seed the results meaningfully.
+  // Without this gate a new guest sees global trends labelled "for you".
+  const isPersonalised = profileKey !== "global" || hasEnoughSignals;
+  const trendingForYou = isPersonalised
+    ? (profileWeekRecord?.trendingRecipeTypes ?? []).slice(0, 3).map((rt) => ({
+        cuisine: rt.cuisine,
+        occasion: rt.occasion,
+        seedIngredients,
+      }))
+    : [];
 
   console.log(`[insights] userId=${userId} useStoredProfile=${useStoredProfile} hasEnoughSignals=${hasEnoughSignals} recipeSuggestions=${recipeSuggestions?.length ?? 0} tasteProfile=${tasteProfile !== null}`);
 
