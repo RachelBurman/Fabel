@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     spiceTolerance?: unknown;
     adventurousness?: unknown;
     alcoholMode?: unknown;
+    activePresets?: unknown;
   };
   try {
     body = await req.json();
@@ -128,23 +129,36 @@ export async function POST(req: NextRequest) {
     // No userId — rate-limit by IP only
   }
 
+  // Parse preference fields needed for both guest and rate-limited fallback paths
+  const guestAllergens = Array.isArray(body.allergens)
+    ? (body.allergens as unknown[]).filter((a): a is string => typeof a === "string")
+    : [];
+  const guestSafeFoodsMode = body.safeFoodsMode === true;
+  const guestSafeIngredients = Array.isArray(body.safeIngredients)
+    ? (body.safeIngredients as unknown[]).filter((s): s is string => typeof s === "string")
+    : [];
+  const guestActivePresets = Array.isArray(body.activePresets)
+    ? (body.activePresets as unknown[]).filter((p): p is string => typeof p === "string")
+    : [];
+  const guestAlcoholMode =
+    typeof body.alcoholMode === "string" &&
+    (body.alcoholMode === "no_cooking" || body.alcoholMode === "exclude_entirely")
+      ? (body.alcoholMode as 'no_cooking' | 'exclude_entirely')
+      : undefined;
+
+  const guestFallbackParams = {
+    allergens: guestAllergens,
+    safeFoods: guestSafeFoodsMode && guestSafeIngredients.length > 0 ? guestSafeIngredients : null,
+    cuisine: typeof body.cuisine === "string" ? body.cuisine : undefined,
+    occasion: typeof body.occasion === "string" ? body.occasion : undefined,
+    mealType: typeof body.mealType === "string" ? body.mealType : undefined,
+    dietaryPresets: guestActivePresets.length > 0 ? guestActivePresets : undefined,
+    alcoholMode: guestAlcoholMode,
+  };
+
   // ── Guest mode: return DB fallback, no Claude call, no rate limit consumed ──
   if (!isAuthenticated) {
-    const allergens = Array.isArray(body.allergens)
-      ? (body.allergens as unknown[]).filter((a): a is string => typeof a === "string")
-      : [];
-    const safeFoodsMode = body.safeFoodsMode === true;
-    const safeIngredients = Array.isArray(body.safeIngredients)
-      ? (body.safeIngredients as unknown[]).filter((s): s is string => typeof s === "string")
-      : [];
-
-    const fallback = await findFallbackRecipe({
-      allergens,
-      safeFoods: safeFoodsMode && safeIngredients.length > 0 ? safeIngredients : null,
-      cuisine: typeof body.cuisine === "string" ? body.cuisine : undefined,
-      occasion: typeof body.occasion === "string" ? body.occasion : undefined,
-      mealType: typeof body.mealType === "string" ? body.mealType : undefined,
-    });
+    const fallback = await findFallbackRecipe(guestFallbackParams);
 
     return NextResponse.json({
       recipe: fallback ?? null,
@@ -159,21 +173,7 @@ export async function POST(req: NextRequest) {
 
   if (!rateLimit.allowed) {
     // For generate-recipe: return a fallback community recipe rather than a hard error
-    const allergens = Array.isArray(body.allergens)
-      ? (body.allergens as unknown[]).filter((a): a is string => typeof a === "string")
-      : [];
-    const safeFoodsMode = body.safeFoodsMode === true;
-    const safeIngredients = Array.isArray(body.safeIngredients)
-      ? (body.safeIngredients as unknown[]).filter((s): s is string => typeof s === "string")
-      : [];
-
-    const fallback = await findFallbackRecipe({
-      allergens,
-      safeFoods: safeFoodsMode && safeIngredients.length > 0 ? safeIngredients : null,
-      cuisine: typeof body.cuisine === "string" ? body.cuisine : undefined,
-      occasion: typeof body.occasion === "string" ? body.occasion : undefined,
-      mealType: typeof body.mealType === "string" ? body.mealType : undefined,
-    });
+    const fallback = await findFallbackRecipe(guestFallbackParams);
 
     if (fallback) {
       return NextResponse.json({

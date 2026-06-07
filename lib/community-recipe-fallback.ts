@@ -12,7 +12,24 @@ export interface FindFallbackParams {
   cuisine?: string;
   occasion?: string;
   mealType?: string;
-  dietaryPresets?: string[];
+  dietaryPresets?: string[]; // user's active diet presets — vegan/vegetarian are hard filters
+  alcoholMode?: 'no_cooking' | 'exclude_entirely'; // if set, exclude recipes with alcohol
+}
+
+const ALCOHOL_TERMS = [
+  'wine', 'beer', 'spirit', 'rum', 'gin', 'vodka', 'whiskey', 'whisky',
+  'brandy', 'sherry', 'mirin', 'sake', 'champagne', 'prosecco', 'cider',
+  'lager', 'stout', 'bourbon', 'tequila', 'vermouth', 'liqueur', 'port',
+  'ale', 'cooking wine',
+]
+
+function ingredientHasAlcohol(name: string): boolean {
+  const norm = name.toLowerCase()
+  return ALCOHOL_TERMS.some(term => norm.includes(term))
+}
+
+function ingredientsHaveAlcohol(ingredientNames: string[]): boolean {
+  return ingredientNames.some(ingredientHasAlcohol)
 }
 
 // Returns true if a recipe ingredient name plausibly contains the given allergen.
@@ -105,6 +122,11 @@ function scoreCandidate(
 async function queryDBFallback(
   params: FindFallbackParams
 ): Promise<FallbackRecipe | null> {
+  // DB recipes have no dietary preset metadata — skip when vegan/vegetarian is required
+  // so we fall through to seed recipes which have proper tags.
+  const strictPresets = ['vegan', 'vegetarian']
+  if (params.dietaryPresets?.some(p => strictPresets.includes(p))) return null
+
   try {
     // Scan all saved (isSaved: true) recipes for community candidates.
     // At hackathon scale this is fine; at production scale add a GSI.
@@ -150,6 +172,9 @@ async function queryDBFallback(
         if (!isSafeForSafeFoods(ingredientNames, params.safeFoods)) continue;
       }
 
+      // Hard filter: alcohol
+      if (params.alcoholMode && ingredientsHaveAlcohol(ingredientNames)) continue;
+
       const score = scoreCandidate(
         params.cuisine,
         params.mealType,
@@ -189,6 +214,8 @@ async function queryDBFallback(
 
 function querySeedFallback(params: FindFallbackParams): FallbackRecipe | null {
   const candidates: { seed: SeedRecipe; score: number }[] = [];
+  const isVeganRequired = params.dietaryPresets?.includes('vegan')
+  const isVegetarianRequired = params.dietaryPresets?.includes('vegetarian')
 
   for (const seed of SEED_RECIPES) {
     // Hard filter: allergens — seed.containsAllergens lists what's in the recipe
@@ -202,6 +229,18 @@ function querySeedFallback(params: FindFallbackParams): FallbackRecipe | null {
       const ingredientNames = seed.ingredients.map((i) => i.name);
       if (!isSafeForSafeFoods(ingredientNames, params.safeFoods)) continue;
     }
+
+    // Hard filter: alcohol
+    if (params.alcoholMode) {
+      const ingredientNames = seed.ingredients.map((i) => i.name)
+      if (ingredientsHaveAlcohol(ingredientNames)) continue
+    }
+
+    // Hard filter: vegan (must be tagged vegan)
+    if (isVeganRequired && !seed.tags.dietaryPresets?.includes('vegan')) continue
+
+    // Hard filter: vegetarian (must be tagged vegetarian or vegan)
+    if (isVegetarianRequired && !seed.tags.dietaryPresets?.some(p => p === 'vegetarian' || p === 'vegan')) continue
 
     const score = scoreCandidate(
       params.cuisine,

@@ -220,6 +220,7 @@ function FableAppContent() {
       // Run brief fetch + Epicure pairings in parallel.
       // When a pre-computed suggestion is available from the Discover tab, skip the
       // /api/recipe-brief call and resolve immediately with the stored suggestion.
+      // Guests are not authenticated — skip brief entirely (it returns 401 for guests).
       const [briefResult, pairingsResult] = await Promise.allSettled([
         pendingSuggestion
           ? Promise.resolve({
@@ -235,6 +236,8 @@ function FableAppContent() {
                 ],
               } satisfies RecipeBrief,
             })
+          : !isSignedIn
+          ? Promise.resolve({ brief: null })
           : recipeBriefMutation.mutateAsync({
               userId: uid,
               preferences: {
@@ -288,6 +291,7 @@ function FableAppContent() {
         showMacros: preferences.showMacros,
         spiceTolerance: preferences.spiceTolerance,
         adventurousness: preferences.adventurousness,
+        ...(preferences.activePresets.length > 0 ? { activePresets: preferences.activePresets } : {}),
         ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
         ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
         ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
@@ -302,6 +306,14 @@ function FableAppContent() {
           },
         } : {}),
       })
+      if (recipeData.guestMode) {
+        setGuestMode(true)
+        if (!recipeData.recipe) {
+          // No community recipe matched the guest's filters — show empty state
+          setGeneratedRecipe(null)
+          return
+        }
+      }
       const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
@@ -312,7 +324,6 @@ function FableAppContent() {
           resetAt: recipeData.resetAt ?? '',
         })
       }
-      if (recipeData.guestMode) setGuestMode(true)
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -345,26 +356,29 @@ function FableAppContent() {
       .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
 
     try {
-      // Fetch brief then generate — pairings are already loaded
+      // Fetch brief then generate — pairings are already loaded.
+      // Guests are not authenticated — skip brief (it returns 401 for guests).
       let fetchedBrief: RecipeBrief | null = null
-      try {
-        const briefResult = await recipeBriefMutation.mutateAsync({
-          userId: uid,
-          preferences: {
-            mealType: recipeFilters.mealType,
-            cookTime: recipeFilters.cookTime,
-            cuisine: recipeFilters.cuisine,
-            occasion: recipeFilters.occasion,
-            servings: recipeFilters.servings,
-            equipment: preferences.kitchenEquipment,
-            useKitchenOnly: recipeFilters.kitchenOnly,
-            spiceTolerance: preferences.spiceTolerance,
-            adventurousness: preferences.adventurousness,
-          },
-          kitchenIngredients: kitchenDisplayNames,
-        })
-        fetchedBrief = briefResult.brief
-      } catch { /* brief is optional */ }
+      if (isSignedIn) {
+        try {
+          const briefResult = await recipeBriefMutation.mutateAsync({
+            userId: uid,
+            preferences: {
+              mealType: recipeFilters.mealType,
+              cookTime: recipeFilters.cookTime,
+              cuisine: recipeFilters.cuisine,
+              occasion: recipeFilters.occasion,
+              servings: recipeFilters.servings,
+              equipment: preferences.kitchenEquipment,
+              useKitchenOnly: recipeFilters.kitchenOnly,
+              spiceTolerance: preferences.spiceTolerance,
+              adventurousness: preferences.adventurousness,
+            },
+            kitchenIngredients: kitchenDisplayNames,
+          })
+          fetchedBrief = briefResult.brief
+        } catch { /* brief is optional */ }
+      }
 
       setBrief(fetchedBrief)
       setLoadingStep('recipe')
@@ -384,6 +398,7 @@ function FableAppContent() {
         showMacros: preferences.showMacros,
         spiceTolerance: preferences.spiceTolerance,
         adventurousness: preferences.adventurousness,
+        ...(preferences.activePresets.length > 0 ? { activePresets: preferences.activePresets } : {}),
         ...(preferences.lactoseIntolerant && preferences.lactoseMode === 'include' ? { lactoseMode: 'include' } : {}),
         ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
         ...(dislikedPatterns.length > 0 ? { dislikedPatterns } : {}),
@@ -397,6 +412,13 @@ function FableAppContent() {
           },
         } : {}),
       })
+      if (recipeData.guestMode) {
+        setGuestMode(true)
+        if (!recipeData.recipe) {
+          setGeneratedRecipe(null)
+          return
+        }
+      }
       const recipe: GeneratedRecipe = (recipeData.rateLimited || recipeData.guestMode) && recipeData.recipe
         ? recipeData.recipe
         : recipeData as GeneratedRecipe
@@ -407,7 +429,6 @@ function FableAppContent() {
           resetAt: recipeData.resetAt ?? '',
         })
       }
-      if (recipeData.guestMode) setGuestMode(true)
       const recipeId = Date.now().toString()
       setGeneratedRecipe(recipe)
       setGeneratedRecipeId(recipeId)
@@ -418,7 +439,7 @@ function FableAppContent() {
     } finally {
       setLoadingStep(null)
     }
-  }, [pairings, preferences, navigate, addToHistory, recipeBriefMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pairings, preferences, isSignedIn, navigate, addToHistory, recipeBriefMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {

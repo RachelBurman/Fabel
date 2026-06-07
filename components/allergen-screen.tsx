@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS, ALL_TABS, type SpiceTolerance, type Adventurousness } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, Monitor, PlayCircle, Compass, Layout, UtensilsCrossed } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, Monitor, PlayCircle, Compass, Layout, UtensilsCrossed, Loader2, Trash2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { useSession } from '@/lib/auth-client'
+import { useSession, signOut } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
+import { toast } from 'sonner'
 
 interface AllergenScreenProps {
   onDone: () => void
@@ -36,6 +37,9 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
   const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none'
 
   const [isDietExpanded, setIsDietExpanded] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   // Expand the diet section once profile loads if any option is active
   useEffect(() => {
@@ -43,6 +47,29 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
       setIsDietExpanded(true)
     }
   }, [isLoadingProfile]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      const res = await fetch('/api/user/account', { method: 'DELETE' })
+      const data = await res.json() as { success?: boolean; errors?: string[]; error?: string }
+      if (!res.ok) {
+        setDeleteError(data.error ?? 'Deletion failed. Please try again.')
+        return
+      }
+      // Clear all local state then sign out
+      localStorage.clear()
+      await signOut()
+      setShowDeleteModal(false)
+      toast.success('Your account and all data have been permanently deleted.')
+      onDone()
+    } catch {
+      setDeleteError('Something went wrong. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   // ── Header subtitle ────────────────────────────────────────────────────────
   const allergenCount = preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
@@ -58,6 +85,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
   })()
 
   return (
+    <>
     <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex flex-col px-6 py-8 md:py-12">
         <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
@@ -623,6 +651,44 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
             </div>
           </div>
 
+          {/* Account */}
+          <div className="py-4 border-t border-border">
+            {isSignedIn ? (
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Trash2 className="w-5 h-5 text-destructive/70" />
+                  <p className="text-sm font-semibold text-foreground">Account</p>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Permanently delete your account and all associated data.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { setShowDeleteModal(true); setDeleteError(null) }}
+                  className="rounded-full text-xs border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  Delete my account and all data
+                </Button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">Account</p>
+                <p className="text-xs text-muted-foreground mb-3">
+                  You&apos;re using Fable as a guest. Sign in to create an account — your current kitchen and preferences will carry over.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenAuth}
+                  className="rounded-full text-xs"
+                >
+                  Sign in to Fable
+                </Button>
+              </div>
+            )}
+          </div>
+
           {/* Done */}
           <div className="pt-4 border-t border-border mt-auto">
             <Button size="lg" onClick={onDone} className="w-full rounded-full py-6">
@@ -633,5 +699,56 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
         </div>
       </div>
     </div>
+
+    {/* Delete account confirmation modal */}
+    <AnimatePresence>
+      {showDeleteModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-[300] flex items-center justify-center px-5 bg-black/50 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget && !isDeleting) setShowDeleteModal(false) }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+          >
+            <h2 className="text-lg font-semibold text-foreground mb-2">Delete your account?</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              This will permanently delete your account, kitchen, saved recipes, taste profile, and all personal data. This cannot be undone.
+            </p>
+
+            {deleteError && (
+              <p className="text-xs text-destructive mb-4">{deleteError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 rounded-full"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={isDeleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting}
+                className="flex-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+              >
+                {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                Delete permanently
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   )
 }

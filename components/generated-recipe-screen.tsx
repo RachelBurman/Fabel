@@ -393,6 +393,25 @@ export function GeneratedRecipeScreen({
 
   // Full-page error state — generation was attempted but failed
   if (!isLoading && !recipe && attempted) {
+    if (guestMode) {
+      return (
+        <div className="bg-background">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
+          >
+            <div className="text-5xl mb-6">🥘</div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">No matching recipes found</h2>
+            <p className="text-muted-foreground max-w-sm mx-auto mb-8">
+              We couldn&apos;t find a community recipe that matches your requirements. Sign in to generate a personalised recipe with AI.
+            </p>
+            <Button onClick={onOpenAuth} className="rounded-full mb-3">Sign in to Fable</Button>
+            <Button onClick={onBack} variant="outline" className="rounded-full">Go Back</Button>
+          </motion.div>
+        </div>
+      )
+    }
     return (
       <div className="bg-background">
         <motion.div
