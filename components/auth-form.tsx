@@ -34,10 +34,10 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     setLoading(true)
     try {
       if (mode === 'signin') {
-        const { error: e } = await signIn.email({ email, password, callbackURL: '/' })
+        const { error: e } = await signIn.email({ email, password })
         if (e) { setError(e.message ?? 'Sign in failed'); return }
       } else {
-        const { error: e } = await signUp.email({ email, password, name, callbackURL: '/' })
+        const { error: e } = await signUp.email({ email, password, name })
         if (e) { setError(e.message ?? 'Sign up failed'); return }
       }
       onSuccess?.()
