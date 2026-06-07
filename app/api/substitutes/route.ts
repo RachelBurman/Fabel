@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     allergens?: unknown;
     safeIngredients?: unknown;
     userId?: unknown;
+    adventurousness?: unknown;
   };
   try {
     body = await req.json();
@@ -107,6 +108,9 @@ export async function POST(req: NextRequest) {
   // Drop exact co-ingredients — anything already in the dish context cannot substitute
   candidates = candidates.filter(({ name }) => !context.includes(name));
 
+  const adventurousness =
+    typeof body.adventurousness === "string" ? body.adventurousness : "occasional";
+
   // d. Context score + category adjustment
   const withScores = candidates.map(({ name, score: similarityToOriginal }) => {
     let contextFit = 0;
@@ -121,15 +125,25 @@ export async function POST(req: NextRequest) {
     const contextContribution = isLikelyCoIngredient ? -0.2 : 0.3 * contextFit;
     const base = 0.6 * similarityToOriginal + contextContribution;
     const candidateCategory = getCategoryForIngredient(name);
+    // adventurous mode: remove both the same-category bonus and the cross-category penalty
+    // so more surprising but valid substitutes can surface
     const categoryAdj =
-      originalCategory && candidateCategory
+      adventurousness === "adventurous"
+        ? 0
+        : originalCategory && candidateCategory
         ? originalCategory === candidateCategory ? 0.1 : -0.3
         : 0;
     const combinedScore = Math.max(0, base + categoryAdj);
     return { name, similarityToOriginal, contextFit, combinedScore };
   });
 
-  const top3 = withScores
+  // familiar mode: restrict to high-similarity substitutes only
+  const filtered =
+    adventurousness === "familiar"
+      ? withScores.filter((s) => s.similarityToOriginal > 0.7)
+      : withScores;
+
+  const top3 = filtered
     .sort((a, b) => b.combinedScore - a.combinedScore)
     .slice(0, 3);
 

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
+import { ALLERGENS, DIET_PRESETS, type SpiceTolerance, type Adventurousness } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
 import { Check, Leaf, ArrowRight, ShieldCheck, Shield, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -14,16 +14,23 @@ interface OnboardingScreenProps {
   onComplete: () => void
 }
 
-type Step = 'welcome' | 'allergens' | 'safe-foods-intro' | 'safe-foods-setup'
+type Step = 'welcome' | 'allergens' | 'cooking-style' | 'safe-foods-intro' | 'safe-foods-setup'
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode, togglePreset, setLactoseIntolerant, setLactoseMode } = useFable()
+  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode, togglePreset, setLactoseIntolerant, setLactoseMode, setSpiceTolerance, setAdventurousness } = useFable()
   const [step, setStep] = useState<Step>('welcome')
   const [isDietExpanded, setIsDietExpanded] = useState(false)
+  const [localSpice, setLocalSpice] = useState<SpiceTolerance | null>(null)
+  const [localAdventurousness, setLocalAdventurousness] = useState<Adventurousness | null>(null)
 
   const handleContinue = () => {
     if (step === 'welcome') setStep('allergens')
-    else if (step === 'allergens') setStep('safe-foods-intro')
+    else if (step === 'allergens') setStep('cooking-style')
+    else if (step === 'cooking-style') {
+      setSpiceTolerance(localSpice ?? 'medium')
+      setAdventurousness(localAdventurousness ?? 'occasional')
+      setStep('safe-foods-intro')
+    }
   }
 
   const handleSkipSafeFoods = () => {
@@ -341,6 +348,94 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                     ? 'No allergens selected'
                     : `${preferences.allergens.length} allergen${preferences.allergens.length > 1 ? 's' : ''} selected`}
                 </p>
+                <Button
+                  size="lg"
+                  onClick={handleContinue}
+                  className="rounded-full px-8 gap-2"
+                >
+                  Continue
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        ) : step === 'cooking-style' ? (
+          <motion.div
+            key="cooking-style"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4 }}
+            className="flex-1 flex flex-col px-6 py-8 md:py-12"
+          >
+            <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
+                  Your cooking style
+                </h2>
+                <p className="text-muted-foreground text-pretty">
+                  You can change these any time in settings.
+                </p>
+              </div>
+
+              {/* Spice tolerance */}
+              <div className="mb-8">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">How do you feel about spice?</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {([
+                    { value: 'none' as const, label: 'No spice please', emoji: '🌿' },
+                    { value: 'mild' as const, label: 'A little warmth', emoji: '🌶️' },
+                    { value: 'medium' as const, label: 'Medium heat', emoji: '🌶️🌶️' },
+                    { value: 'hot' as const, label: 'Bring it on', emoji: '🌶️🌶️🌶️' },
+                  ]).map(({ value, label, emoji }) => (
+                    <button
+                      key={value}
+                      onClick={() => setLocalSpice(value)}
+                      className={cn(
+                        'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-center',
+                        localSpice === value
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border bg-card hover:border-primary/50'
+                      )}
+                    >
+                      <span className="text-2xl">{emoji}</span>
+                      <span className={cn('text-xs font-medium leading-tight', localSpice === value ? 'text-primary' : 'text-foreground')}>
+                        {label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Adventurousness */}
+              <div className="mb-8">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">How adventurous are you feeling?</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {([
+                    { value: 'familiar' as const, label: 'Stick to what I know', emoji: '🏠' },
+                    { value: 'occasional' as const, label: 'The occasional surprise', emoji: '🗺️' },
+                    { value: 'adventurous' as const, label: 'Take me somewhere new', emoji: '🌍' },
+                  ]).map(({ value, label, emoji }) => (
+                    <button
+                      key={value}
+                      onClick={() => setLocalAdventurousness(value)}
+                      className={cn(
+                        'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-center',
+                        localAdventurousness === value
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border bg-card hover:border-primary/50'
+                      )}
+                    >
+                      <span className="text-2xl">{emoji}</span>
+                      <span className={cn('text-xs font-medium leading-tight', localAdventurousness === value ? 'text-primary' : 'text-foreground')}>
+                        {label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-4 border-t border-border mt-auto">
                 <Button
                   size="lg"
                   onClick={handleContinue}

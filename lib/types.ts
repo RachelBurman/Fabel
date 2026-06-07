@@ -69,6 +69,9 @@ export interface IngredientItem {
   addedAt: string        // YYYY-MM-DD
 }
 
+export type SpiceTolerance = 'none' | 'mild' | 'medium' | 'hot'
+export type Adventurousness = 'familiar' | 'occasional' | 'adventurous'
+
 export interface UserPreferences {
   allergens: string[]
   customAllergens: string[] // specific Epicure ingredients to avoid
@@ -84,6 +87,8 @@ export interface UserPreferences {
   colorMode: 'light' | 'dark' | 'system' // theme preference; 'system' follows OS
   discoverSettings: DiscoverSettings
   visibleTabs: string[]       // which nav tabs are shown; min 2
+  spiceTolerance: SpiceTolerance
+  adventurousness: Adventurousness
 }
 
 export interface DietPreset {

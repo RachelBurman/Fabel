@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
     userId?: unknown;
     seedIngredients?: unknown;
     recipeBrief?: unknown;
+    spiceTolerance?: unknown;
+    adventurousness?: unknown;
   };
   try {
     body = await req.json();
@@ -414,9 +416,30 @@ export async function POST(req: NextRequest) {
         `Make this recipe noticeably different.\n\n`
       : "";
 
+  const spiceTolerance =
+    typeof body.spiceTolerance === "string" ? body.spiceTolerance : "medium";
+  const adventurousness =
+    typeof body.adventurousness === "string" ? body.adventurousness : "occasional";
+
+  const spiceClause =
+    spiceTolerance === "none"
+      ? `This user cannot tolerate any heat or spice. Use no chilli, black pepper, cayenne, or spiced condiments. Flavour with herbs, citrus, and umami instead.\n\n`
+      : spiceTolerance === "mild"
+      ? `This user prefers very mild spice only. A pinch of black pepper or the faintest hint of chilli at most. Keep heat minimal.\n\n`
+      : spiceTolerance === "hot"
+      ? `This user loves bold heat. Strong spicing is encouraged — don't hold back on chilli, black pepper, and warming spices.\n\n`
+      : "";
+
+  const adventurousnessClause =
+    adventurousness === "familiar"
+      ? `Stay within cuisines and techniques the user has already engaged with. Prioritise familiar, comforting combinations over novelty.\n\n`
+      : adventurousness === "adventurous"
+      ? `Push into less familiar territory. Unusual ingredient combinations, less common cuisines, and novel techniques are all encouraged.\n\n`
+      : "";
+
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -433,7 +456,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +

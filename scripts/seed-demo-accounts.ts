@@ -71,6 +71,8 @@ async function seedMaya(userId: string): Promise<void> {
         kitchenEquipment: ["hob", "oven"],
         colorMode: "system",
         onboardingComplete: true,
+        spiceTolerance: "hot",
+        adventurousness: "adventurous",
         discoverSettings: {
           showDiscover: true,
           showTrendingForYou: true,
@@ -341,6 +343,8 @@ async function seedSeren(userId: string): Promise<void> {
         kitchenEquipment: ["hob", "oven"],
         colorMode: "system",
         onboardingComplete: true,
+        spiceTolerance: "none",
+        adventurousness: "familiar",
         discoverSettings: {
           showDiscover: true,
           showTrendingForYou: true,

@@ -2,10 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ALLERGENS, DIET_PRESETS } from '@/lib/types'
+import { ALLERGENS, DIET_PRESETS, ALL_TABS, type SpiceTolerance, type Adventurousness } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { ALL_TABS } from '@/lib/types'
-import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, Monitor, PlayCircle, Compass, Layout } from 'lucide-react'
+import { Check, ArrowLeft, ShieldCheck, BarChart2, ChevronDown, Moon, Sun, Monitor, PlayCircle, Compass, Layout, UtensilsCrossed } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSession } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -20,7 +19,7 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, onOpenAuth }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setColorMode, setDiscoverSettings, setVisibleTabs, isLoadingProfile } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setColorMode, setDiscoverSettings, setVisibleTabs, setSpiceTolerance, setAdventurousness, isLoadingProfile } = useFable()
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
@@ -258,6 +257,65 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
 
           <div className="mb-4">
             <CustomAllergenSearch />
+          </div>
+
+          {/* Cooking style */}
+          <div className="py-4 border-t border-border">
+            <div className="flex items-center gap-2 mb-3">
+              <UtensilsCrossed className="w-5 h-5 text-muted-foreground" />
+              <p className="text-sm font-semibold text-foreground">Cooking style</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Spice tolerance</p>
+                <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
+                  {([
+                    { value: 'none' as SpiceTolerance, label: 'No spice' },
+                    { value: 'mild' as SpiceTolerance, label: 'A little warmth' },
+                    { value: 'medium' as SpiceTolerance, label: 'Medium heat' },
+                    { value: 'hot' as SpiceTolerance, label: 'Bring it on' },
+                  ]).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setSpiceTolerance(value)}
+                      className={cn(
+                        'flex-1 py-2 text-xs font-medium transition-colors',
+                        preferences.spiceTolerance === value
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Adventurousness</p>
+                <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
+                  {([
+                    { value: 'familiar' as Adventurousness, label: 'Stick to what I know' },
+                    { value: 'occasional' as Adventurousness, label: 'The occasional surprise' },
+                    { value: 'adventurous' as Adventurousness, label: 'Take me somewhere new' },
+                  ]).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => setAdventurousness(value)}
+                      className={cn(
+                        'flex-1 py-2 text-xs font-medium transition-colors',
+                        preferences.adventurousness === value
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Safe Foods Mode */}

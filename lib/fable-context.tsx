@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
+import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, type SpiceTolerance, type Adventurousness, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
 import { markTutorialComplete } from '@/lib/tutorial'
 
@@ -35,6 +35,8 @@ interface FableContextType {
   setColorMode: (mode: 'light' | 'dark' | 'system') => void
   setDiscoverSettings: (settings: DiscoverSettings) => void
   setVisibleTabs: (tabs: string[]) => void
+  setSpiceTolerance: (v: SpiceTolerance) => void
+  setAdventurousness: (v: Adventurousness) => void
   effectiveAllergens: string[]
   effectiveCustomAllergens: string[]
   savedRecipes: Recipe[]
@@ -74,6 +76,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
     colorMode: 'system' as const,
     discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
     visibleTabs: [...ALL_TABS], // includes 'discover' by default
+    spiceTolerance: 'medium' as const,
+    adventurousness: 'occasional' as const,
   })
   const [savedRecipes, setSavedRecipes] = useState<Recipe[]>([])
   const [recipeHistory, setRecipeHistory] = useState<HistoryEntry[]>([])
@@ -116,6 +120,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
           discoverSettings?: DiscoverSettings
           visibleTabs?: string[]
           onboardingComplete?: boolean
+          spiceTolerance?: SpiceTolerance
+          adventurousness?: Adventurousness
         } = await profileRes.json()
         if (
           profile.allergens !== undefined ||
@@ -138,6 +144,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             colorMode: (profile.colorMode as 'light' | 'dark' | 'system' | undefined) ?? prev.colorMode,
             discoverSettings: profile.discoverSettings ?? prev.discoverSettings,
             visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
+            spiceTolerance: profile.spiceTolerance ?? prev.spiceTolerance,
+            adventurousness: profile.adventurousness ?? prev.adventurousness,
           }))
           setHasCompletedOnboarding(true)
         }
@@ -223,6 +231,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
         colorMode: 'system',
         discoverSettings: { ...DEFAULT_DISCOVER_SETTINGS },
         visibleTabs: [...ALL_TABS],
+        spiceTolerance: 'medium',
+        adventurousness: 'occasional',
       })
       setSavedRecipes([])
       setRecipeHistory([])
@@ -257,6 +267,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
             colorMode: preferences.colorMode,
             discoverSettings: preferences.discoverSettings,
             visibleTabs: preferences.visibleTabs,
+            spiceTolerance: preferences.spiceTolerance,
+            adventurousness: preferences.adventurousness,
             onboardingComplete: tutorialComplete,
           }),
         })
@@ -267,7 +279,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, tutorialComplete])
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, tutorialComplete])
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -402,6 +414,14 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const setVisibleTabs = useCallback((tabs: string[]) => {
     if (tabs.length < 2) return
     setPreferences(prev => ({ ...prev, visibleTabs: tabs }))
+  }, [])
+
+  const setSpiceTolerance = useCallback((v: SpiceTolerance) => {
+    setPreferences(prev => ({ ...prev, spiceTolerance: v }))
+  }, [])
+
+  const setAdventurousness = useCallback((v: Adventurousness) => {
+    setPreferences(prev => ({ ...prev, adventurousness: v }))
   }, [])
 
   // ── Saved recipes — local state + DynamoDB ───────────────────────────────────
@@ -588,6 +608,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
         setColorMode,
         setDiscoverSettings,
         setVisibleTabs,
+        setSpiceTolerance,
+        setAdventurousness,
         effectiveAllergens,
         effectiveCustomAllergens,
         savedRecipes,

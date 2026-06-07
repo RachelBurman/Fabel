@@ -118,6 +118,10 @@ export async function POST(req: NextRequest) {
       typeof prefs.occasion === "string" && prefs.occasion.trim()
         ? prefs.occasion.trim()
         : "None";
+    const spiceTolerance =
+      typeof prefs.spiceTolerance === "string" ? prefs.spiceTolerance : "medium";
+    const adventurousness =
+      typeof prefs.adventurousness === "string" ? prefs.adventurousness : "occasional";
 
     const kitchenIngredients = Array.isArray(body.kitchenIngredients)
       ? (body.kitchenIngredients as unknown[])
@@ -133,6 +137,25 @@ export async function POST(req: NextRequest) {
         )
         .join("\n") || "- No history yet";
 
+    const adventurousnessInstruction =
+      adventurousness === "familiar"
+        ? `Stay strictly within cuisines and techniques the user has already engaged with. Prioritise familiar, comforting combinations. Set noveltyNote to null.\n`
+        : adventurousness === "adventurous"
+        ? `The user is actively seeking new flavours. The noveltyNote should suggest something genuinely unexpected that still fits the direction. Push into less familiar flavour territory.\n`
+        : "";
+
+    const spiceInstruction =
+      spiceTolerance === "none" || spiceTolerance === "mild"
+        ? `Do not suggest spiced or heat-forward directions.\n`
+        : spiceTolerance === "hot"
+        ? `The user loves heat — bold spicing is welcome in the direction.\n`
+        : "";
+
+    const cookingStyleNote =
+      adventurousnessInstruction || spiceInstruction
+        ? `Cooking style guidance:\n${adventurousnessInstruction}${spiceInstruction}\n`
+        : "";
+
     const userMessage =
       `Taste profile:\n` +
       `- Top loved ingredients: ${preferred.join(", ") || "not enough data yet"}\n` +
@@ -146,6 +169,7 @@ export async function POST(req: NextRequest) {
       `- Cuisine: ${cuisine}\n` +
       `- Occasion: ${occasion}\n` +
       `- Kitchen includes: ${kitchenIngredients.join(", ") || "not specified"}\n\n` +
+      cookingStyleNote +
       `Write a recipe brief. Identify what flavour territory this user hasn't explored yet that aligns with their taste profile. If cuisine is 'Surprise me', choose something genuinely novel for them. Be specific — name a dish direction, not just a cuisine.\n\n` +
       `Respond with this exact JSON shape:\n` +
       `{\n` +

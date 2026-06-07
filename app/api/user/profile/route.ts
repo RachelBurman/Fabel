@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GetCommand, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo } from "@/lib/dynamo";
 import { getUserId } from "@/lib/get-user-id";
-import { type DiscoverSettings, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from "@/lib/types";
+import { type DiscoverSettings, type SpiceTolerance, type Adventurousness, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from "@/lib/types";
 
 interface IngredientItem {
   id: string;
@@ -58,6 +58,8 @@ export async function GET(req: NextRequest) {
     discoverSettings,
     visibleTabs,
     onboardingComplete,
+    spiceTolerance,
+    adventurousness,
   } = result.Item;
 
   // Migrate old boolean darkMode to string colorMode
@@ -79,6 +81,8 @@ export async function GET(req: NextRequest) {
     discoverSettings,
     visibleTabs,
     onboardingComplete,
+    spiceTolerance,
+    adventurousness,
   });
 }
 
@@ -99,6 +103,8 @@ export async function PUT(req: NextRequest) {
     discoverSettings?: DiscoverSettings;
     visibleTabs?: string[];
     onboardingComplete?: boolean;
+    spiceTolerance?: SpiceTolerance;
+    adventurousness?: Adventurousness;
   };
   try {
     body = await req.json();
@@ -121,6 +127,8 @@ export async function PUT(req: NextRequest) {
     discoverSettings,
     visibleTabs,
     onboardingComplete,
+    spiceTolerance,
+    adventurousness,
   } = body;
   let userId: string;
   try {
@@ -149,6 +157,8 @@ export async function PUT(req: NextRequest) {
         discoverSettings: discoverSettings ?? DEFAULT_DISCOVER_SETTINGS,
         visibleTabs: visibleTabs ?? [...ALL_TABS],
         onboardingComplete: onboardingComplete ?? false,
+        spiceTolerance: spiceTolerance ?? "medium",
+        adventurousness: adventurousness ?? "occasional",
         updatedAt: new Date().toISOString(),
       },
     })
