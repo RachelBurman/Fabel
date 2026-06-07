@@ -487,6 +487,7 @@ In-memory (loaded at server startup)
 - ✅ **TanStack Query migration** — all `fetch()` calls in components replaced with `useQuery` / `useMutation` hooks from `@tanstack/react-query` v5; 28 hook files in `lib/hooks/` (one per hook); shared `QueryProvider` + `makeQueryClient` factory in root layout; `queryKeys` factory for cache key management; stale times per query type (profile 5 min, saved/collections 2 min, insights 1 hr, ingredient search 30 s); 150 ms debounce on ingredient search queries to avoid per-keystroke requests
 - ✅ **Guest 401 fix + community recipe preference matching** — client now skips `/api/recipe-brief` entirely for unauthenticated users (no HTTP call, no 401 in console); `activePresets` and `alcoholMode` passed to `/api/generate-recipe` for guest fallback; `findFallbackRecipe` hard-filters by alcohol ingredients and vegan/vegetarian presets; DB fallback skipped when strict presets require preset metadata; clean empty state shown when no community recipe matches: "No matching recipes found — sign in to generate a personalised recipe with AI."
 - ✅ **Account deletion (GDPR right to erasure)** — `DELETE /api/user/account` deletes all personal data across DynamoDB (fable-users, saved-recipes, collections, feedback, rate-limits) and Neon Postgres (session, account, verification, user); partial failures caught and reported; "Delete my account and all data" button in Allergen Settings with confirmation modal, loading spinner, Sonner toast on success; guest settings show sign-in prompt instead
+- ✅ **Mobile scrolling bug fixes** — unified screen transition animations across all screens (consistent `initial`, `animate`, `exit` variants on every `motion.div`); eliminated scroll position jumps and jank caused by inconsistent animation timing between screens
 
 ### In Progress
 
@@ -495,7 +496,6 @@ In-memory (loaded at server startup)
 - [ ] High histamine preset — dietary filter excluding known high-histamine ingredients; same pattern as existing vegan/low-FODMAP presets; framed as a filter, not a medical tool, with disclaimer
 - [ ] **Multi-turn brief refinement** — "go vegetarian instead" updates direction and regenerates; brief card animates to new direction
 - [ ] i18n framework — next-intl, English + Spanish for hackathon; architecture supports Epicure's 7 languages; UI strings only (recipe output language is post-hackathon)
-- [ ] Mobile scrolling bugs — batch fix
 
 ### Post-Hackathon / Future
 - [ ] Better Auth + AWS RDS Postgres — replace Neon with RDS for a full AWS architecture story; schema identical, connection string swap
