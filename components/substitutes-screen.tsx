@@ -806,7 +806,7 @@ export function SubstitutesScreen({
                                     if (!res.ok) return
                                     const data = await res.json() as { recipe: GeneratedRecipe }
                                     if (data.recipe) {
-                                      onSubstituteSelected(data.recipe, selectedIngredient, sub.displayName)
+                                      onSubstituteSelected(data.recipe, epicureDisplay(selectedIngredient), sub.displayName)
                                     }
                                   } finally {
                                     setApplyingSubstitute(null)
