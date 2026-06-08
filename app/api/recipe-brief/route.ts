@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
     kitchenIngredients?: unknown;
     nudge?: unknown;
     forcedCuisine?: unknown;
+    existingRecipe?: unknown;
   };
   try {
     body = await req.json();
@@ -178,6 +179,29 @@ export async function POST(req: NextRequest) {
       ? `This user does not consume alcohol. Do not suggest alcohol-forward directions or cuisines where alcohol is central to the dish (e.g. no coq au vin, sake-braised dishes, or beer-based stews).\n\n`
       : "";
 
+    const rawExistingRecipe =
+      typeof body.existingRecipe === "object" && body.existingRecipe !== null
+        ? (body.existingRecipe as Record<string, unknown>)
+        : null;
+    const existingRecipeTitle =
+      rawExistingRecipe && typeof rawExistingRecipe.title === "string"
+        ? rawExistingRecipe.title.trim()
+        : null;
+    const existingRecipeIngredients = Array.isArray(rawExistingRecipe?.ingredients)
+      ? (rawExistingRecipe!.ingredients as unknown[])
+          .map((i) => {
+            if (typeof i === "string") return i;
+            if (typeof i === "object" && i !== null && "name" in (i as Record<string, unknown>))
+              return String((i as Record<string, unknown>).name);
+            return null;
+          })
+          .filter((x): x is string => typeof x === "string")
+          .slice(0, 8)
+      : [];
+    const existingRecipeNote = existingRecipeTitle
+      ? `The user is refining an existing recipe: "${existingRecipeTitle}" (key ingredients: ${existingRecipeIngredients.join(", ") || "unknown"}). Build the new direction as a variation — keep what worked but adjust toward the requested change.\n\n`
+      : "";
+
     const nudgeInstruction = forcedCuisine
       ? `The user has selected ${forcedCuisine} cuisine. Build the direction around ${forcedCuisine} cooking. Acknowledge naturally in the reasoning — e.g. "Taking this in a ${forcedCuisine} direction as requested."\n\n`
       : nudge === 'spicier'
@@ -205,6 +229,7 @@ export async function POST(req: NextRequest) {
       `- Kitchen includes: ${kitchenIngredients.join(", ") || "not specified"}\n\n` +
       cookingStyleNote +
       noAlcoholNote +
+      existingRecipeNote +
       nudgeInstruction +
       `Write a recipe brief. Identify what flavour territory this user hasn't explored yet that aligns with their taste profile. If cuisine is 'Surprise me', choose something genuinely novel for them. Be specific — name a dish direction, not just a cuisine.\n\n` +
       `Respond with this exact JSON shape:\n` +

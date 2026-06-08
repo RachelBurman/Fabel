@@ -47,7 +47,7 @@ jest.mock('@/lib/fable-context', () => ({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function renderAndSwitchToRecipeMode() {
-  render(<SubstitutesScreen onBack={jest.fn()} />)
+  render(<SubstitutesScreen onBack={jest.fn()} onNavigateToKitchen={jest.fn()} />)
   fireEvent.click(screen.getByRole('button', { name: /from a recipe/i }))
 }
 

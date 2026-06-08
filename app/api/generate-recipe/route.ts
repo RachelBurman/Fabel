@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     adventurousness?: unknown;
     alcoholMode?: unknown;
     activePresets?: unknown;
+    existingRecipe?: unknown;
   };
   try {
     body = await req.json();
@@ -405,6 +406,15 @@ export async function POST(req: NextRequest) {
     ? `Adapt this recipe: "${recipeContext}". Use the provided ingredients and maintain the spirit of the original dish where possible.\n\n`
     : "";
 
+  const rawExistingRecipe =
+    typeof body.existingRecipe === "object" && body.existingRecipe !== null
+      ? (body.existingRecipe as Record<string, unknown>)
+      : null;
+  const existingRecipeClause =
+    rawExistingRecipe && typeof rawExistingRecipe.title === "string"
+      ? `This is a refinement of an existing recipe: "${rawExistingRecipe.title}". Apply the requested direction change while maintaining the spirit and technique of the original where possible.\n\n`
+      : "";
+
   const dislikedPrefix =
     dislikedPatterns.length > 0 || dislikedIngredients.length > 0
       ? `User feedback from past recipes: ` +
@@ -450,7 +460,7 @@ export async function POST(req: NextRequest) {
 
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + existingRecipeClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -467,7 +477,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + existingRecipeClause + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +

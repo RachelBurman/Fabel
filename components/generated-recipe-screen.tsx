@@ -73,7 +73,12 @@ interface GeneratedRecipeScreenProps {
   onNudge?: (type: NudgeType, forcedCuisine?: string) => void
   activeNudge?: NudgeType | null
   isNudging?: boolean
+  isRefining?: boolean
   currentFilters?: { spiceTolerance?: string; dietaryPresets?: string[]; cookTime?: string; cuisine?: string }
+  // Substitution banner
+  substitutionBanner?: { original: string; substitute: string } | null
+  // Regenerate
+  onRegenerate?: () => void
 }
 
 
@@ -315,12 +320,17 @@ export function GeneratedRecipeScreen({
   onNudge,
   activeNudge,
   isNudging = false,
+  isRefining = false,
   currentFilters,
+  substitutionBanner,
+  onRegenerate,
 }: GeneratedRecipeScreenProps) {
   const { preferences } = useFable()
   const isLoading = loadingStep !== null
 
   const [cuisinePickerOpen, setCuisinePickerOpen] = useState(false)
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+  const [bannerVisible, setBannerVisible] = useState(false)
   const missingEquipment = recipe ? detectMissingEquipment(recipe.steps, preferences.kitchenEquipment) : []
 
   const drinkPairingsMutation = useDrinkPairings()
@@ -367,6 +377,13 @@ export function GeneratedRecipeScreen({
   }, [recipe]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const drinkPairingsLoading = drinkPairingsMutation.isPending
+
+  useEffect(() => {
+    if (!substitutionBanner) { setBannerVisible(false); return }
+    setBannerVisible(true)
+    const id = setTimeout(() => setBannerVisible(false), 4000)
+    return () => clearTimeout(id)
+  }, [substitutionBanner])
 
   const handleSafeExplain = async () => {
     if (guestMode) {
@@ -649,8 +666,8 @@ export function GeneratedRecipeScreen({
             )}
           </div>
 
-          {/* Loading */}
-          {isLoading && (
+          {/* Loading (not refining an existing recipe) */}
+          {isLoading && !isRefining && (
             loadingStep === 'recipe' && brief ? (
               <RecipeBriefCard
                 brief={brief}
@@ -674,12 +691,30 @@ export function GeneratedRecipeScreen({
             )
           )}
 
+          {/* Refining overlay — brief card sticks to top while recipe dims behind */}
+          {isRefining && brief && (
+            <div className="sticky top-0 z-50 -mx-6 px-6 py-3 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+              <RecipeBriefCard
+                brief={brief}
+                isAuthenticated={isAuthenticated}
+                onNudge={onNudge ? (type) => onNudge(type) : undefined}
+                onNudgeCuisine={onNudge ? () => setCuisinePickerOpen(true) : undefined}
+                activeNudge={activeNudge}
+                isNudging={isNudging}
+                spiceTolerance={currentFilters?.spiceTolerance}
+                dietaryPresets={currentFilters?.dietaryPresets}
+                cookTime={currentFilters?.cookTime}
+              />
+            </div>
+          )}
+
           {/* Recipe */}
-          {!isLoading && recipe && (
+          {(!isLoading || isRefining) && recipe && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-8"
+              animate={{ opacity: isRefining ? 0.4 : 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className={cn('space-y-8', isRefining && 'pointer-events-none select-none')}
             >
               {/* Hero gradient */}
               <RecipeGradient title={recipe.title} className="w-full h-52 rounded-2xl">
@@ -696,6 +731,56 @@ export function GeneratedRecipeScreen({
               <p className="text-muted-foreground leading-relaxed text-pretty">
                 {recipe.description}
               </p>
+
+              {/* Nudge row on completed recipe (authenticated users only) */}
+              {isAuthenticated && onNudge && !isRefining && (() => {
+                const visibleNudges = NUDGE_BUTTONS.filter(b => !b.hiddenWhen({
+                  spiceTolerance: currentFilters?.spiceTolerance,
+                  dietaryPresets: currentFilters?.dietaryPresets,
+                  cookTime: currentFilters?.cookTime,
+                }))
+                if (visibleNudges.length === 0) return null
+                return (
+                  <div className="flex flex-wrap gap-2 -mt-2">
+                    {visibleNudges.map(btn => (
+                      <button
+                        key={btn.type}
+                        onClick={() => {
+                          if (btn.type === 'cuisine') {
+                            setCuisinePickerOpen(true)
+                          } else {
+                            onNudge(btn.type)
+                          }
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap border border-transparent bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-200"
+                      >
+                        <span>{btn.emoji}</span>
+                        <span>{btn.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )
+              })()}
+
+              {/* Substitution success banner */}
+              <AnimatePresence>
+                {bannerVisible && substitutionBanner && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <span className="text-base shrink-0">✅</span>
+                      <p className="text-sm text-amber-700 dark:text-amber-400">
+                        Swapped <span className="font-medium">{substitutionBanner.original}</span> → <span className="font-medium">{substitutionBanner.substitute}</span>
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Safety explainer card */}
               <AnimatePresence>
@@ -1019,7 +1104,7 @@ export function GeneratedRecipeScreen({
               </section>
 
               {/* Drink Pairings */}
-              <section className="pb-8">
+              <section>
                 <h2 className="text-lg font-semibold text-foreground mb-4">Drink Pairings</h2>
                 {drinkPairingsLoading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -1043,6 +1128,41 @@ export function GeneratedRecipeScreen({
                   <p className="text-sm text-muted-foreground">No drink suggestions found.</p>
                 )}
               </section>
+
+              {/* Start fresh */}
+              {onRegenerate && (
+                <div className="pb-8 flex flex-col items-center gap-3 pt-2 border-t border-border">
+                  {!showRegenerateConfirm ? (
+                    <button
+                      onClick={() => setShowRegenerateConfirm(true)}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                    >
+                      🔄 Start fresh with a new recipe
+                    </button>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 w-full max-w-xs">
+                      <p className="text-sm text-foreground text-center">Replace this recipe?</p>
+                      <div className="flex gap-3 w-full">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 rounded-full"
+                          onClick={() => setShowRegenerateConfirm(false)}
+                        >
+                          Keep this
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 rounded-full"
+                          onClick={() => { setShowRegenerateConfirm(false); onRegenerate() }}
+                        >
+                          Start fresh
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </motion.div>
           )}
 

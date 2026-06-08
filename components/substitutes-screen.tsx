@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 import allergenMapData from '@/data/allergen-map.json'
 import { useSubstitutes, type SubstitutesInput } from '@/lib/hooks/use-substitutes'
 import { useExtractIngredients } from '@/lib/hooks/use-extract-ingredients'
+import { type GeneratedRecipe } from '@/lib/types'
 
 const allergenMap = allergenMapData as Record<string, string[]>
 
@@ -72,6 +73,8 @@ export interface SubstitutesScreenProps {
   initialIngredient?: string
   initialContext?: string[]
   onAdaptAndCook?: (adaptedIngredients: string[], recipeContext?: string) => void
+  sourceRecipe?: GeneratedRecipe
+  onSubstituteSelected?: (updatedRecipe: GeneratedRecipe, original: string, substitute: string) => void
 }
 
 type Mode = 'from-kitchen' | 'from-recipe'
@@ -170,6 +173,8 @@ export function SubstitutesScreen({
   initialIngredient,
   initialContext,
   onAdaptAndCook,
+  sourceRecipe,
+  onSubstituteSelected,
 }: SubstitutesScreenProps) {
   const { preferences } = useFable()
   const { data: session } = useSession()
@@ -198,6 +203,7 @@ export function SubstitutesScreen({
   const [results, setResults] = useState<EnrichedResult[]>([])
   const [isLoadingResults, setIsLoadingResults] = useState(false)
   const [rateLimitMsg, setRateLimitMsg] = useState<string | null>(null)
+  const [applyingSubstitute, setApplyingSubstitute] = useState<string | null>(null)
 
   const kitchenIngredients = preferences.ingredients.map((i) => i.name)
 
@@ -772,7 +778,7 @@ export function SubstitutesScreen({
                           <p className="text-sm text-muted-foreground italic">Sign in to see why this substitution works.</p>
                         ) : null}
 
-                        <div className="flex gap-6 mt-3 pt-3 border-t border-border/50">
+                        <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/50">
                           <div>
                             <p className="text-xs text-muted-foreground">Similarity</p>
                             <p className="text-sm font-medium text-foreground">{sub.similarityToOriginal}%</p>
@@ -781,6 +787,42 @@ export function SubstitutesScreen({
                             <p className="text-xs text-muted-foreground">Context fit</p>
                             <p className="text-sm font-medium text-foreground">{sub.contextFit}%</p>
                           </div>
+                          {onSubstituteSelected && sourceRecipe && selectedIngredient && (
+                            <div className="ml-auto">
+                              <button
+                                onClick={async () => {
+                                  if (applyingSubstitute) return
+                                  setApplyingSubstitute(sub.name)
+                                  try {
+                                    const res = await fetch('/api/recipe-update-ingredient', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        existingRecipe: sourceRecipe,
+                                        original: selectedIngredient,
+                                        substitute: sub.name,
+                                      }),
+                                    })
+                                    if (!res.ok) return
+                                    const data = await res.json() as { recipe: GeneratedRecipe }
+                                    if (data.recipe) {
+                                      onSubstituteSelected(data.recipe, selectedIngredient, sub.displayName)
+                                    }
+                                  } finally {
+                                    setApplyingSubstitute(null)
+                                  }
+                                }}
+                                disabled={!!applyingSubstitute}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                              >
+                                {applyingSubstitute === sub.name ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <>Use this <ArrowRight className="w-3 h-3" /></>
+                                )}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     )

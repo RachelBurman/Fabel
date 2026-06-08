@@ -140,6 +140,8 @@ function FableAppContent() {
 
   const [activeNudge, setActiveNudge] = useState<NudgeType | null>(null)
   const [isNudging, setIsNudging] = useState(false)
+  const [isRefining, setIsRefining] = useState(false)
+  const [substitutionBanner, setSubstitutionBanner] = useState<{ original: string; substitute: string } | null>(null)
 
   useEffect(() => {
     if (hasCompletedOnboarding && currentScreen === 'onboarding') {
@@ -471,10 +473,17 @@ function FableAppContent() {
   const handleNudge = useCallback(async (nudgeType: NudgeType, forcedCuisine?: string) => {
     if (!isSignedIn) return
 
+    // Capture existing recipe before generation starts (for refining context)
+    const existingRecipeSnapshot = generatedRecipe
+      ? { title: generatedRecipe.title, ingredients: generatedRecipe.ingredients.map(i => i.name) }
+      : null
+    const refining = generatedRecipe !== null
+
     generateAbortRef.current?.abort()
     setActiveNudge(nudgeType)
     setIsNudging(true)
     setLoadingStep('recipe')
+    if (refining) setIsRefining(true)
 
     const uid = typeof window !== 'undefined' ? localStorage.getItem('fable_user_id') : null
     const kitchenDisplayNames = preferences.ingredients.map(i => i.displayName ?? i.name.replace(/_/g, ' '))
@@ -499,6 +508,7 @@ function FableAppContent() {
           kitchenIngredients: kitchenDisplayNames,
           ...(nudgeType !== 'cuisine' ? { nudge: nudgeType } : {}),
           ...(forcedCuisine ? { forcedCuisine } : {}),
+          ...(existingRecipeSnapshot ? { existingRecipe: existingRecipeSnapshot } : {}),
         }),
       })
       if (res.ok) {
@@ -544,6 +554,7 @@ function FableAppContent() {
         ...(uid ? { userId: uid } : {}),
         ...sfPayload,
         ...(newBrief?.direction ? { recipeBrief: { direction: newBrief.direction, keyIngredients: newBrief.keyIngredients } } : {}),
+        ...(existingRecipeSnapshot ? { existingRecipe: existingRecipeSnapshot } : {}),
         _signal: controller.signal,
       })
       if (recipeData.guestMode) {
@@ -575,9 +586,23 @@ function FableAppContent() {
       if (!abortedByNewerNudge) {
         setActiveNudge(null)
         setLoadingStep(null)
+        setIsRefining(false)
       }
     }
-  }, [preferences, isSignedIn, recipeFilters, brief, pairings, effectiveAllergens, effectiveCustomAllergens, dislikedPatterns, dislikedIngredients, generateRecipeMutation, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [preferences, isSignedIn, recipeFilters, brief, pairings, effectiveAllergens, effectiveCustomAllergens, dislikedPatterns, dislikedIngredients, generatedRecipe, generateRecipeMutation, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Start fresh: navigate to ingredients to generate a new recipe ─────────────
+  const handleRegenerate = useCallback(() => {
+    navigate('ingredients')
+  }, [navigate])
+
+  // ── Apply a substitute from the substitutes screen back to the recipe ─────────
+  const handleApplySubstitution = useCallback((updatedRecipe: GeneratedRecipe, original: string, substitute: string) => {
+    setGeneratedRecipe(updatedRecipe)
+    setGeneratedRecipeSaved(false)
+    setSubstitutionBanner({ original, substitute })
+    navigate('generated')
+  }, [navigate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // â”€â”€ Save generated recipe â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const handleSaveGeneratedRecipe = useCallback(() => {
@@ -930,12 +955,15 @@ function FableAppContent() {
                 onNudge={isSignedIn ? handleNudge : undefined}
                 activeNudge={activeNudge}
                 isNudging={isNudging}
+                isRefining={isRefining}
                 currentFilters={{
                   spiceTolerance: preferences.spiceTolerance,
                   dietaryPresets: preferences.activePresets,
                   cookTime: recipeFilters.cookTime,
                   cuisine: recipeFilters.cuisine,
                 }}
+                substitutionBanner={substitutionBanner}
+                onRegenerate={handleRegenerate}
               />
             </motion.div>
           )}
@@ -1011,6 +1039,8 @@ function FableAppContent() {
                 initialIngredient={substituteIngredient}
                 initialContext={substituteContext}
                 onAdaptAndCook={handleAdaptAndCook}
+                sourceRecipe={prevScreen === 'generated' && substituteIngredient ? generatedRecipe ?? undefined : undefined}
+                onSubstituteSelected={prevScreen === 'generated' && substituteIngredient ? handleApplySubstitution : undefined}
               />
             </motion.div>
           )}
