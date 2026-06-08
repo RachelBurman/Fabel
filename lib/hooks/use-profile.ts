@@ -20,6 +20,7 @@ export type ProfileData = {
   onboardingComplete?: boolean
   spiceTolerance?: string
   adventurousness?: string
+  lowHistamine?: boolean
 }
 
 async function fetchProfile(userId: string): Promise<ProfileData> {

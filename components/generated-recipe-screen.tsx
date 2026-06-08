@@ -64,6 +64,7 @@ interface GeneratedRecipeScreenProps {
   lactoseIntolerant?: boolean
   lactoseMode?: 'include' | 'exclude'
   alcoholMode?: 'none' | 'no_cooking' | 'exclude_entirely'
+  lowHistamine?: boolean
   rateLimitInfo?: { hourRemaining: number; dayRemaining: number; resetAt: string } | null
   macrosRateLimitMsg?: string | null
   guestMode?: boolean
@@ -313,6 +314,7 @@ export function GeneratedRecipeScreen({
   lactoseIntolerant = false,
   lactoseMode,
   alcoholMode = 'none',
+  lowHistamine = false,
   rateLimitInfo,
   macrosRateLimitMsg,
   guestMode = false,
@@ -890,6 +892,15 @@ export function GeneratedRecipeScreen({
                   <span className="text-base shrink-0">🥛</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
                     <span className="font-medium">Contains dairy</span> — consider taking Lactaid before eating.
+                  </p>
+                </div>
+              )}
+
+              {lowHistamine && (
+                <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <span className="text-base shrink-0">🧬</span>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">Low histamine filter active</span> — this recipe avoids common histamine triggers. Always consult a healthcare professional for medical advice.
                   </p>
                 </div>
               )}

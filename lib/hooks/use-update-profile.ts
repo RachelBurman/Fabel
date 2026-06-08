@@ -19,6 +19,7 @@ export type UpdateProfileInput = {
   spiceTolerance: string
   adventurousness: string
   onboardingComplete: boolean
+  lowHistamine: boolean
 }
 
 async function updateProfile(input: UpdateProfileInput): Promise<void> {

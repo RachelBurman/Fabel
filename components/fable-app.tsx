@@ -962,6 +962,7 @@ function FableAppContent() {
                 lactoseIntolerant={preferences.lactoseIntolerant}
                 lactoseMode={preferences.lactoseMode}
                 alcoholMode={preferences.alcoholMode}
+                lowHistamine={preferences.lowHistamine}
                 rateLimitInfo={rateLimitInfo}
                 macrosRateLimitMsg={macrosRateLimitMsg}
                 guestMode={guestMode}
