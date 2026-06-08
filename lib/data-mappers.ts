@@ -1,4 +1,4 @@
-import type { IngredientItem, Collection, Recipe, GeneratedRecipe } from './types'
+import type { IngredientItem, Collection, Recipe, GeneratedRecipe, HistoryEntry } from './types'
 
 /**
  * Convert old flat string[] profiles (or mixed arrays) to IngredientItem[].
@@ -29,6 +29,15 @@ export function itemToCollection(item: Record<string, unknown>): Collection {
     recipeIds: Array.isArray(item.recipeIds) ? (item.recipeIds as string[]) : [],
     createdAt: String(item.createdAt ?? ''),
     updatedAt: String(item.updatedAt ?? ''),
+  }
+}
+
+/** Map a DynamoDB history item back to the HistoryEntry shape. */
+export function itemToHistoryEntry(item: Record<string, unknown>): HistoryEntry {
+  return {
+    id: String(item.recipeId ?? item.id ?? ''),
+    recipe: (item.fullRecipe ?? {}) as GeneratedRecipe,
+    timestamp: item.savedAt ? new Date(String(item.savedAt)).getTime() : 0,
   }
 }
 

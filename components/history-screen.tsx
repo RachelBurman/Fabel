@@ -135,7 +135,7 @@ export function HistoryScreen({ history, onViewRecipe, onGenerateNew, onBack }: 
               <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Recipe History</h1>
             </div>
             <p className="text-muted-foreground text-sm">
-              {`${history.length} recipe${history.length > 1 ? 's' : ''} generated this session`}
+              {`${history.length} recipe${history.length > 1 ? 's' : ''} in your history`}
             </p>
           </div>
 

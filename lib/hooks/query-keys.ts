@@ -11,6 +11,9 @@ export const queryKeys = {
   insights: (userId: string) =>
     ['insights', userId] as const,
 
+  history: (userId: string, isSignedIn: boolean) =>
+    ['history', userId, isSignedIn] as const,
+
   dislikedPatterns: (userId: string) =>
     ['dislikedPatterns', userId] as const,
 

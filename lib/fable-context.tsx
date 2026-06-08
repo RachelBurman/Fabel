@@ -4,11 +4,12 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, ty
 import { useSession } from '@/lib/auth-client'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, type SpiceTolerance, type Adventurousness, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { ALCOHOL_INGREDIENT_KEYS } from '@/lib/alcohol-ingredients'
-import { migrateIngredients, itemToCollection, itemToRecipe } from '@/lib/data-mappers'
+import { migrateIngredients, itemToCollection, itemToRecipe, itemToHistoryEntry } from '@/lib/data-mappers'
 import { markTutorialComplete } from '@/lib/tutorial'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { useSavedRecipes } from '@/lib/hooks/use-saved-recipes'
 import { useCollections } from '@/lib/hooks/use-collections'
+import { useHistory } from '@/lib/hooks/use-history'
 import { useUpdateProfile } from '@/lib/hooks/use-update-profile'
 import { useCompleteOnboarding } from '@/lib/hooks/use-complete-onboarding'
 import { useSaveRecipe } from '@/lib/hooks/use-save-recipe'
@@ -122,6 +123,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const profileQuery = useProfile(userId, isSignedIn)
   const savedRecipesQuery = useSavedRecipes(userId, isSignedIn)
   const collectionsQuery = useCollections(userId, isSignedIn)
+  const historyQuery = useHistory(userId, isSignedIn)
 
   // Derive isLoadingProfile from the three queries
   const isLoadingProfile = !userId || profileQuery.isLoading || savedRecipesQuery.isLoading || collectionsQuery.isLoading
@@ -190,6 +192,16 @@ export function FableProvider({ children }: { children: ReactNode }) {
     if (!data) return
     setCollections(data.collections?.length ? data.collections.map(itemToCollection) : [])
   }, [collectionsQuery.data])
+
+  // ── Populate recipeHistory from query (logged-in users only) ─────────────────
+  useEffect(() => {
+    const data = historyQuery.data
+    if (!data) return
+    const entries = data.entries?.length
+      ? [...data.entries.map(itemToHistoryEntry)].sort((a, b) => b.timestamp - a.timestamp)
+      : []
+    setRecipeHistory(entries)
+  }, [historyQuery.data])
 
   // ── React to sign-in / sign-out after initial load ───────────────────────────
   useEffect(() => {
