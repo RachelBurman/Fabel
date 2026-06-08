@@ -492,12 +492,12 @@ In-memory (loaded at server startup)
 - ✅ **Mobile scrolling bug fixes** — unified screen transition animations across all screens (consistent `initial`, `animate`, `exit` variants on every `motion.div`); eliminated scroll position jumps and jank caused by inconsistent animation timing between screens
 - ✅ **Guest ingredient rendering fix** — `queryDBFallback` now handles the three possible shapes of a community DB record: (1) `fullRecipe.ingredients` present → use proper `{name, amount, unit}` objects; (2) `fullRecipe` absent (older saves / demo seed records that predate the field) → normalise `best.ingredients` string array to `{name, amount: 1, unit: 'serving'}` objects; (3) both absent → empty array. Eliminates the `undefined` ingredient names and the subsequent empty-ingredients regression introduced by the initial fix.
 - ✅ **Nudge button bug fixes** — (1) pressing a nudge button no longer flashes the "Couldn't generate a recipe" error screen: `handleGenerateRecipe` and `handleGenerateFromPairings` now use a `wasAborted` flag so their `finally` blocks skip `setLoadingStep(null)` when the abort was triggered by a nudge, keeping the brief card visible throughout; (2) nudge buttons now wrap (`flex-wrap`) instead of scrolling horizontally, so all five buttons are always fully visible.
+- ✅ **Multi-turn brief refinement** — implemented via nudge buttons: tapping Spicier, Vegetarian, Quicker, Different Cuisine, or Surprise Me during generation updates the brief direction in-place and immediately regenerates; brief card fades during the transition and animates to the new direction without leaving the screen.
 
 ### In Progress
 
 ### Near Term
 - [ ] High histamine preset — dietary filter excluding known high-histamine ingredients; same pattern as existing vegan/low-FODMAP presets; framed as a filter, not a medical tool, with disclaimer
-- [ ] **Multi-turn brief refinement** — "go vegetarian instead" updates direction and regenerates; brief card animates to new direction
 - [ ] i18n framework — next-intl, English + Spanish for hackathon; architecture supports Epicure's 7 languages; UI strings only (recipe output language is post-hackathon)
 
 ### Post-Hackathon / Future
