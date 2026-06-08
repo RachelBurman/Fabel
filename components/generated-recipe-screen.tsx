@@ -390,7 +390,11 @@ export function GeneratedRecipeScreen({
   useEffect(() => {
     if (isRefining) {
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
     }
+    return () => { document.body.style.overflow = '' }
   }, [isRefining])
 
   const handleSafeExplain = async () => {
@@ -620,7 +624,7 @@ export function GeneratedRecipeScreen({
             </Button>
 
             {/* Show title while loading (recipe title lives in the gradient hero) */}
-            {isLoading && (
+            {isLoading && !isRefining && (
               <h1 className="flex-1 text-xl md:text-2xl font-semibold text-foreground">
                 Generating Recipe…
               </h1>
@@ -707,10 +711,10 @@ export function GeneratedRecipeScreen({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 z-10"
+                className="absolute inset-0 z-10 bg-background pt-6"
               >
                 {onCancelRefine && (
-                  <div className="flex justify-end mb-3">
+                  <div className="flex justify-end mb-5">
                     <button
                       onClick={onCancelRefine}
                       className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
