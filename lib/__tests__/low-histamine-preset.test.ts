@@ -461,6 +461,158 @@ describe('substitutes — histamine key exclusion', () => {
   })
 })
 
+// ─── HIGH_HISTAMINE_INGREDIENT_KEYS — Fix 2 additions ────────────────────────
+
+describe('HIGH_HISTAMINE_INGREDIENT_KEYS — Fix 2: additional cheeses', () => {
+  it('includes mozzarella_cheese (previously missing, caused generation failure)', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('mozzarella_cheese')
+  })
+
+  it('includes soft/fresh cheeses added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('ricotta_cheese')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('cream_cheese')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('feta_cheese')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('halloumi')
+  })
+
+  it('includes extended aged cheeses added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('swiss_cheese')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('manchego_cheese')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('pecorino_cheese')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('romano_cheese')
+  })
+})
+
+describe('HIGH_HISTAMINE_INGREDIENT_KEYS — Fix 2: tomato derivatives and fermented sauces', () => {
+  it('includes pasta_sauce (previously missing, caused generation failure)', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('pasta_sauce')
+  })
+
+  it('includes sriracha and hot_sauce (fermented/vinegar-based)', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('sriracha')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('hot_sauce')
+  })
+
+  it('includes generic citrus key', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('citrus')
+  })
+})
+
+describe('HIGH_HISTAMINE_INGREDIENT_KEYS — Fix 2: additional processed meats', () => {
+  it('includes processed meats added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('hot_dog')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('sausage')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('mortadella')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('pastrami')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('corned_beef')
+  })
+})
+
+describe('HIGH_HISTAMINE_INGREDIENT_KEYS — Fix 2: additional vinegars and fermented condiments', () => {
+  it('includes additional vinegars added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('sherry_vinegar')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('malt_vinegar')
+  })
+
+  it('includes additional fermented Asian condiments added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('natto')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('doenjang')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('gochujang')
+  })
+
+  it('includes pickled ingredients added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('pickled_vegetable')
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('pickled_ginger')
+  })
+
+  it('includes milk_chocolate added in audit', () => {
+    expect(HIGH_HISTAMINE_INGREDIENT_KEYS).toContain('milk_chocolate')
+  })
+})
+
+// ─── generate-recipe — Fix 1: kitchen ingredient hard filter ─────────────────
+
+// Extracts the humanAvailable portion of the prompt — the comma-separated
+// ingredient list between "listed first): " and ". Prioritise using".
+function extractHumanAvailable(prompt: string): string {
+  const match = /listed first\): (.*?)\. Prioritise using/s.exec(prompt)
+  return match?.[1] ?? ''
+}
+
+describe('generate-recipe — Fix 1: kitchen ingredients filtered against customAllergens', () => {
+  it('removes an ingredient from humanAvailable when its key is in customAllergens', async () => {
+    await POST_RECIPE(makeRecipeRequest({
+      ...MINIMAL_RECIPE_BODY,
+      ingredients: [
+        { name: 'chicken' },
+        { name: 'mozzarella_cheese' },
+      ],
+      customAllergens: ['mozzarella_cheese'],
+    }))
+    const prompt = capturedRecipePrompt()
+    const available = extractHumanAvailable(prompt)
+    // mozzarella_cheese in customAllergens — must not appear in the "use these" list
+    expect(available).not.toContain('mozzarella cheese')
+    // chicken is safe and must still appear
+    expect(available).toContain('chicken')
+    // it should still appear in the avoid clause so Claude knows to avoid it
+    expect(prompt).toContain('Also avoid these specific ingredients entirely')
+    expect(prompt).toContain('mozzarella cheese')
+  })
+
+  it('keeps an ingredient in humanAvailable when customAllergens is empty', async () => {
+    await POST_RECIPE(makeRecipeRequest({
+      ...MINIMAL_RECIPE_BODY,
+      ingredients: [
+        { name: 'chicken' },
+        { name: 'mozzarella_cheese' },
+      ],
+      customAllergens: [],
+    }))
+    const prompt = capturedRecipePrompt()
+    const available = extractHumanAvailable(prompt)
+    // No customAllergens — both ingredients should be in the available list
+    expect(available).toContain('mozzarella cheese')
+    expect(available).toContain('chicken')
+  })
+
+  it('removes multiple conflicting ingredients from humanAvailable in a single request', async () => {
+    await POST_RECIPE(makeRecipeRequest({
+      ...MINIMAL_RECIPE_BODY,
+      ingredients: [
+        { name: 'chicken' },
+        { name: 'tomato' },
+        { name: 'pasta_sauce' },
+        { name: 'cheddar_cheese' },
+      ],
+      customAllergens: ['tomato', 'pasta_sauce', 'cheddar_cheese'],
+    }))
+    const prompt = capturedRecipePrompt()
+    const available = extractHumanAvailable(prompt)
+    expect(available).not.toContain('tomato')
+    expect(available).not.toContain('pasta sauce')
+    expect(available).not.toContain('cheddar cheese')
+    expect(available).toContain('chicken')
+  })
+
+  it('applies the filter regardless of lowHistamine — works for any customAllergens source', async () => {
+    // No lowHistamine flag — customAllergens from a different source (e.g. user allergen list)
+    await POST_RECIPE(makeRecipeRequest({
+      ...MINIMAL_RECIPE_BODY,
+      ingredients: [
+        { name: 'chicken' },
+        { name: 'peanut' },
+      ],
+      customAllergens: ['peanut'],
+      lowHistamine: false,
+    }))
+    const prompt = capturedRecipePrompt()
+    const available = extractHumanAvailable(prompt)
+    expect(available).not.toContain('peanut')
+    expect(available).toContain('chicken')
+  })
+})
+
 // ─── profile GET — lowHistamine returned ─────────────────────────────────────
 
 describe('GET /api/user/profile — lowHistamine', () => {

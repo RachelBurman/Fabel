@@ -330,6 +330,16 @@ export async function POST(req: NextRequest) {
           .join(", ")}.`
       : "";
 
+// Remove kitchen ingredients whose Epicure key appears in customAllergens before
+  // presenting them to Claude. Without this, Claude receives conflicting instructions
+  // ("use these ingredients" and "avoid these ingredients") for the same item, and
+  // the use-instruction reliably wins when the avoid-list is long.
+  // Applies to all customAllergens sources: presets, alcohol mode, low histamine, etc.
+  const customAllergenSet = new Set(customAllergens);
+  if (customAllergenSet.size > 0) {
+    adjustedItems = adjustedItems.filter(item => !customAllergenSet.has(item.name));
+  }
+
 // Human-readable forms for the prompt
   const humanSafe = safeIngredients.map((s) => s.replace(/_/g, " ")).join(", ");
   const humanAvailable = adjustedItems.map(buildIngredientDescription).join(", ");
