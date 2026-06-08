@@ -391,10 +391,15 @@ export function GeneratedRecipeScreen({
     if (isRefining) {
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
       document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
     }
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
   }, [isRefining])
 
   const handleSafeExplain = async () => {
