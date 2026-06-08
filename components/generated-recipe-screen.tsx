@@ -263,14 +263,14 @@ function RecipeBriefCard({
 
         {/* Nudge buttons — authenticated users only, shown when brief has direction */}
         {visibleNudges.length > 0 && brief.direction && (
-          <div className="flex gap-2 overflow-x-auto pb-0.5 -mx-1 px-1" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex flex-wrap gap-2">
             {visibleNudges.map(btn => (
               <button
                 key={btn.type}
                 onClick={() => handleNudgeClick(btn.type)}
                 disabled={isNudging && activeNudge !== btn.type}
                 className={cn(
-                  'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all duration-200 shrink-0',
+                  'flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap border transition-all duration-200',
                   activeNudge === btn.type
                     ? 'bg-primary/15 text-primary border-primary/30'
                     : 'bg-secondary text-muted-foreground border-transparent hover:bg-primary/10 hover:text-primary',
