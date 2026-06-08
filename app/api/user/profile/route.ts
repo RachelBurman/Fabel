@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
     onboardingComplete,
     spiceTolerance,
     adventurousness,
+    lowHistamine,
   } = result.Item;
 
   // Migrate old boolean darkMode to string colorMode
@@ -85,6 +86,7 @@ export async function GET(req: NextRequest) {
     onboardingComplete,
     spiceTolerance,
     adventurousness,
+    lowHistamine,
   });
 }
 
@@ -108,6 +110,7 @@ export async function PUT(req: NextRequest) {
     onboardingComplete?: boolean;
     spiceTolerance?: SpiceTolerance;
     adventurousness?: Adventurousness;
+    lowHistamine?: boolean;
   };
   try {
     body = await req.json();
@@ -133,6 +136,7 @@ export async function PUT(req: NextRequest) {
     onboardingComplete,
     spiceTolerance,
     adventurousness,
+    lowHistamine,
   } = body;
   let userId: string;
   try {
@@ -164,6 +168,7 @@ export async function PUT(req: NextRequest) {
         onboardingComplete: onboardingComplete ?? false,
         spiceTolerance: spiceTolerance ?? "medium",
         adventurousness: adventurousness ?? "occasional",
+        lowHistamine: lowHistamine ?? false,
         updatedAt: new Date().toISOString(),
       },
     })

@@ -8,6 +8,7 @@ import {
 } from "@/lib/epicure";
 import { resolveToEpicureKey } from "@/lib/drink-pairing-utils";
 import { ALCOHOL_INGREDIENT_KEYS } from "@/lib/alcohol-ingredients";
+import { HIGH_HISTAMINE_INGREDIENT_KEYS } from "@/lib/high-histamine-ingredients";
 
 // Keys verified to exist in data/epicure-core.json
 const BEVERAGE_KEYS = new Set([
@@ -45,7 +46,7 @@ const epicureKeySet = new Set(allIngredients);
 export async function POST(req: NextRequest) {
   console.log("[drink-pairings] POST received");
 
-  let body: { ingredients?: unknown; allergens?: unknown; alcoholMode?: unknown };
+  let body: { ingredients?: unknown; allergens?: unknown; alcoholMode?: unknown; lowHistamine?: unknown };
   try {
     body = await req.json();
   } catch {
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest) {
       : null;
 
   const alcoholKeySet = new Set(ALCOHOL_INGREDIENT_KEYS);
+  const lowHistamine = body.lowHistamine === true;
+  const histamineKeySet = lowHistamine ? new Set(HIGH_HISTAMINE_INGREDIENT_KEYS) : null;
 
   const NON_ALCOHOLIC_FALLBACKS = [
     "ginger_beer",       // non-alcoholic soft drink
@@ -115,6 +118,7 @@ export async function POST(req: NextRequest) {
   let pairings = Array.from(scoreMap.entries())
     .filter(([name]) => {
       if (alcoholMode && alcoholKeySet.has(name)) return false;
+      if (histamineKeySet && histamineKeySet.has(name)) return false;
       const allergenList = getAllergensForIngredient(name);
       return !allergenList.some((a) => blockedSet.has(a));
     })

@@ -20,7 +20,7 @@ interface AllergenScreenProps {
 }
 
 export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, onOpenAuth }: AllergenScreenProps) {
-  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setAlcoholMode, setColorMode, setDiscoverSettings, setVisibleTabs, setSpiceTolerance, setAdventurousness, isLoadingProfile } = useFable()
+  const { preferences, toggleAllergen, setSafeFoodsMode, setShowMacros, togglePreset, setLactoseIntolerant, setLactoseMode, setAlcoholMode, setLowHistamine, setColorMode, setDiscoverSettings, setVisibleTabs, setSpiceTolerance, setAdventurousness, isLoadingProfile } = useFable()
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
@@ -34,7 +34,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
   }
 
   const activePresetLabels = preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id)
-  const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none'
+  const anyDietActive = preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none' || preferences.lowHistamine
 
   const [isDietExpanded, setIsDietExpanded] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -79,6 +79,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
     if (activePresetLabels.length > 0) parts.push(activePresetLabels.join(', '))
     if (preferences.lactoseIntolerant) parts.push('Lactose intolerance')
     if (preferences.alcoholMode !== 'none') parts.push('No alcohol')
+    if (preferences.lowHistamine) parts.push('Low histamine')
     if (allergenCount > 0) parts.push(`${allergenCount} allergen${allergenCount > 1 ? 's' : ''}`)
     if (parts.length === 0) return 'No restrictions selected'
     return `${parts.join(' + ')} active`
@@ -116,6 +117,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                       ...activePresetLabels,
                       ...(preferences.lactoseIntolerant ? ['Lactose'] : []),
                       ...(preferences.alcoholMode !== 'none' ? ['No Alcohol'] : []),
+                      ...(preferences.lowHistamine ? ['Low Histamine'] : []),
                     ].join(', ') + ' active'
                   : 'None active'}
                 <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
@@ -322,6 +324,41 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                           </motion.div>
                         )}
                       </AnimatePresence>
+                    </div>
+
+                    {/* Low Histamine */}
+                    <div className={cn(
+                      'rounded-xl border transition-colors',
+                      preferences.lowHistamine ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                    )}>
+                      <div className="flex items-center justify-between gap-4 px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">🧬</span>
+                          <div>
+                            <p className="text-sm font-medium text-foreground">Low Histamine</p>
+                            <p className="text-xs text-muted-foreground">
+                              Filters out high-histamine ingredients — fermented foods, aged cheeses, cured meats, alcohol, and common histamine triggers.
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          role="switch"
+                          aria-checked={preferences.lowHistamine}
+                          onClick={() => setLowHistamine(!preferences.lowHistamine)}
+                          className={cn(
+                            'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                            preferences.lowHistamine ? 'bg-amber-500' : 'bg-secondary'
+                          )}
+                        >
+                          <span className={cn(
+                            'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                            preferences.lowHistamine ? 'translate-x-5' : 'translate-x-0'
+                          )} />
+                        </button>
+                      </div>
+                      <p className="px-4 pb-3 text-xs text-muted-foreground">
+                        ⚕️ This is a dietary filter based on common low-histamine guidelines. It is not medical advice. Always consult a healthcare professional for diagnosis and treatment of histamine intolerance or MCAS.
+                      </p>
                     </div>
                   </div>
                 </motion.div>

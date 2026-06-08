@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef, ty
 import { useSession } from '@/lib/auth-client'
 import { type UserPreferences, type Recipe, type GeneratedRecipe, type HistoryEntry, type IngredientItem, type IngredientArea, type IngredientDateType, type IngredientUnit, type Collection, type DiscoverSettings, type SpiceTolerance, type Adventurousness, DIET_PRESETS, DEFAULT_DISCOVER_SETTINGS, ALL_TABS } from '@/lib/types'
 import { ALCOHOL_INGREDIENT_KEYS } from '@/lib/alcohol-ingredients'
+import { HIGH_HISTAMINE_INGREDIENT_KEYS } from '@/lib/high-histamine-ingredients'
 import { migrateIngredients, itemToCollection, itemToRecipe, itemToHistoryEntry } from '@/lib/data-mappers'
 import { markTutorialComplete } from '@/lib/tutorial'
 import { useProfile } from '@/lib/hooks/use-profile'
@@ -46,6 +47,7 @@ interface FableContextType {
   setLactoseIntolerant: (active: boolean) => void
   setLactoseMode: (mode: 'include' | 'exclude') => void
   setAlcoholMode: (mode: 'none' | 'no_cooking' | 'exclude_entirely') => void
+  setLowHistamine: (active: boolean) => void
   setKitchenEquipment: (equipment: string[]) => void
   toggleKitchenEquipment: (item: string) => void
   setColorMode: (mode: 'light' | 'dark' | 'system') => void
@@ -92,6 +94,7 @@ const BLANK_PREFERENCES: UserPreferences = {
   visibleTabs: [...ALL_TABS],
   spiceTolerance: 'medium',
   adventurousness: 'occasional',
+  lowHistamine: false,
 }
 
 export function FableProvider({ children }: { children: ReactNode }) {
@@ -170,6 +173,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         visibleTabs: profile.visibleTabs ?? prev.visibleTabs,
         spiceTolerance: (profile.spiceTolerance as SpiceTolerance | undefined) ?? prev.spiceTolerance,
         adventurousness: (profile.adventurousness as Adventurousness | undefined) ?? prev.adventurousness,
+        lowHistamine: (profile.lowHistamine as boolean | undefined) ?? prev.lowHistamine,
       }))
       setHasCompletedOnboarding(true)
     }
@@ -263,6 +267,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
           visibleTabs: preferences.visibleTabs,
           spiceTolerance: preferences.spiceTolerance,
           adventurousness: preferences.adventurousness,
+          lowHistamine: preferences.lowHistamine,
           onboardingComplete: tutorialComplete,
         })
       } catch (err) {
@@ -272,7 +277,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
       }
     }, 1500)
     return () => clearTimeout(id)
-  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.alcoholMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, tutorialComplete]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isLoadingProfile, preferences.allergens, preferences.customAllergens, preferences.ingredients, preferences.safeIngredients, preferences.safeFoodsMode, preferences.showMacros, preferences.activePresets, preferences.lactoseIntolerant, preferences.lactoseMode, preferences.alcoholMode, preferences.kitchenEquipment, preferences.colorMode, preferences.discoverSettings, preferences.visibleTabs, preferences.spiceTolerance, preferences.adventurousness, preferences.lowHistamine, tutorialComplete]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Preference mutators ──────────────────────────────────────────────────────
 
@@ -385,6 +390,10 @@ export function FableProvider({ children }: { children: ReactNode }) {
 
   const setAlcoholMode = useCallback((mode: 'none' | 'no_cooking' | 'exclude_entirely') => {
     setPreferences(prev => ({ ...prev, alcoholMode: mode }))
+  }, [])
+
+  const setLowHistamine = useCallback((active: boolean) => {
+    setPreferences(prev => ({ ...prev, lowHistamine: active }))
   }, [])
 
   const setKitchenEquipment = useCallback((equipment: string[]) => {
@@ -545,7 +554,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
   const effectiveCustomAllergens: string[] = (() => {
     const presetIngredients = preferences.activePresets.flatMap(id => DIET_PRESETS[id]?.ingredients ?? [])
     const alcoholIngredients = preferences.alcoholMode === 'exclude_entirely' ? [...ALCOHOL_INGREDIENT_KEYS] : []
-    return [...new Set([...preferences.customAllergens, ...presetIngredients, ...alcoholIngredients])]
+    const histamineIngredients = preferences.lowHistamine ? [...HIGH_HISTAMINE_INGREDIENT_KEYS] : []
+    return [...new Set([...preferences.customAllergens, ...presetIngredients, ...alcoholIngredients, ...histamineIngredients])]
   })()
 
   // ── Onboarding ────────────────────────────────────────────────────────────────
@@ -584,6 +594,7 @@ export function FableProvider({ children }: { children: ReactNode }) {
         setLactoseIntolerant,
         setLactoseMode,
         setAlcoholMode,
+        setLowHistamine,
         setKitchenEquipment,
         toggleKitchenEquipment,
         setColorMode,

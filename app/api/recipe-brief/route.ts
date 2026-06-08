@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
       (prefs.alcoholMode === "no_cooking" || prefs.alcoholMode === "exclude_entirely")
         ? prefs.alcoholMode
         : null;
+    const lowHistamine = prefs.lowHistamine === true;
 
     const kitchenIngredients = Array.isArray(body.kitchenIngredients)
       ? (body.kitchenIngredients as unknown[])
@@ -177,6 +178,10 @@ export async function POST(req: NextRequest) {
 
     const noAlcoholNote = alcoholMode
       ? `This user does not consume alcohol. Do not suggest alcohol-forward directions or cuisines where alcohol is central to the dish (e.g. no coq au vin, sake-braised dishes, or beer-based stews).\n\n`
+      : "";
+
+    const lowHistamineNote = lowHistamine
+      ? `This user follows a low-histamine diet. Do not suggest directions centred on fermented, aged, cured, or vinegar-heavy ingredients. Fresh, simple preparations are preferred.\n\n`
       : "";
 
     const rawExistingRecipe =
@@ -229,6 +234,7 @@ export async function POST(req: NextRequest) {
       `- Kitchen includes: ${kitchenIngredients.join(", ") || "not specified"}\n\n` +
       cookingStyleNote +
       noAlcoholNote +
+      lowHistamineNote +
       existingRecipeNote +
       nudgeInstruction +
       `Write a recipe brief. Identify what flavour territory this user hasn't explored yet that aligns with their taste profile. If cuisine is 'Surprise me', choose something genuinely novel for them. Be specific — name a dish direction, not just a cuisine.\n\n` +

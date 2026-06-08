@@ -90,6 +90,7 @@ export interface UserPreferences {
   visibleTabs: string[]       // which nav tabs are shown; min 2
   spiceTolerance: SpiceTolerance
   adventurousness: Adventurousness
+  lowHistamine: boolean  // dietary filter; not a medical tool
 }
 
 export interface DietPreset {

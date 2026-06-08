@@ -17,7 +17,7 @@ interface OnboardingScreenProps {
 type Step = 'welcome' | 'allergens' | 'cooking-style' | 'safe-foods-intro' | 'safe-foods-setup'
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode, togglePreset, setLactoseIntolerant, setLactoseMode, setAlcoholMode, setSpiceTolerance, setAdventurousness } = useFable()
+  const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode, togglePreset, setLactoseIntolerant, setLactoseMode, setAlcoholMode, setLowHistamine, setSpiceTolerance, setAdventurousness } = useFable()
   const [step, setStep] = useState<Step>('welcome')
   const [isDietExpanded, setIsDietExpanded] = useState(false)
   const [localSpice, setLocalSpice] = useState<SpiceTolerance | null>(null)
@@ -158,11 +158,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                     Diet &amp; Lifestyle
                   </h3>
                   <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
-                    {preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none'
+                    {preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none' || preferences.lowHistamine
                       ? [
                           ...preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id),
                           ...(preferences.lactoseIntolerant ? ['Lactose'] : []),
                           ...(preferences.alcoholMode !== 'none' ? ['No Alcohol'] : []),
+                          ...(preferences.lowHistamine ? ['Low Histamine'] : []),
                         ].join(', ') + ' active'
                       : 'None active'}
                     <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
@@ -369,6 +370,41 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                               </motion.div>
                             )}
                           </AnimatePresence>
+                        </div>
+
+                        {/* Low Histamine */}
+                        <div className={cn(
+                          'rounded-xl border transition-colors',
+                          preferences.lowHistamine ? 'bg-amber-500/5 border-amber-500/30' : 'bg-card border-border'
+                        )}>
+                          <div className="flex items-center justify-between gap-4 px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <span className="text-xl">🧬</span>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">Low Histamine</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Filters out high-histamine ingredients — fermented foods, aged cheeses, cured meats, alcohol, and common histamine triggers.
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              role="switch"
+                              aria-checked={preferences.lowHistamine}
+                              onClick={() => setLowHistamine(!preferences.lowHistamine)}
+                              className={cn(
+                                'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                                preferences.lowHistamine ? 'bg-amber-500' : 'bg-secondary'
+                              )}
+                            >
+                              <span className={cn(
+                                'pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg transition-transform',
+                                preferences.lowHistamine ? 'translate-x-5' : 'translate-x-0'
+                              )} />
+                            </button>
+                          </div>
+                          <p className="px-4 pb-3 text-xs text-muted-foreground">
+                            ⚕️ This is a dietary filter based on common low-histamine guidelines. It is not medical advice. Always consult a healthcare professional for diagnosis and treatment of histamine intolerance or MCAS.
+                          </p>
                         </div>
                       </div>
                     </motion.div>

@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     alcoholMode?: unknown;
     activePresets?: unknown;
     existingRecipe?: unknown;
+    lowHistamine?: unknown;
   };
   try {
     body = await req.json();
@@ -458,9 +459,14 @@ export async function POST(req: NextRequest) {
     ? `This user does not consume alcohol. Do not use any alcoholic ingredients in this recipe — no wine, beer, spirits, mirin, or cooking wines. Where a recipe would traditionally use alcohol (e.g. white wine in a risotto, mirin in a teriyaki), substitute with a non-alcoholic alternative (stock, rice vinegar, apple juice, or similar). Do not mention alcohol in the recipe at all.\n\n`
     : "";
 
+  const lowHistamine = body.lowHistamine === true;
+  const lowHistamineClause = lowHistamine
+    ? `This user follows a low-histamine diet. Avoid fermented foods, aged cheeses, cured meats, alcohol, vinegar-based ingredients, tomatoes, spinach, avocado, citrus fruits, and chocolate. Use fresh ingredients over preserved or fermented ones. Fresh meat, rice, most vegetables (except those listed), and fresh herbs are all suitable.\n\n`
+    : "";
+
   const userPrompt =
     safeFoodsMode && safeIngredients.length > 0
-      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + existingRecipeClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
+      ? tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + lowHistamineClause + existingRecipeClause + `CRITICAL CONSTRAINT: This user has severe dietary restrictions (MCAS or similar). ` +
         `They can ONLY eat these exact ingredients: ${humanSafe}. ` +
         `You MUST NOT suggest, add, or imply any ingredient not on this list. ` +
         `No substitutions, no optional additions, no garnishes from outside the list. ` +
@@ -477,7 +483,7 @@ export async function POST(req: NextRequest) {
         `Return JSON: { title, description, ingredients: [{name, amount, unit}], steps: [string], cookTime, servings, allergenFree: true` +
         (showMacros ? `, macros: { calories: number, protein: number, carbs: number, fat: number }` : ``) +
         ` }`
-      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + existingRecipeClause + adaptContext + `${kitchenConstraint}` +
+      : tasteProfileClause + seedIngredientsClause + recipeBriefClause + dislikedPrefix + spiceClause + adventurousnessClause + noAlcoholClause + lowHistamineClause + existingRecipeClause + adaptContext + `${kitchenConstraint}` +
         `${cuisineClause}${occasionClause}${servingsClause}${equipmentClause}` +
         `Generate a ${mealType} recipe that takes ${cookTimeLabel} to prepare. ` +
         `Use some or all of these ingredients (listed in order of expiry — prioritise using those listed first): ${humanAvailable}. ` +
