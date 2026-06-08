@@ -224,6 +224,7 @@ function FableAppContent() {
     const kitchenDisplayNames = preferences.ingredients
       .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
 
+    let wasAborted = false
     try {
       // Run brief fetch + Epicure pairings in parallel.
       // When a pre-computed suggestion is available from the Discover tab, skip the
@@ -341,11 +342,14 @@ function FableAppContent() {
       setGeneratedRecipeId(recipeId)
       addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return
+      if (error instanceof Error && error.name === 'AbortError') {
+        wasAborted = true
+        return
+      }
       console.error('Error generating recipe:', error)
       setGeneratedRecipe(null)
     } finally {
-      setLoadingStep(null)
+      if (!wasAborted) setLoadingStep(null)
     }
   }, [preferences, navigate, addToHistory, recipeBriefMutation, recipePairingsMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -368,6 +372,7 @@ function FableAppContent() {
     const kitchenDisplayNames = preferences.ingredients
       .map(i => i.displayName ?? i.name.replace(/_/g, ' '))
 
+    let wasAborted = false
     try {
       // Fetch brief then generate — pairings are already loaded.
       // Guests are not authenticated — skip brief (it returns 401 for guests).
@@ -451,11 +456,14 @@ function FableAppContent() {
       setGeneratedRecipeId(recipeId)
       addToHistory({ id: recipeId, recipe, timestamp: Date.now() })
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return
+      if (error instanceof Error && error.name === 'AbortError') {
+        wasAborted = true
+        return
+      }
       console.error('Error generating recipe from pairings:', error)
       setGeneratedRecipe(null)
     } finally {
-      setLoadingStep(null)
+      if (!wasAborted) setLoadingStep(null)
     }
   }, [pairings, preferences, isSignedIn, navigate, addToHistory, recipeBriefMutation, generateRecipeMutation]) // eslint-disable-line react-hooks/exhaustive-deps
 
