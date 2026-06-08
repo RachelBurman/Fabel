@@ -708,7 +708,7 @@ export function GeneratedRecipeScreen({
             )
           )}
 
-          {/* Refining full-screen takeover — brief card fills content area, recipe ghosts behind */}
+          {/* Refining full-screen takeover — fixed overlay covers full viewport */}
           <AnimatePresence>
             {isRefining && brief && (
               <motion.div
@@ -716,30 +716,32 @@ export function GeneratedRecipeScreen({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="absolute inset-0 z-10 bg-background pt-6"
+                className="fixed inset-0 z-50 bg-background overflow-y-auto"
               >
-                {onCancelRefine && (
-                  <div className="flex justify-end mb-5">
-                    <button
-                      onClick={onCancelRefine}
-                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <X className="w-3 h-3" />
-                      Cancel refinement
-                    </button>
-                  </div>
-                )}
-                <RecipeBriefCard
-                  brief={brief}
-                  isAuthenticated={isAuthenticated}
-                  onNudge={onNudge ? (type) => onNudge(type) : undefined}
-                  onNudgeCuisine={onNudge ? () => setCuisinePickerOpen(true) : undefined}
-                  activeNudge={activeNudge}
-                  isNudging={isNudging}
-                  spiceTolerance={currentFilters?.spiceTolerance}
-                  dietaryPresets={currentFilters?.dietaryPresets}
-                  cookTime={currentFilters?.cookTime}
-                />
+                <div className="max-w-2xl mx-auto px-6 pt-8 pb-12">
+                  {onCancelRefine && (
+                    <div className="flex justify-end mb-5">
+                      <button
+                        onClick={onCancelRefine}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel refinement
+                      </button>
+                    </div>
+                  )}
+                  <RecipeBriefCard
+                    brief={brief}
+                    isAuthenticated={isAuthenticated}
+                    onNudge={onNudge ? (type) => onNudge(type) : undefined}
+                    onNudgeCuisine={onNudge ? () => setCuisinePickerOpen(true) : undefined}
+                    activeNudge={activeNudge}
+                    isNudging={isNudging}
+                    spiceTolerance={currentFilters?.spiceTolerance}
+                    dietaryPresets={currentFilters?.dietaryPresets}
+                    cookTime={currentFilters?.cookTime}
+                  />
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
