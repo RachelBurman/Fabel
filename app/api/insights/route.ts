@@ -145,32 +145,56 @@ export async function GET(req: NextRequest) {
   const seedIngredients = resolvedPreferred.slice(0, 3);
 
   const profileWeekRecord = (profileWeekRes.Item ?? null) as IngredientInsightsRecord | null;
+  const profileAllTimeRecord = (profileAllTimeRes.Item ?? null) as IngredientInsightsRecord | null;
+
+  // Fall back to all-time data for fields the Lambda never populates on new weekly records.
+  // trendingRecipeTypes and trendingPairings only come from the seed script; when the
+  // current week rolls over the weekly record starts empty for those two arrays.
+  const effectiveRecipeTypes =
+    profileWeekRecord?.trendingRecipeTypes?.length
+      ? profileWeekRecord.trendingRecipeTypes
+      : (profileAllTimeRecord?.trendingRecipeTypes ?? []);
+
+  const effectivePairings =
+    profileWeekRecord?.trendingPairings?.length
+      ? profileWeekRecord.trendingPairings
+      : (profileAllTimeRecord?.trendingPairings ?? []);
+
   // Only surface "Trending for you" when the data is actually personalised:
   // either the user has allergens/presets that give them a filtered profile,
   // or they have enough feedback signals to seed the results meaningfully.
   // Without this gate a new guest sees global trends labelled "for you".
   const isPersonalised = profileKey !== "global" || hasEnoughSignals;
   const trendingForYou = isPersonalised
-    ? (profileWeekRecord?.trendingRecipeTypes ?? []).slice(0, 3).map((rt) => ({
+    ? effectiveRecipeTypes.slice(0, 3).map((rt) => ({
         cuisine: rt.cuisine,
         occasion: rt.occasion,
         seedIngredients,
       }))
     : [];
 
-  console.log(`[insights] userId=${userId} useStoredProfile=${useStoredProfile} hasEnoughSignals=${hasEnoughSignals} recipeSuggestions=${recipeSuggestions?.length ?? 0} tasteProfile=${tasteProfile !== null}`);
+  // Merge fallback pairings into the profileWeek shape so the client doesn't need
+  // to know about the fallback logic.
+  const profileWeekForClient = profileWeekRecord
+    ? { ...profileWeekRecord, trendingPairings: effectivePairings }
+    : profileAllTimeRecord
+      ? { ...profileAllTimeRecord, timeWindow: weekStr, trendingPairings: effectivePairings }
+      : null;
+
+  const rawGlobalWeek = profileKey === "global"
+    ? profileWeekRecord
+    : (globalWeekRes.Item ?? null) as IngredientInsightsRecord | null;
+
+  console.log(`[insights] userId=${userId} useStoredProfile=${useStoredProfile} hasEnoughSignals=${hasEnoughSignals} recipeSuggestions=${recipeSuggestions?.length ?? 0} tasteProfile=${tasteProfile !== null} weeklyRecipeTypes=${effectiveRecipeTypes.length} weeklyPairings=${effectivePairings.length}`);
 
   return NextResponse.json({
     profileKey,
     weekStr,
     allergens,
     customAllergens: (profile.customAllergens ?? []) as string[],
-    profileWeek: profileWeekRecord,
-    profileAllTime: (profileAllTimeRes.Item ?? null) as IngredientInsightsRecord | null,
-    globalWeek:
-      profileKey === "global"
-        ? profileWeekRecord
-        : (globalWeekRes.Item ?? null) as IngredientInsightsRecord | null,
+    profileWeek: profileWeekForClient,
+    profileAllTime: profileAllTimeRecord,
+    globalWeek: rawGlobalWeek,
     tasteProfile,
     trendingForYou,
   });
