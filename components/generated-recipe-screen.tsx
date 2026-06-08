@@ -74,6 +74,7 @@ interface GeneratedRecipeScreenProps {
   activeNudge?: NudgeType | null
   isNudging?: boolean
   isRefining?: boolean
+  onCancelRefine?: () => void
   currentFilters?: { spiceTolerance?: string; dietaryPresets?: string[]; cookTime?: string; cuisine?: string }
   // Substitution banner
   substitutionBanner?: { original: string; substitute: string } | null
@@ -321,6 +322,7 @@ export function GeneratedRecipeScreen({
   activeNudge,
   isNudging = false,
   isRefining = false,
+  onCancelRefine,
   currentFilters,
   substitutionBanner,
   onRegenerate,
@@ -384,6 +386,12 @@ export function GeneratedRecipeScreen({
     const id = setTimeout(() => setBannerVisible(false), 4000)
     return () => clearTimeout(id)
   }, [substitutionBanner])
+
+  useEffect(() => {
+    if (isRefining) {
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+    }
+  }, [isRefining])
 
   const handleSafeExplain = async () => {
     if (guestMode) {
@@ -597,7 +605,7 @@ export function GeneratedRecipeScreen({
       </AnimatePresence>
 
       <div className="px-6 py-8 md:py-12">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto relative">
 
           {/* Back + title (during load) + save */}
           <div className="flex items-center gap-4 mb-8">
@@ -691,28 +699,47 @@ export function GeneratedRecipeScreen({
             )
           )}
 
-          {/* Refining overlay — brief card sticks to top while recipe dims behind */}
-          {isRefining && brief && (
-            <div className="sticky top-0 z-50 -mx-6 px-6 py-3 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
-              <RecipeBriefCard
-                brief={brief}
-                isAuthenticated={isAuthenticated}
-                onNudge={onNudge ? (type) => onNudge(type) : undefined}
-                onNudgeCuisine={onNudge ? () => setCuisinePickerOpen(true) : undefined}
-                activeNudge={activeNudge}
-                isNudging={isNudging}
-                spiceTolerance={currentFilters?.spiceTolerance}
-                dietaryPresets={currentFilters?.dietaryPresets}
-                cookTime={currentFilters?.cookTime}
-              />
-            </div>
-          )}
+          {/* Refining full-screen takeover — brief card fills content area, recipe ghosts behind */}
+          <AnimatePresence>
+            {isRefining && brief && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="absolute inset-0 z-10"
+              >
+                {onCancelRefine && (
+                  <div className="flex justify-end mb-3">
+                    <button
+                      onClick={onCancelRefine}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                      Cancel refinement
+                    </button>
+                  </div>
+                )}
+                <RecipeBriefCard
+                  brief={brief}
+                  isAuthenticated={isAuthenticated}
+                  onNudge={onNudge ? (type) => onNudge(type) : undefined}
+                  onNudgeCuisine={onNudge ? () => setCuisinePickerOpen(true) : undefined}
+                  activeNudge={activeNudge}
+                  isNudging={isNudging}
+                  spiceTolerance={currentFilters?.spiceTolerance}
+                  dietaryPresets={currentFilters?.dietaryPresets}
+                  cookTime={currentFilters?.cookTime}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Recipe */}
           {(!isLoading || isRefining) && recipe && (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: isRefining ? 0.4 : 1, y: 0 }}
+              animate={{ opacity: isRefining ? 0.15 : 1, y: 0 }}
               transition={{ duration: 0.3 }}
               className={cn('space-y-8', isRefining && 'pointer-events-none select-none')}
             >

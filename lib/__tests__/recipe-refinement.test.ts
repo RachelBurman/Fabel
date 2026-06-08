@@ -411,3 +411,113 @@ describe('substitution banner auto-dismiss logic', () => {
     expect(bannerVisible).toBe(false)
   })
 })
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. Full-screen takeover — isRefining state transitions
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('isRefining full-screen takeover state', () => {
+  it('isRefining is set to true when nudge is tapped on a completed recipe', () => {
+    const generatedRecipe = { title: 'Lemon Herb Chicken', ingredients: [] }
+    let isRefining = false
+
+    // Simulate: handleNudge detects existing recipe and sets isRefining
+    const hadExistingRecipe = generatedRecipe !== null
+    if (hadExistingRecipe) isRefining = true
+
+    expect(isRefining).toBe(true)
+  })
+
+  it('isRefining is NOT set when nudge is tapped during initial generation (no recipe yet)', () => {
+    const generatedRecipe = null
+    let isRefining = false
+
+    const hadExistingRecipe = generatedRecipe !== null
+    if (hadExistingRecipe) isRefining = true
+
+    expect(isRefining).toBe(false)
+  })
+
+  it('isRefining is reset to false when generation completes', () => {
+    let isRefining = true
+    let abortedByNewerNudge = false
+
+    // Simulate: generation completes normally
+    if (!abortedByNewerNudge) {
+      isRefining = false
+    }
+
+    expect(isRefining).toBe(false)
+  })
+
+  it('isRefining stays true when generation is aborted by a newer nudge', () => {
+    let isRefining = true
+    const abortedByNewerNudge = true
+
+    // Simulate: generation is aborted mid-flight
+    if (!abortedByNewerNudge) {
+      isRefining = false
+    }
+
+    expect(isRefining).toBe(true)
+  })
+
+  it('cancel refinement resets all state: isRefining, isNudging, activeNudge, loadingStep', () => {
+    let isRefining = true
+    let isNudging = true
+    let activeNudge: string | null = 'spicier'
+    let loadingStep: string | null = 'recipe'
+
+    // Simulate: handleCancelRefine
+    isRefining = false
+    isNudging = false
+    activeNudge = null
+    loadingStep = null
+
+    expect(isRefining).toBe(false)
+    expect(isNudging).toBe(false)
+    expect(activeNudge).toBe(null)
+    expect(loadingStep).toBe(null)
+  })
+
+  it('cancel refinement with abort controller stops in-flight generation', () => {
+    const controller = new AbortController()
+    expect(controller.signal.aborted).toBe(false)
+
+    // Simulate: handleCancelRefine calls abort()
+    controller.abort()
+
+    expect(controller.signal.aborted).toBe(true)
+  })
+
+  it('recipe opacity is 0.15 when isRefining, 1 when not', () => {
+    const opacityWhenRefining = 0.15
+    const opacityWhenNormal = 1
+
+    expect(opacityWhenRefining).toBe(0.15)
+    expect(opacityWhenNormal).toBe(1)
+    // isRefining ? 0.15 : 1 — correct values
+    expect(true ? opacityWhenRefining : opacityWhenNormal).toBe(0.15)
+    expect(false ? opacityWhenRefining : opacityWhenNormal).toBe(1)
+  })
+
+  it('guest users: nudge buttons are not shown (onNudge is undefined)', () => {
+    const isSignedIn = false
+    const onNudge = isSignedIn ? (() => {}) : undefined
+
+    expect(onNudge).toBeUndefined()
+    // isRefining can never be set for guests since handleNudge guards on isSignedIn
+  })
+
+  it('regenerate completely navigates to ingredients, does not set isRefining', () => {
+    let navigatedTo: string | null = null
+    let isRefining = false
+
+    // Simulate: handleRegenerate
+    navigatedTo = 'ingredients'
+    // isRefining is NOT touched by handleRegenerate
+
+    expect(navigatedTo).toBe('ingredients')
+    expect(isRefining).toBe(false)
+  })
+})

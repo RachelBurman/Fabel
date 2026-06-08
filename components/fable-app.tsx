@@ -591,6 +591,16 @@ function FableAppContent() {
     }
   }, [preferences, isSignedIn, recipeFilters, brief, pairings, effectiveAllergens, effectiveCustomAllergens, dislikedPatterns, dislikedIngredients, generatedRecipe, generateRecipeMutation, addToHistory]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Cancel refinement: abort generation, restore recipe at full opacity ────────
+  const handleCancelRefine = useCallback(() => {
+    generateAbortRef.current?.abort()
+    generateAbortRef.current = null
+    setIsRefining(false)
+    setIsNudging(false)
+    setActiveNudge(null)
+    setLoadingStep(null)
+  }, [])
+
   // ── Start fresh: navigate to ingredients to generate a new recipe ─────────────
   const handleRegenerate = useCallback(() => {
     navigate('ingredients')
@@ -956,6 +966,7 @@ function FableAppContent() {
                 activeNudge={activeNudge}
                 isNudging={isNudging}
                 isRefining={isRefining}
+                onCancelRefine={handleCancelRefine}
                 currentFilters={{
                   spiceTolerance: preferences.spiceTolerance,
                   dietaryPresets: preferences.activePresets,
