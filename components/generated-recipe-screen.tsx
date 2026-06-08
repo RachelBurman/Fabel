@@ -718,9 +718,9 @@ export function GeneratedRecipeScreen({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50 bg-background overflow-y-auto"
+                className="fixed inset-0 z-[60] bg-background overflow-y-auto"
               >
-                <div className="max-w-2xl mx-auto px-6 pt-8 pb-12">
+                <div className="max-w-2xl mx-auto px-6 pt-8 pb-[max(3rem,env(safe-area-inset-bottom))]">
                   {onCancelRefine && (
                     <div className="flex justify-end mb-5">
                       <button
