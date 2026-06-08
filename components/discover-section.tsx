@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat, Info } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useFable } from '@/lib/fable-context'
@@ -63,16 +62,10 @@ interface DiscoverSectionProps {
 }
 
 export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngredients, onSelectSuggestion }: DiscoverSectionProps) {
-  const { preferences } = useFable()
+  const { preferences, userId, isSignedIn } = useFable()
   const { discoverSettings } = preferences
 
-  const [userId, setUserId] = useState('')
-  useEffect(() => {
-    const uid = localStorage.getItem('fable_user_id') ?? ''
-    setUserId(uid)
-  }, [])
-
-  const insightsQuery = useInsights(userId)
+  const insightsQuery = useInsights(userId, isSignedIn)
   const data = insightsQuery.data as InsightsData | undefined
   const isLoading = insightsQuery.isLoading
 

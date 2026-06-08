@@ -20,6 +20,8 @@ import { useDeleteCollection } from '@/lib/hooks/use-delete-collection'
 import { useUpdateCollection } from '@/lib/hooks/use-update-collection'
 
 interface FableContextType {
+  userId: string
+  isSignedIn: boolean
   preferences: UserPreferences
   setAllergens: (allergens: string[]) => void
   toggleAllergen: (allergenId: string) => void
@@ -565,6 +567,8 @@ export function FableProvider({ children }: { children: ReactNode }) {
   return (
     <FableContext.Provider
       value={{
+        userId,
+        isSignedIn,
         preferences,
         setAllergens,
         toggleAllergen,

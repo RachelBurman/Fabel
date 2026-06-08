@@ -8,8 +8,8 @@ export const queryKeys = {
   collections: (userId: string, isSignedIn: boolean) =>
     ['collections', userId, isSignedIn] as const,
 
-  insights: (userId: string) =>
-    ['insights', userId] as const,
+  insights: (userId: string, isSignedIn: boolean) =>
+    ['insights', userId, isSignedIn] as const,
 
   history: (userId: string, isSignedIn: boolean) =>
     ['history', userId, isSignedIn] as const,

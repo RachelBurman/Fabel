@@ -23,11 +23,11 @@ async function fetchInsights(userId: string): Promise<InsightsData> {
   return res.json() as Promise<InsightsData>
 }
 
-export function useInsights(userId: string) {
+export function useInsights(userId: string, isSignedIn: boolean) {
   return useQuery({
-    queryKey: queryKeys.insights(userId),
+    queryKey: queryKeys.insights(userId, isSignedIn),
     queryFn: () => fetchInsights(userId),
     enabled: !!userId,
-    staleTime: 60 * 60 * 1000, // 1 hour (matches server-side cache)
+    staleTime: 60 * 60 * 1000,
   })
 }
