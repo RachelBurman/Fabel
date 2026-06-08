@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat } from 'lucide-react'
+import { TrendingUp, Globe, Heart, Wine, Sparkles, ChefHat, Info } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useFable } from '@/lib/fable-context'
 import { type IngredientInsightsRecord, type RecipeSuggestion } from '@/lib/types'
 import { useInsights } from '@/lib/hooks/use-insights'
@@ -113,7 +114,22 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
               )}
               {data.tasteProfile.flavourTerritory.length > 0 && (
                 <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">Flavour territory</span>
+                  <div className="w-28 shrink-0 pt-0.5 flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs text-muted-foreground">Flavour territory</span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-3 h-3 text-muted-foreground/50 cursor-default shrink-0" />
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-48 text-xs">
+                            Ingredients that sit close to everything you love — found by mapping what your favourite flavours have in common.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground/50 leading-tight">where your taste is heading</span>
+                  </div>
                   <div className="flex flex-wrap gap-1.5">
                     {data.tasteProfile.flavourTerritory.map((ing, i) => (
                       <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-700 dark:text-amber-400">
