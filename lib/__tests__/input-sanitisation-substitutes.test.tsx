@@ -9,17 +9,18 @@
 import '@testing-library/jest-dom'
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SubstitutesScreen } from '../../components/substitutes-screen'
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 jest.mock('framer-motion', () => {
   const React = require('react')
+  const passthrough = (tag: string) =>
+    ({ children, className, style, onClick }: React.HTMLAttributes<HTMLElement>) =>
+      React.createElement(tag, { className, style, onClick }, children)
   return {
-    motion: {
-      div: ({ children, className, style, onClick }: React.HTMLAttributes<HTMLDivElement>) =>
-        React.createElement('div', { className, style, onClick }, children),
-    },
+    motion: { div: passthrough('div'), button: passthrough('button') },
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
   }
 })
@@ -31,7 +32,7 @@ jest.mock('@/lib/auth-client', () => ({
 jest.mock('@/lib/fable-context', () => ({
   useFable: () => ({
     preferences: {
-      ingredients: [],
+      ingredients: [{ name: 'chicken' }],
       allergens: [],
       customAllergens: [],
       safeIngredients: [],
@@ -47,7 +48,12 @@ jest.mock('@/lib/fable-context', () => ({
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function renderAndSwitchToRecipeMode() {
-  render(<SubstitutesScreen onBack={jest.fn()} onNavigateToKitchen={jest.fn()} />)
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+  render(
+    <QueryClientProvider client={qc}>
+      <SubstitutesScreen onBack={jest.fn()} onNavigateToKitchen={jest.fn()} />
+    </QueryClientProvider>
+  )
   fireEvent.click(screen.getByRole('button', { name: /from a recipe/i }))
 }
 

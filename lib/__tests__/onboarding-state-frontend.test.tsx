@@ -10,6 +10,7 @@
 import '@testing-library/jest-dom'
 import React from 'react'
 import { render, act, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { FableProvider, useFable } from '../../lib/fable-context'
 import { TUTORIAL_COMPLETE_KEY, shouldShowTutorial } from '../tutorial'
 
@@ -88,9 +89,11 @@ async function renderWithContext(profileOverrides: Record<string, unknown> = {})
 
   await act(async () => {
     render(
-      <FableProvider>
-        <Probe />
-      </FableProvider>
+      <QueryClientProvider client={queryClient}>
+        <FableProvider>
+          <Probe />
+        </FableProvider>
+      </QueryClientProvider>
     )
   })
 
@@ -99,12 +102,15 @@ async function renderWithContext(profileOverrides: Record<string, unknown> = {})
   }, { timeout: 3000 })
 }
 
+let queryClient: QueryClient
+
 beforeEach(() => {
   // Seed a userId so loadProfile is called (rather than the "new user" early-exit path)
   store = { fable_user_id: 'test-user-id' }
   session.data = null
   session.isPending = false
   jest.clearAllMocks()
+  queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
 })
 
 // ─── Profile load sets localStorage ──────────────────────────────────────────

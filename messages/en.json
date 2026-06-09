@@ -25,7 +25,7 @@
   },
   "kitchen": {
     "title": "My Kitchen",
-    "searchPlaceholder": "Search ingredients...",
+    "searchPlaceholder": "Search 1,790 ingredients…",
     "addIngredient": "Add ingredient",
     "empty": "Your kitchen is empty",
     "emptySubtitle": "Add ingredients to get personalised recipes",

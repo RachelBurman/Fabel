@@ -25,7 +25,7 @@
   },
   "kitchen": {
     "title": "Mi Cocina",
-    "searchPlaceholder": "Buscar ingredientes...",
+    "searchPlaceholder": "Buscar 1,790 ingredientes…",
     "addIngredient": "Añadir ingrediente",
     "empty": "Tu cocina está vacía",
     "emptySubtitle": "Añade ingredientes para obtener recetas personalizadas",

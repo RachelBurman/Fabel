@@ -9,6 +9,7 @@
 import '@testing-library/jest-dom'
 import React from 'react'
 import { render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { IngredientsScreen } from '../../components/ingredients-screen'
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -77,13 +78,15 @@ describe('IngredientsScreen — ingredient search maxLength', () => {
   }
 
   it('renders the search input with maxLength of 100', () => {
-    render(<IngredientsScreen {...defaultProps} />)
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    render(<QueryClientProvider client={qc}><IngredientsScreen {...defaultProps} /></QueryClientProvider>)
     const input = screen.getByPlaceholderText('Search 1,790 ingredients…') as HTMLInputElement
     expect(input.maxLength).toBe(100)
   })
 
   it('has the maxLength attribute set to "100" in the DOM', () => {
-    render(<IngredientsScreen {...defaultProps} />)
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+    render(<QueryClientProvider client={qc}><IngredientsScreen {...defaultProps} /></QueryClientProvider>)
     const input = screen.getByPlaceholderText('Search 1,790 ingredients…')
     expect(input).toHaveAttribute('maxLength', '100')
   })
