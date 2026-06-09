@@ -13,14 +13,15 @@
     "signOut": "Cerrar sesión",
     "email": "Correo electrónico",
     "password": "Contraseña",
-    "name": "Nombre",
+    "name": "Tu nombre",
     "guest": "Invitado",
     "guestTooltip": "Estás usando Fable como invitado. Inicia sesión para guardar tus preferencias en todos los dispositivos.",
     "signingIn": "Iniciando sesión...",
     "signingUp": "Registrándose...",
     "continueAsGuest": "Continuar como invitado",
     "alreadyHaveAccount": "¿Ya tienes una cuenta?",
-    "dontHaveAccount": "¿No tienes una cuenta?"
+    "dontHaveAccount": "¿No tienes una cuenta?",
+    "createAccount": "Crear cuenta"
   },
   "kitchen": {
     "title": "Mi Cocina",

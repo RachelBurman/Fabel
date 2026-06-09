@@ -93,7 +93,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
       >
         {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        {loading ? (mode === 'signin' ? t('signingIn') : t('signingUp')) : (mode === 'signin' ? t('signIn') : t('signUp'))}
+        {loading ? (mode === 'signin' ? t('signingIn') : t('signingUp')) : (mode === 'signin' ? t('signIn') : t('createAccount'))}
       </button>
 
       <p className="text-xs text-center text-muted-foreground">
