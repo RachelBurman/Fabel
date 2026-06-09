@@ -14,6 +14,7 @@ import { useFable } from '@/lib/fable-context'
 import { type SurveyResponse } from '@/lib/survey-signals'
 import { useDrinkPairings } from '@/lib/hooks/use-drink-pairings'
 import { useRecipeSafeExplain } from '@/lib/hooks/use-recipe-safe-explain'
+import { useTranslations } from 'next-intl'
 
 export type LoadingStep = 'pairings' | 'recipe'
 
@@ -331,6 +332,8 @@ export function GeneratedRecipeScreen({
 }: GeneratedRecipeScreenProps) {
   const { preferences } = useFable()
   const isLoading = loadingStep !== null
+  const t = useTranslations('recipe')
+  const tFeedback = useTranslations('feedback')
 
   const [cuisinePickerOpen, setCuisinePickerOpen] = useState(false)
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
@@ -536,11 +539,11 @@ export function GeneratedRecipeScreen({
             className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
           >
             <div className="text-5xl mb-6">🥘</div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">No matching recipes found</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-2">{t('noMatchingRecipes')}</h2>
             <p className="text-muted-foreground max-w-sm mx-auto mb-8">
               We couldn&apos;t find a community recipe that matches your requirements. Sign in to generate a personalised recipe with AI.
             </p>
-            <Button onClick={onOpenAuth} className="rounded-full mb-3">Sign in to Fable</Button>
+            <Button onClick={onOpenAuth} className="rounded-full mb-3">{t('noMatchingRecipes')}</Button>
             <Button onClick={onBack} variant="outline" className="rounded-full">Go Back</Button>
           </motion.div>
         </div>
@@ -853,14 +856,7 @@ export function GeneratedRecipeScreen({
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">🍳</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    You&apos;re seeing a community recipe —{' '}
-                    <button
-                      onClick={onOpenAuth}
-                      className="font-medium underline underline-offset-2 hover:no-underline"
-                    >
-                      Sign in
-                    </button>
-                    {' '}to generate a personalised recipe with AI.
+                    {t('communityRecipe')}
                   </p>
                 </div>
               )}
@@ -891,7 +887,7 @@ export function GeneratedRecipeScreen({
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">🥛</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    <span className="font-medium">Contains dairy</span> — consider taking Lactaid before eating.
+                    {t('containsDairy')}
                   </p>
                 </div>
               )}
@@ -900,7 +896,7 @@ export function GeneratedRecipeScreen({
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">🧬</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    <span className="font-medium">Low histamine filter active</span> — this recipe avoids common histamine triggers. Always consult a healthcare professional for medical advice.
+                    {t('lowHistamineBanner')}
                   </p>
                 </div>
               )}
@@ -911,7 +907,7 @@ export function GeneratedRecipeScreen({
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">⚠️</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    <span className="font-medium">This recipe may contain alcohol</span> — check ingredients before cooking.
+                    {t('alcoholBanner')}
                   </p>
                 </div>
               )}
@@ -929,7 +925,7 @@ export function GeneratedRecipeScreen({
                 {recipe.allergenFree && (
                   <div className="flex items-center gap-2 text-primary">
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Allergen safe</span>
+                    <span>{t('allergenSafe')}</span>
                   </div>
                 )}
               </div>
@@ -962,7 +958,7 @@ export function GeneratedRecipeScreen({
               <div className="flex items-center justify-between -mt-4">
                 {feedbackGiven === null && (
                   <>
-                    <span className="text-sm text-muted-foreground">Rate this recipe</span>
+                    <span className="text-sm text-muted-foreground">{tFeedback('rateThis')}</span>
                     <div className="flex gap-2">
                       <button
                         onClick={handleLike}
@@ -1108,7 +1104,7 @@ export function GeneratedRecipeScreen({
 
               {/* Ingredients */}
               <section>
-                <h2 className="text-lg font-semibold text-foreground mb-4">Ingredients</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{t('ingredients')}</h2>
                 <ul className="space-y-2.5">
                   {recipe.ingredients.map((ing, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm">
@@ -1139,7 +1135,7 @@ export function GeneratedRecipeScreen({
 
               {/* Steps */}
               <section>
-                <h2 className="text-lg font-semibold text-foreground mb-4">Method</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{t('method')}</h2>
                 <ol className="space-y-5">
                   {recipe.steps.map((step, i) => (
                     <li key={i} className="flex items-start gap-4">
@@ -1154,7 +1150,7 @@ export function GeneratedRecipeScreen({
 
               {/* Drink Pairings */}
               <section>
-                <h2 className="text-lg font-semibold text-foreground mb-4">Drink Pairings</h2>
+                <h2 className="text-lg font-semibold text-foreground mb-4">{t('drinkPairings')}</h2>
                 {drinkPairingsLoading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />

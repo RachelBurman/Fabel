@@ -7,6 +7,7 @@ import { Clock, Users, History, Share2, Loader2, ArrowRight, ArrowLeft } from 'l
 import { Button } from '@/components/ui/button'
 import { RecipeGradient } from '@/components/recipe-gradient'
 import { shareRecipe } from '@/lib/share-recipe'
+import { useTranslations } from 'next-intl'
 
 function relativeTime(ts: number): string {
   const diff = Date.now() - ts
@@ -97,6 +98,8 @@ interface HistoryScreenProps {
 }
 
 export function HistoryScreen({ history, onViewRecipe, onGenerateNew, onBack }: HistoryScreenProps) {
+  const t = useTranslations('history')
+
   if (history.length === 0) {
     return (
       <div className="bg-background">
@@ -106,12 +109,12 @@ export function HistoryScreen({ history, onViewRecipe, onGenerateNew, onBack }: 
           className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
         >
           <div className="text-5xl mb-6">📖</div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">No recipes yet</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('empty')}</h2>
           <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-            Generate your first recipe to see your history here.
+            {t('emptySubtitle')}
           </p>
           <Button onClick={onGenerateNew} className="rounded-full gap-2">
-            Generate a recipe <ArrowRight className="w-4 h-4" />
+            {t('generateFirst')} <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>
       </div>
@@ -132,7 +135,7 @@ export function HistoryScreen({ history, onViewRecipe, onGenerateNew, onBack }: 
                 </Button>
               )}
               <Clock className="w-6 h-6 text-primary" />
-              <h1 className="text-2xl md:text-3xl font-semibold text-foreground">Recipe History</h1>
+              <h1 className="text-2xl md:text-3xl font-semibold text-foreground">{t('title')}</h1>
             </div>
             <p className="text-muted-foreground text-sm">
               {`${history.length} recipe${history.length > 1 ? 's' : ''} in your history`}

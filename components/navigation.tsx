@@ -9,6 +9,7 @@ import { useSession, signOut as authSignOut } from '@/lib/auth-client'
 import { AuthForm } from '@/components/auth-form'
 import { cn } from '@/lib/utils'
 import { useFable } from '@/lib/fable-context'
+import { useTranslations } from 'next-intl'
 
 type NavScreen = 'ingredients' | 'recipe' | 'discover' | 'substitutes' | 'saved' | 'history'
 
@@ -20,14 +21,15 @@ interface BottomNavigationProps {
 export function BottomNavigation({ currentScreen, onNavigate }: BottomNavigationProps) {
   const { preferences } = useFable()
   const visibleTabs = preferences.visibleTabs
+  const t = useTranslations('nav')
 
   const allNavItems = [
-    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,       tabKey: 'kitchen'     },
-    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen,      tabKey: 'recipe'      },
-    { id: 'discover'     as const, label: 'Discover',    icon: Compass,       tabKey: 'discover'    },
-    { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight, tabKey: 'substitutes' },
-    { id: 'history'      as const, label: 'History',     icon: Clock,         tabKey: 'history'     },
-    { id: 'saved'        as const, label: 'Saved',       icon: Heart,         tabKey: 'saved'       },
+    { id: 'ingredients'  as const, label: t('kitchen'),     icon: ChefHat,       tabKey: 'kitchen'     },
+    { id: 'recipe'       as const, label: t('recipe'),      icon: BookOpen,      tabKey: 'recipe'      },
+    { id: 'discover'     as const, label: t('discover'),    icon: Compass,       tabKey: 'discover'    },
+    { id: 'substitutes'  as const, label: t('substitutes'), icon: ArrowLeftRight, tabKey: 'substitutes' },
+    { id: 'history'      as const, label: t('history'),     icon: Clock,         tabKey: 'history'     },
+    { id: 'saved'        as const, label: t('saved'),       icon: Heart,         tabKey: 'saved'       },
   ]
 
   const navItems = allNavItems.filter(item => visibleTabs.includes(item.tabKey))
@@ -67,14 +69,15 @@ export function SidebarNavigation({ currentScreen, onNavigate }: BottomNavigatio
   const { preferences } = useFable()
   const visibleTabs = preferences.visibleTabs
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
+  const t = useTranslations('nav')
 
   const allNavItems = [
-    { id: 'ingredients'  as const, label: 'Kitchen',     icon: ChefHat,        tabKey: 'kitchen'     },
-    { id: 'recipe'       as const, label: 'Recipe',      icon: BookOpen,       tabKey: 'recipe'      },
-    { id: 'discover'     as const, label: 'Discover',    icon: Compass,        tabKey: 'discover'    },
-    { id: 'substitutes'  as const, label: 'Substitutes', icon: ArrowLeftRight, tabKey: 'substitutes' },
-    { id: 'history'      as const, label: 'History',     icon: Clock,          tabKey: 'history'     },
-    { id: 'saved'        as const, label: 'Saved',       icon: Heart,          tabKey: 'saved'       },
+    { id: 'ingredients'  as const, label: t('kitchen'),     icon: ChefHat,        tabKey: 'kitchen'     },
+    { id: 'recipe'       as const, label: t('recipe'),      icon: BookOpen,       tabKey: 'recipe'      },
+    { id: 'discover'     as const, label: t('discover'),    icon: Compass,        tabKey: 'discover'    },
+    { id: 'substitutes'  as const, label: t('substitutes'), icon: ArrowLeftRight, tabKey: 'substitutes' },
+    { id: 'history'      as const, label: t('history'),     icon: Clock,          tabKey: 'history'     },
+    { id: 'saved'        as const, label: t('saved'),       icon: Heart,          tabKey: 'saved'       },
   ]
 
   const navItems = allNavItems.filter(item => visibleTabs.includes(item.tabKey))
@@ -141,6 +144,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
   const isLoaded = !isPending
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const colorMode = preferences.colorMode
+  const tAuth = useTranslations('auth')
 
   const [guestOpen, setGuestOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -181,7 +185,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
 
   const displayName = isLoaded && isSignedIn
     ? (session?.user?.name?.split(' ')?.[0] || session?.user?.email?.split('@')[0] || 'Account').slice(0, 12)
-    : 'Guest'
+    : tAuth('guest')
 
   const pillInitial = isLoaded && isSignedIn && session?.user?.name
     ? session.user.name[0].toUpperCase()
@@ -230,7 +234,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
               : <User className="w-3 h-3 shrink-0" />
             }
             <span className="hidden xs:inline">{displayName}</span>
-            <span className="xs:hidden">{isSignedIn ? displayName : 'Guest'}</span>
+            <span className="xs:hidden">{isSignedIn ? displayName : tAuth('guest')}</span>
           </button>
 
           {/* Auth popover */}
@@ -273,7 +277,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border border-border"
                   >
                     <LogOut className="w-4 h-4" />
-                    Sign out
+                    {tAuth('signOut')}
                   </button>
                 </div>
               </motion.div>

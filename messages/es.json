@@ -1,0 +1,321 @@
+{
+  "nav": {
+    "kitchen": "Cocina",
+    "recipe": "Receta",
+    "discover": "Descubrir",
+    "substitutes": "Sustitutos",
+    "history": "Historial",
+    "saved": "Guardados"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "name": "Nombre",
+    "guest": "Invitado",
+    "guestTooltip": "Estás usando Fable como invitado. Inicia sesión para guardar tus preferencias en todos los dispositivos.",
+    "signingIn": "Iniciando sesión...",
+    "signingUp": "Registrándose...",
+    "continueAsGuest": "Continuar como invitado",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "dontHaveAccount": "¿No tienes una cuenta?"
+  },
+  "kitchen": {
+    "title": "Mi Cocina",
+    "searchPlaceholder": "Buscar ingredientes...",
+    "addIngredient": "Añadir ingrediente",
+    "empty": "Tu cocina está vacía",
+    "emptySubtitle": "Añade ingredientes para obtener recetas personalizadas",
+    "areas": {
+      "fridge": "Nevera",
+      "freezer": "Congelador",
+      "cupboard": "Armario",
+      "pantry": "Despensa"
+    },
+    "expiry": {
+      "useToday": "Usar hoy",
+      "expiringSoon": "Caduca pronto",
+      "expires": "Caduca"
+    },
+    "useKitchenOnly": "Usar solo mi cocina",
+    "scanIngredients": "Escanear ingredientes",
+    "scanBarcode": "Escanear código de barras"
+  },
+  "recipe": {
+    "title": "Receta",
+    "generating": "Generando receta...",
+    "generate": "Generar receta",
+    "findPairings": "Encontrar maridajes",
+    "mealType": "Tipo de comida",
+    "cookTime": "Tiempo de cocción",
+    "cuisine": "Cocina",
+    "occasion": "Ocasión",
+    "servings": "Raciones",
+    "equipment": "Equipamiento de cocina",
+    "mealTypes": {
+      "snack": "Aperitivo",
+      "starter": "Entrante",
+      "main": "Plato principal",
+      "dessert": "Postre"
+    },
+    "cookTimes": {
+      "quick": "Rápido (<30 min)",
+      "medium": "Medio (30-60 min)",
+      "slow": "Cocción lenta (60+ min)"
+    },
+    "cuisines": {
+      "chinese": "China",
+      "korean": "Coreana",
+      "spanish": "Española",
+      "italian": "Italiana",
+      "japanese": "Japonesa",
+      "indian": "India",
+      "mexican": "Mexicana",
+      "french": "Francesa",
+      "moroccan": "Marroquí",
+      "thai": "Tailandesa",
+      "british": "Británica",
+      "greek": "Griega",
+      "turkish": "Turca",
+      "surprise": "Sorpréndeme"
+    },
+    "occasions": {
+      "weeknight": "Entre semana",
+      "dinnerParty": "Cena con amigos",
+      "streetFood": "Comida callejera",
+      "comfortFood": "Comida reconfortante",
+      "packedLunch": "Almuerzo para llevar",
+      "romanticDinner": "Cena romántica",
+      "mealPrep": "Preparación semanal",
+      "celebration": "Celebración"
+    },
+    "nudges": {
+      "spicier": "Más picante",
+      "vegetarian": "Hacerlo vegetariano",
+      "quicker": "Más rápido",
+      "differentCuisine": "Otra cocina",
+      "surpriseMe": "Sorpréndeme"
+    },
+    "refine": "Refinar esta receta",
+    "regenerate": "Empezar con una nueva receta",
+    "allergenSafe": "Sin alérgenos",
+    "containsDairy": "Contiene lácteos — considera tomar Lactaid antes de comer.",
+    "lowHistamineBanner": "Filtro bajo en histamina activo — esta receta evita los desencadenantes comunes de histamina. Consulta siempre a un profesional de la salud.",
+    "alcoholBanner": "Esta receta puede contener alcohol — comprueba los ingredientes antes de cocinar.",
+    "ingredients": "Ingredientes",
+    "method": "Elaboración",
+    "drinkPairings": "Maridajes",
+    "macros": "Información nutricional",
+    "macrosDisclaimer": "Valores estimados. No sustituye el asesoramiento dietético profesional.",
+    "save": "Guardar receta",
+    "saved": "Guardado",
+    "share": "Compartir",
+    "whySafe": "¿Por qué es segura para mí?",
+    "whySafeGuest": "Inicia sesión para ver por qué esta receta es segura para ti",
+    "communityRecipe": "Estás viendo una receta de la comunidad — Inicia sesión para generar una receta personalizada con IA.",
+    "noMatchingRecipes": "No se encontraron recetas compatibles — Inicia sesión en Fable"
+  },
+  "brief": {
+    "thinking": "PENSANDO...",
+    "loadingHints": {
+      "checking": "Revisando tu historial de sabores...",
+      "finding": "Buscando ingredientes seguros...",
+      "crafting": "Creando tu receta...",
+      "personalising": "Personalizando para ti..."
+    }
+  },
+  "discover": {
+    "title": "Descubrir",
+    "subtitle": "Tendencias esta semana · seguro para ti",
+    "excluding": "Excluyendo",
+    "tasteProfile": "Tu perfil de sabor",
+    "youLove": "Te encanta",
+    "youAvoid": "Evitas",
+    "flavourTerritory": "Territorio de sabor",
+    "flavourTerritorySubtitle": "hacia dónde va tu gusto",
+    "flavourTerritoryTooltip": "Ingredientes cercanos a todo lo que amas — encontrados mapeando lo que tienen en común tus sabores favoritos.",
+    "basedOn": "Basado en tus últimas {count} recetas",
+    "suggestedForYou": "Sugerido para ti",
+    "trendingForYou": "Tendencias para ti",
+    "trendingGlobally": "Tendencias globales",
+    "mostLoved": "Ingredientes más queridos",
+    "trendingPairings": "Maridajes tendencia"
+  },
+  "substitutes": {
+    "title": "Sustitutos",
+    "fromKitchen": "De mi cocina",
+    "fromRecipe": "De una receta",
+    "pasteRecipe": "Pega tu receta aquí...",
+    "findSubstitutes": "Buscar sustitutos",
+    "useThis": "Usar este →",
+    "inKitchen": "En cocina",
+    "allergenSwap": "Cambio por alérgeno",
+    "missing": "Faltante",
+    "contextFit": "Encaje contextual"
+  },
+  "history": {
+    "title": "Historial de recetas",
+    "empty": "Aún no hay recetas",
+    "emptySubtitle": "Genera tu primera receta para ver tu historial aquí.",
+    "generateFirst": "Generar una receta →",
+    "signInForHistory": "Inicia sesión para conservar tu historial entre sesiones"
+  },
+  "saved": {
+    "title": "Recetas guardadas",
+    "empty": "Aún no hay recetas guardadas",
+    "emptySubtitle": "Genera tu primera receta y guarda las que te encanten.",
+    "generateFirst": "Generar una receta →"
+  },
+  "collections": {
+    "title": "Colecciones",
+    "empty": "Esta colección está vacía",
+    "emptySubtitle": "Guarda recetas aquí para crear tu colección.",
+    "browseSaved": "Ver recetas guardadas →",
+    "newCollection": "Nueva colección",
+    "addToCollection": "Añadir a colección"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "allergens": "Alérgenos",
+    "dietPresets": "Dieta y estilo de vida",
+    "cookingStyle": "Estilo de cocina",
+    "spiceTolerance": "Tolerancia al picante",
+    "adventurousness": "¿Qué tan aventurero/a eres?",
+    "theme": "Apariencia",
+    "tabs": "Pestañas visibles",
+    "discoverSettings": "Secciones de Descubrir",
+    "onboarding": "Introducción",
+    "restartOnboarding": "Reiniciar tutorial",
+    "deleteAccount": "Eliminar mi cuenta y todos los datos",
+    "deleteConfirmTitle": "¿Eliminar tu cuenta?",
+    "deleteConfirmBody": "Esto eliminará permanentemente tu cuenta, cocina, recetas guardadas, perfil de sabor y todos los datos personales. No se puede deshacer.",
+    "deleteConfirm": "Eliminar permanentemente",
+    "deleteCancel": "Cancelar",
+    "themes": {
+      "light": "Claro",
+      "dark": "Oscuro",
+      "system": "Auto"
+    }
+  },
+  "onboarding": {
+    "skip": "Saltar",
+    "next": "Siguiente",
+    "letsGo": "¡Empecemos!",
+    "slides": {
+      "welcome": {
+        "title": "Bienvenido a Fable",
+        "subtitle": "Ingredientes seguros. Sabores atrevidos. Comida para todos."
+      },
+      "allergens": {
+        "title": "Tus alérgenos",
+        "subtitle": "Dinos qué evitar y mantendremos cada receta segura para ti."
+      },
+      "cookingStyle": {
+        "title": "Tu estilo de cocina",
+        "subtitle": "Puedes cambiar esto en cualquier momento en los ajustes."
+      },
+      "kitchen": {
+        "title": "Tu cocina",
+        "subtitle": "Añade lo que tienes y crearemos recetas a tu medida."
+      },
+      "recipe": {
+        "title": "Genera recetas",
+        "subtitle": "Recetas personalizadas y sin alérgenos en segundos."
+      },
+      "safeFoods": {
+        "title": "Modo Alimentos Seguros",
+        "subtitle": "Para MCAS, alergias graves o dietas muy restringidas. Define exactamente lo que puedes comer."
+      }
+    }
+  },
+  "spiceLevels": {
+    "none": "Sin picante",
+    "mild": "Un poco de calor",
+    "medium": "Picante medio",
+    "hot": "¡Al máximo!"
+  },
+  "adventurous": {
+    "familiar": "Me quedo con lo conocido",
+    "occasional": "Alguna que otra sorpresa",
+    "adventurous": "Llévame a algún lugar nuevo"
+  },
+  "presets": {
+    "vegan": {
+      "name": "Vegano",
+      "description": "Excluye todos los productos animales"
+    },
+    "vegetarian": {
+      "name": "Vegetariano",
+      "description": "Excluye carne y pescado"
+    },
+    "keto": {
+      "name": "Keto",
+      "description": "Excluye ingredientes altos en carbohidratos"
+    },
+    "lowFodmap": {
+      "name": "Bajo en FODMAP",
+      "description": "Excluye los desencadenantes comunes de FODMAP"
+    },
+    "lactose": {
+      "name": "Intolerancia a la lactosa",
+      "description": "Elige cómo manejar los lácteos",
+      "reminder": "Los lácteos se mantienen en las recetas — verás un recordatorio de Lactaid",
+      "exclude": "Excluir lácteos completamente — trata los lácteos como un alérgeno"
+    },
+    "alcohol": {
+      "name": "Sin alcohol",
+      "description": "Elimina el alcohol de las recetas y maridajes",
+      "noCooking": "Cocina sin alcohol — alcohol eliminado de las recetas, maridajes alcohólicos ocultos",
+      "excludeEntirely": "Excluir completamente — trata el alcohol como un alérgeno, filtrado de todos los resultados"
+    },
+    "lowHistamine": {
+      "name": "Bajo en histamina",
+      "description": "Filtra ingredientes altos en histamina — alimentos fermentados, quesos curados, carnes procesadas, alcohol y otros desencadenantes comunes.",
+      "disclaimer": "Este es un filtro dietético basado en pautas comunes de baja histamina. No es un consejo médico. Consulta siempre a un profesional de la salud para el diagnóstico y tratamiento de la intolerancia a la histamina o MCAS."
+    }
+  },
+  "feedback": {
+    "rateThis": "Valora esta receta",
+    "highlight": "Lo mejor del plato",
+    "leaveOut": "Dejaría fuera",
+    "whatWorked": "Lo que funcionó",
+    "whatDidnt": "Lo que no funcionó",
+    "skip": "Saltar",
+    "submit": "Enviar valoración"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "retry": "Intentar de nuevo",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "done": "Listo",
+    "back": "Volver",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "signIn": "Iniciar sesión",
+    "or": "o",
+    "minutes": "{count} minutos",
+    "servings": "{count} raciones",
+    "people": "{count} personas"
+  },
+  "safeFoods": {
+    "title": "Modo Alimentos Seguros",
+    "description": "Para MCAS, alergias graves o dietas muy restringidas. Solo los ingredientes de tu lista segura aparecerán en las recetas.",
+    "liquidPlaceholder": "Líquido de tu elección",
+    "seasoningPlaceholder": "Condimento de tu elección",
+    "addSafeFood": "Añadir alimento seguro",
+    "noSafeFoods": "Aún no hay alimentos seguros añadidos"
+  },
+  "share": {
+    "title": "Compartir receta",
+    "copied": "Enlace copiado al portapapeles",
+    "sharedRecipe": "Receta compartida",
+    "noLongerAvailable": "Esta receta ya no está disponible.",
+    "disclaimer": "Maridajes mostrados sin filtro de alérgenos — comprueba los ingredientes cuidadosamente."
+  }
+}

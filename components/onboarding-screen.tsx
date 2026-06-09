@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ALLERGENS, DIET_PRESETS, type SpiceTolerance, type Adventurousness } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
@@ -17,6 +18,15 @@ interface OnboardingScreenProps {
 type Step = 'welcome' | 'allergens' | 'cooking-style' | 'safe-foods-intro' | 'safe-foods-setup'
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
+  const t = useTranslations('onboarding')
+  const tPresets = useTranslations('presets')
+  const tSpice = useTranslations('spiceLevels')
+  const tAdv = useTranslations('adventurous')
+
+  const PRESET_I18N_KEY: Record<string, string> = {
+    vegan: 'vegan', vegetarian: 'vegetarian', keto: 'keto', low_fodmap: 'lowFodmap',
+  }
+
   const { preferences, toggleAllergen, completeOnboarding, setSafeFoodsMode, togglePreset, setLactoseIntolerant, setLactoseMode, setAlcoholMode, setLowHistamine, setSpiceTolerance, setAdventurousness } = useFable()
   const [step, setStep] = useState<Step>('welcome')
   const [isDietExpanded, setIsDietExpanded] = useState(false)
@@ -78,7 +88,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               transition={{ delay: 0.3, duration: 0.4 }}
               className="text-4xl md:text-5xl font-semibold text-foreground mb-4 text-center text-balance"
             >
-              Welcome to Fable
+              {t('slides.welcome.title')}
             </motion.h1>
 
             <motion.p
@@ -87,7 +97,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               transition={{ delay: 0.4, duration: 0.4 }}
               className="text-lg text-muted-foreground text-center max-w-md mb-12 text-pretty"
             >
-              Discover delicious recipes that are safe for you. We&apos;ll help you find flavour-matched meals tailored to your dietary needs.
+              {t('slides.welcome.subtitle')}
             </motion.p>
 
             {/* Features */}
@@ -141,10 +151,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               {/* Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
-                  Your dietary restrictions
+                  {t('slides.allergens.title')}
                 </h2>
                 <p className="text-muted-foreground text-pretty">
-                  Set your diet and allergens — we&apos;ll filter recipes to match
+                  {t('slides.allergens.subtitle')}
                 </p>
               </div>
 
@@ -194,8 +204,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                               <div className="flex items-center gap-3">
                                 <span className="text-xl">{preset.emoji}</span>
                                 <div>
-                                  <p className="text-sm font-medium text-foreground">{preset.label}</p>
-                                  <p className="text-xs text-muted-foreground">{preset.description}</p>
+                                  <p className="text-sm font-medium text-foreground">{tPresets(`${PRESET_I18N_KEY[preset.id] ?? preset.id}.name`)}</p>
+                                  <p className="text-xs text-muted-foreground">{tPresets(`${PRESET_I18N_KEY[preset.id] ?? preset.id}.description`)}</p>
                                 </div>
                               </div>
                               <button
@@ -225,7 +235,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                             <div className="flex items-center gap-3">
                               <span className="text-xl">🥛</span>
                               <div>
-                                <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
+                                <p className="text-sm font-medium text-foreground">{tPresets('lactose.name')}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
                                     ? 'Dairy allowed — Lactaid reminder shown on recipes'
@@ -263,8 +273,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                               >
                                 <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
                                   {([
-                                    { value: 'include' as const, label: 'Include dairy with reminders', desc: "Dairy stays in recipes — you'll see a Lactaid reminder" },
-                                    { value: 'exclude' as const, label: 'Exclude dairy entirely', desc: 'Treats dairy like an allergen, filtered from all results' },
+                                    { value: 'include' as const, label: 'Include dairy with reminders', desc: tPresets('lactose.reminder') },
+                                    { value: 'exclude' as const, label: 'Exclude dairy entirely', desc: tPresets('lactose.exclude') },
                                   ]).map(({ value, label, desc }) => (
                                     <button
                                       key={value}
@@ -303,7 +313,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                             <div className="flex items-center gap-3">
                               <span className="text-xl">🍷</span>
                               <div>
-                                <p className="text-sm font-medium text-foreground">No Alcohol</p>
+                                <p className="text-sm font-medium text-foreground">{tPresets('alcohol.name')}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {preferences.alcoholMode === 'no_cooking'
                                     ? 'Alcohol-free cooking — drink pairings hidden'
@@ -341,8 +351,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                               >
                                 <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
                                   {([
-                                    { value: 'no_cooking' as const, label: '🍷 Alcohol-free cooking', desc: 'Alcohol removed from recipes — cooking wine, beer, and spirits replaced with non-alcoholic alternatives. Alcoholic drink pairings hidden.' },
-                                    { value: 'exclude_entirely' as const, label: '🚫 Exclude entirely', desc: 'Treats alcohol like an allergen — filtered from all results including marinades, sauces, and flavourings. Alcoholic drink pairings hidden.' },
+                                    { value: 'no_cooking' as const, label: '🍷 Alcohol-free cooking', desc: tPresets('alcohol.noCooking') },
+                                    { value: 'exclude_entirely' as const, label: '🚫 Exclude entirely', desc: tPresets('alcohol.excludeEntirely') },
                                   ]).map(({ value, label, desc }) => (
                                     <button
                                       key={value}
@@ -381,9 +391,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                             <div className="flex items-center gap-3">
                               <span className="text-xl">🧬</span>
                               <div>
-                                <p className="text-sm font-medium text-foreground">Low Histamine</p>
+                                <p className="text-sm font-medium text-foreground">{tPresets('lowHistamine.name')}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  Filters out high-histamine ingredients — fermented foods, aged cheeses, cured meats, alcohol, and common histamine triggers.
+                                  {tPresets('lowHistamine.description')}
                                 </p>
                               </div>
                             </div>
@@ -403,7 +413,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                             </button>
                           </div>
                           <p className="px-4 pb-3 text-xs text-muted-foreground">
-                            ⚕️ This is a dietary filter based on common low-histamine guidelines. It is not medical advice. Always consult a healthcare professional for diagnosis and treatment of histamine intolerance or MCAS.
+                            ⚕️ {tPresets('lowHistamine.disclaimer')}
                           </p>
                         </div>
                       </div>
@@ -486,10 +496,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
-                  Your cooking style
+                  {t('slides.cookingStyle.title')}
                 </h2>
                 <p className="text-muted-foreground text-pretty">
-                  You can change these any time in settings.
+                  {t('slides.cookingStyle.subtitle')}
                 </p>
               </div>
 
@@ -498,11 +508,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">How do you feel about spice?</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {([
-                    { value: 'none' as const, label: 'No spice please', emoji: '🌿' },
-                    { value: 'mild' as const, label: 'A little warmth', emoji: '🌶️' },
-                    { value: 'medium' as const, label: 'Medium heat', emoji: '🌶️🌶️' },
-                    { value: 'hot' as const, label: 'Bring it on', emoji: '🌶️🌶️🌶️' },
-                  ]).map(({ value, label, emoji }) => (
+                    { value: 'none' as const, emoji: '🌿' },
+                    { value: 'mild' as const, emoji: '🌶️' },
+                    { value: 'medium' as const, emoji: '🌶️🌶️' },
+                    { value: 'hot' as const, emoji: '🌶️🌶️🌶️' },
+                  ]).map(({ value, emoji }) => (
                     <button
                       key={value}
                       onClick={() => setLocalSpice(value)}
@@ -515,7 +525,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                     >
                       <span className="text-2xl">{emoji}</span>
                       <span className={cn('text-xs font-medium leading-tight', localSpice === value ? 'text-primary' : 'text-foreground')}>
-                        {label}
+                        {tSpice(value)}
                       </span>
                     </button>
                   ))}
@@ -527,10 +537,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">How adventurous are you feeling?</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {([
-                    { value: 'familiar' as const, label: 'Stick to what I know', emoji: '🏠' },
-                    { value: 'occasional' as const, label: 'The occasional surprise', emoji: '🗺️' },
-                    { value: 'adventurous' as const, label: 'Take me somewhere new', emoji: '🌍' },
-                  ]).map(({ value, label, emoji }) => (
+                    { value: 'familiar' as const, emoji: '🏠' },
+                    { value: 'occasional' as const, emoji: '🗺️' },
+                    { value: 'adventurous' as const, emoji: '🌍' },
+                  ]).map(({ value, emoji }) => (
                     <button
                       key={value}
                       onClick={() => setLocalAdventurousness(value)}
@@ -543,7 +553,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                     >
                       <span className="text-2xl">{emoji}</span>
                       <span className={cn('text-xs font-medium leading-tight', localAdventurousness === value ? 'text-primary' : 'text-foreground')}>
-                        {label}
+                        {tAdv(value)}
                       </span>
                     </button>
                   ))}
@@ -589,7 +599,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               transition={{ delay: 0.2, duration: 0.35 }}
               className="text-3xl md:text-4xl font-semibold text-foreground mb-4 text-center text-balance"
             >
-              Have a very restricted diet?
+              {t('slides.safeFoods.title')}
             </motion.h2>
 
             <motion.p

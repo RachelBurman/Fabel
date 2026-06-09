@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { CustomAllergenSearch } from '@/components/custom-allergen-search'
 import { toast } from 'sonner'
+import { useTranslations } from 'next-intl'
 
 interface AllergenScreenProps {
   onDone: () => void
@@ -27,6 +28,11 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
   const [macrosAuthPrompt, setMacrosAuthPrompt] = useState(false)
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const colorMode = preferences.colorMode
+  const t = useTranslations('settings')
+  const tPresets = useTranslations('presets')
+  const tSpice = useTranslations('spiceLevels')
+  const tAdventurous = useTranslations('adventurous')
+  const tCommon = useTranslations('common')
 
   const handleColorModeChange = (mode: 'light' | 'dark' | 'system') => {
     setTheme(mode)
@@ -97,7 +103,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-semibold text-foreground">Allergen Settings</h1>
+              <h1 className="text-2xl font-semibold text-foreground">{t('title')}</h1>
               <p className="text-sm text-muted-foreground">{headerSubtitle}</p>
             </div>
           </div>
@@ -109,7 +115,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               className="flex items-center justify-between w-full text-left group mb-3"
             >
               <h2 className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                Diet &amp; Lifestyle
+                {t('dietPresets')}
               </h2>
               <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
                 {anyDietActive
@@ -335,9 +341,9 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                         <div className="flex items-center gap-3">
                           <span className="text-xl">🧬</span>
                           <div>
-                            <p className="text-sm font-medium text-foreground">Low Histamine</p>
+                            <p className="text-sm font-medium text-foreground">{tPresets('lowHistamine.name')}</p>
                             <p className="text-xs text-muted-foreground">
-                              Filters out high-histamine ingredients — fermented foods, aged cheeses, cured meats, alcohol, and common histamine triggers.
+                              {tPresets('lowHistamine.description')}
                             </p>
                           </div>
                         </div>
@@ -357,7 +363,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                         </button>
                       </div>
                       <p className="px-4 pb-3 text-xs text-muted-foreground">
-                        ⚕️ This is a dietary filter based on common low-histamine guidelines. It is not medical advice. Always consult a healthcare professional for diagnosis and treatment of histamine intolerance or MCAS.
+                        ⚕️ {tPresets('lowHistamine.disclaimer')}
                       </p>
                     </div>
                   </div>
@@ -411,18 +417,18 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
           <div className="py-4 border-t border-border">
             <div className="flex items-center gap-2 mb-3">
               <UtensilsCrossed className="w-5 h-5 text-muted-foreground" />
-              <p className="text-sm font-semibold text-foreground">Cooking style</p>
+              <p className="text-sm font-semibold text-foreground">{t('cookingStyle')}</p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <p className="text-xs text-muted-foreground mb-2">Spice tolerance</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('spiceTolerance')}</p>
                 <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
                   {([
-                    { value: 'none' as SpiceTolerance, label: 'No spice' },
-                    { value: 'mild' as SpiceTolerance, label: 'A little warmth' },
-                    { value: 'medium' as SpiceTolerance, label: 'Medium heat' },
-                    { value: 'hot' as SpiceTolerance, label: 'Bring it on' },
+                    { value: 'none' as SpiceTolerance, label: tSpice('none') },
+                    { value: 'mild' as SpiceTolerance, label: tSpice('mild') },
+                    { value: 'medium' as SpiceTolerance, label: tSpice('medium') },
+                    { value: 'hot' as SpiceTolerance, label: tSpice('hot') },
                   ]).map(({ value, label }) => (
                     <button
                       key={value}
@@ -441,12 +447,12 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               </div>
 
               <div>
-                <p className="text-xs text-muted-foreground mb-2">Adventurousness</p>
+                <p className="text-xs text-muted-foreground mb-2">{t('adventurousness')}</p>
                 <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
                   {([
-                    { value: 'familiar' as Adventurousness, label: 'Stick to what I know' },
-                    { value: 'occasional' as Adventurousness, label: 'The occasional surprise' },
-                    { value: 'adventurous' as Adventurousness, label: 'Take me somewhere new' },
+                    { value: 'familiar' as Adventurousness, label: tAdventurous('familiar') },
+                    { value: 'occasional' as Adventurousness, label: tAdventurous('occasional') },
+                    { value: 'adventurous' as Adventurousness, label: tAdventurous('adventurous') },
                   ]).map(({ value, label }) => (
                     <button
                       key={value}
@@ -558,15 +564,15 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
             <div className="flex items-center gap-2 mb-3">
               {colorMode === 'dark' ? <Moon className="w-5 h-5 text-muted-foreground" /> : colorMode === 'light' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Monitor className="w-5 h-5 text-muted-foreground" />}
               <div>
-                <p className="text-sm font-semibold text-foreground">Theme</p>
+                <p className="text-sm font-semibold text-foreground">{t('theme')}</p>
                 <p className="text-xs text-muted-foreground">{colorMode === 'system' ? 'Follows your device setting' : colorMode === 'dark' ? 'Always dark' : 'Always light'}</p>
               </div>
             </div>
             <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
               {([
-                { value: 'light', label: 'Light', Icon: Sun },
-                { value: 'system', label: 'Auto', Icon: Monitor },
-                { value: 'dark', label: 'Dark', Icon: Moon },
+                { value: 'light', label: t('themes.light'), Icon: Sun },
+                { value: 'system', label: t('themes.system'), Icon: Monitor },
+                { value: 'dark', label: t('themes.dark'), Icon: Moon },
               ] as const).map(({ value, label, Icon }) => (
                 <button
                   key={value}
@@ -628,7 +634,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
           <div className="py-4 border-t border-border">
             <div className="flex items-center gap-2 mb-1">
               <Layout className="w-5 h-5 text-muted-foreground" />
-              <p className="text-sm font-semibold text-foreground">Navigation</p>
+              <p className="text-sm font-semibold text-foreground">{t('tabs')}</p>
             </div>
             <p className="text-xs text-muted-foreground mb-3">At least 2 tabs must remain visible.</p>
             {ALL_TABS.map((tabId) => {
@@ -673,7 +679,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               <div className="flex items-center gap-2">
                 <PlayCircle className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Tutorial</p>
+                  <p className="text-sm font-semibold text-foreground">{t('onboarding')}</p>
                   <p className="text-xs text-muted-foreground">Revisit the intro slideshow</p>
                 </div>
               </div>
@@ -683,7 +689,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                 onClick={onRestartTutorial}
                 className="rounded-full text-xs"
               >
-                Restart tutorial
+                {t('restartOnboarding')}
               </Button>
             </div>
           </div>

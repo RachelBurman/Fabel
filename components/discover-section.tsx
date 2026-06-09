@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useFable } from '@/lib/fable-context'
 import { type IngredientInsightsRecord, type RecipeSuggestion } from '@/lib/types'
 import { useInsights } from '@/lib/hooks/use-insights'
+import { useTranslations } from 'next-intl'
 
 const ALLERGEN_LABELS: Record<string, string> = {
   milk: 'Milk', eggs: 'Eggs', gluten: 'Gluten', peanuts: 'Peanuts',
@@ -64,6 +65,7 @@ interface DiscoverSectionProps {
 export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngredients, onSelectSuggestion }: DiscoverSectionProps) {
   const { preferences, userId, isSignedIn } = useFable()
   const { discoverSettings } = preferences
+  const t = useTranslations('discover')
 
   const insightsQuery = useInsights(userId, isSignedIn)
   const data = insightsQuery.data as InsightsData | undefined
@@ -78,12 +80,12 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-semibold text-foreground">Your taste profile</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('tasteProfile')}</h2>
             </div>
             <div className="rounded-xl border border-border bg-card p-4 space-y-3">
               {data.tasteProfile.preferred.length > 0 && (
                 <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">You love</span>
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">{t('youLove')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {data.tasteProfile.preferred.map((ing, i) => (
                       <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
@@ -95,7 +97,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
               )}
               {data.tasteProfile.avoided.length > 0 && (
                 <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">You avoid</span>
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">{t('youAvoid')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {data.tasteProfile.avoided.map((ing, i) => (
                       <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-foreground">
@@ -109,19 +111,19 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                 <div className="flex items-start gap-2">
                   <div className="w-28 shrink-0 pt-0.5 flex flex-col gap-0.5">
                     <div className="flex items-center gap-1">
-                      <span className="text-xs text-muted-foreground">Flavour territory</span>
+                      <span className="text-xs text-muted-foreground">{t('flavourTerritory')}</span>
                       <TooltipProvider delayDuration={200}>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-3 h-3 text-muted-foreground/50 cursor-default shrink-0" />
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-48 text-xs">
-                            Ingredients that sit close to everything you love — found by mapping what your favourite flavours have in common.
+                            {t('flavourTerritoryTooltip')}
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>
-                    <span className="text-[10px] text-muted-foreground/50 leading-tight">where your taste is heading</span>
+                    <span className="text-[10px] text-muted-foreground/50 leading-tight">{t('flavourTerritorySubtitle')}</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {data.tasteProfile.flavourTerritory.map((ing, i) => (
@@ -148,7 +150,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                   </div>
                 </div>
               )}
-              <p className="text-xs text-muted-foreground pt-1">Based on your last {data.tasteProfile.signalCount} recipes</p>
+              <p className="text-xs text-muted-foreground pt-1">{t('basedOn', { count: data.tasteProfile.signalCount })}</p>
             </div>
           </div>
         )}
@@ -158,7 +160,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           <div>
             <div className="flex items-center gap-2 mb-3">
               <ChefHat className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Suggested for you</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('suggestedForYou')}</h2>
             </div>
             <div className="space-y-2.5">
               {data.tasteProfile.recipeSuggestions.map((s, i) => (
@@ -187,7 +189,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           <div>
             <div className="flex items-center gap-2 mb-3">
               <TrendingUp className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-semibold text-foreground">Trending for you</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('trendingForYou')}</h2>
             </div>
             {data?.trendingForYou && data.trendingForYou.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -218,7 +220,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Globe className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold text-foreground">Trending globally</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('trendingGlobally')}</h2>
             </div>
             {data?.globalWeek?.trendingIngredients && data.globalWeek.trendingIngredients.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -242,7 +244,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Heart className="w-4 h-4 text-rose-500" />
-              <h2 className="text-sm font-semibold text-foreground">Most loved ingredients</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('mostLoved')}</h2>
             </div>
             {data?.profileAllTime?.trendingIngredients && data.profileAllTime.trendingIngredients.length > 0 ? (
               <div className="space-y-2.5">
@@ -270,7 +272,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           <div>
             <div className="flex items-center gap-2 mb-3">
               <Wine className="w-4 h-4 text-violet-500" />
-              <h2 className="text-sm font-semibold text-foreground">Trending pairings</h2>
+              <h2 className="text-sm font-semibold text-foreground">{t('trendingPairings')}</h2>
             </div>
             {data?.profileWeek?.trendingPairings && data.profileWeek.trendingPairings.length > 0 ? (
               <div className="flex flex-wrap gap-2">

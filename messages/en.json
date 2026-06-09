@@ -1,0 +1,321 @@
+{
+  "nav": {
+    "kitchen": "Kitchen",
+    "recipe": "Recipe",
+    "discover": "Discover",
+    "substitutes": "Substitutes",
+    "history": "History",
+    "saved": "Saved"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "guest": "Guest",
+    "guestTooltip": "You're using Fable as a guest. Sign in to save your preferences across devices.",
+    "signingIn": "Signing in...",
+    "signingUp": "Signing up...",
+    "continueAsGuest": "Continue as guest",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?"
+  },
+  "kitchen": {
+    "title": "My Kitchen",
+    "searchPlaceholder": "Search ingredients...",
+    "addIngredient": "Add ingredient",
+    "empty": "Your kitchen is empty",
+    "emptySubtitle": "Add ingredients to get personalised recipes",
+    "areas": {
+      "fridge": "Fridge",
+      "freezer": "Freezer",
+      "cupboard": "Cupboard",
+      "pantry": "Pantry"
+    },
+    "expiry": {
+      "useToday": "Use today",
+      "expiringSoon": "Expiring soon",
+      "expires": "Expires"
+    },
+    "useKitchenOnly": "Use my kitchen only",
+    "scanIngredients": "Scan ingredients",
+    "scanBarcode": "Scan barcode"
+  },
+  "recipe": {
+    "title": "Recipe",
+    "generating": "Generating Recipe...",
+    "generate": "Generate Recipe",
+    "findPairings": "Find Pairings",
+    "mealType": "Meal type",
+    "cookTime": "Cook time",
+    "cuisine": "Cuisine",
+    "occasion": "Occasion",
+    "servings": "Servings",
+    "equipment": "Kitchen equipment",
+    "mealTypes": {
+      "snack": "Snack",
+      "starter": "Starter",
+      "main": "Main Course",
+      "dessert": "Dessert"
+    },
+    "cookTimes": {
+      "quick": "Quick (<30m)",
+      "medium": "Medium (30-60m)",
+      "slow": "Slow Cook (60m+)"
+    },
+    "cuisines": {
+      "chinese": "Chinese",
+      "korean": "Korean",
+      "spanish": "Spanish",
+      "italian": "Italian",
+      "japanese": "Japanese",
+      "indian": "Indian",
+      "mexican": "Mexican",
+      "french": "French",
+      "moroccan": "Moroccan",
+      "thai": "Thai",
+      "british": "British",
+      "greek": "Greek",
+      "turkish": "Turkish",
+      "surprise": "Surprise me"
+    },
+    "occasions": {
+      "weeknight": "Weeknight",
+      "dinnerParty": "Dinner Party",
+      "streetFood": "Street Food",
+      "comfortFood": "Comfort Food",
+      "packedLunch": "Packed Lunch",
+      "romanticDinner": "Romantic Dinner",
+      "mealPrep": "Meal Prep",
+      "celebration": "Celebration"
+    },
+    "nudges": {
+      "spicier": "Make it spicier",
+      "vegetarian": "Make it vegetarian",
+      "quicker": "Make it quicker",
+      "differentCuisine": "Different cuisine",
+      "surpriseMe": "Surprise me"
+    },
+    "refine": "Refine this recipe",
+    "regenerate": "Start fresh with a new recipe",
+    "allergenSafe": "Allergen safe",
+    "containsDairy": "Contains dairy — consider taking Lactaid before eating.",
+    "lowHistamineBanner": "Low histamine filter active — this recipe avoids common histamine triggers. Always consult a healthcare professional for medical advice.",
+    "alcoholBanner": "This recipe may contain alcohol — check ingredients before cooking.",
+    "ingredients": "Ingredients",
+    "method": "Method",
+    "drinkPairings": "Drink pairings",
+    "macros": "Nutritional info",
+    "macrosDisclaimer": "Estimated values only. Not a substitute for professional dietary advice.",
+    "save": "Save recipe",
+    "saved": "Saved",
+    "share": "Share",
+    "whySafe": "Why is this safe for me?",
+    "whySafeGuest": "Sign in to see why this recipe is safe for you",
+    "communityRecipe": "You're seeing a community recipe — Sign in to generate a personalised recipe with AI.",
+    "noMatchingRecipes": "No matching recipes found — Sign in to Fable"
+  },
+  "brief": {
+    "thinking": "I'M THINKING...",
+    "loadingHints": {
+      "checking": "Checking your taste history...",
+      "finding": "Finding safe ingredients...",
+      "crafting": "Crafting your recipe...",
+      "personalising": "Personalising for you..."
+    }
+  },
+  "discover": {
+    "title": "Discover",
+    "subtitle": "Trending this week · safe for you",
+    "excluding": "Excluding",
+    "tasteProfile": "Your taste profile",
+    "youLove": "You love",
+    "youAvoid": "You avoid",
+    "flavourTerritory": "Flavour territory",
+    "flavourTerritorySubtitle": "where your taste is heading",
+    "flavourTerritoryTooltip": "Ingredients that sit close to everything you love — found by mapping what your favourite flavours have in common.",
+    "basedOn": "Based on your last {count} recipes",
+    "suggestedForYou": "Suggested for you",
+    "trendingForYou": "Trending for you",
+    "trendingGlobally": "Trending globally",
+    "mostLoved": "Most loved ingredients",
+    "trendingPairings": "Trending pairings"
+  },
+  "substitutes": {
+    "title": "Substitutes",
+    "fromKitchen": "From my kitchen",
+    "fromRecipe": "From a recipe",
+    "pasteRecipe": "Paste your recipe here...",
+    "findSubstitutes": "Find substitutes",
+    "useThis": "Use this →",
+    "inKitchen": "In kitchen",
+    "allergenSwap": "Allergen swap",
+    "missing": "Missing",
+    "contextFit": "Context fit"
+  },
+  "history": {
+    "title": "Recipe History",
+    "empty": "No recipes yet",
+    "emptySubtitle": "Generate your first recipe to see your history here.",
+    "generateFirst": "Generate a recipe →",
+    "signInForHistory": "Sign in to keep your history across sessions"
+  },
+  "saved": {
+    "title": "Saved Recipes",
+    "empty": "No saved recipes yet",
+    "emptySubtitle": "Generate your first recipe and save ones you love.",
+    "generateFirst": "Generate a recipe →"
+  },
+  "collections": {
+    "title": "Collections",
+    "empty": "This collection is empty",
+    "emptySubtitle": "Save recipes here to build your collection.",
+    "browseSaved": "Browse saved recipes →",
+    "newCollection": "New collection",
+    "addToCollection": "Add to collection"
+  },
+  "settings": {
+    "title": "Settings",
+    "allergens": "Allergens",
+    "dietPresets": "Diet & Lifestyle",
+    "cookingStyle": "Cooking style",
+    "spiceTolerance": "Spice tolerance",
+    "adventurousness": "How adventurous?",
+    "theme": "Appearance",
+    "tabs": "Visible tabs",
+    "discoverSettings": "Discover sections",
+    "onboarding": "Onboarding",
+    "restartOnboarding": "Restart tutorial",
+    "deleteAccount": "Delete my account and all data",
+    "deleteConfirmTitle": "Delete your account?",
+    "deleteConfirmBody": "This will permanently delete your account, kitchen, saved recipes, taste profile, and all personal data. This cannot be undone.",
+    "deleteConfirm": "Delete permanently",
+    "deleteCancel": "Cancel",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Auto"
+    }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "letsGo": "Let's go",
+    "slides": {
+      "welcome": {
+        "title": "Welcome to Fable",
+        "subtitle": "Safe ingredients. Bold flavours. Food for everyone."
+      },
+      "allergens": {
+        "title": "Your allergens",
+        "subtitle": "Tell us what to avoid and we'll keep every recipe safe for you."
+      },
+      "cookingStyle": {
+        "title": "Your cooking style",
+        "subtitle": "You can change these any time in settings."
+      },
+      "kitchen": {
+        "title": "Your kitchen",
+        "subtitle": "Add what you have and we'll build recipes around it."
+      },
+      "recipe": {
+        "title": "Generate recipes",
+        "subtitle": "Personalised, allergen-safe recipes in seconds."
+      },
+      "safeFoods": {
+        "title": "Safe Foods Mode",
+        "subtitle": "For MCAS, severe allergies, or highly restricted diets. Define exactly what you can eat."
+      }
+    }
+  },
+  "spiceLevels": {
+    "none": "No spice please",
+    "mild": "A little warmth",
+    "medium": "Medium heat",
+    "hot": "Bring it on"
+  },
+  "adventurous": {
+    "familiar": "Stick to what I know",
+    "occasional": "The occasional surprise",
+    "adventurous": "Take me somewhere new"
+  },
+  "presets": {
+    "vegan": {
+      "name": "Vegan",
+      "description": "Excludes all animal products"
+    },
+    "vegetarian": {
+      "name": "Vegetarian",
+      "description": "Excludes meat and fish"
+    },
+    "keto": {
+      "name": "Keto",
+      "description": "Excludes high-carb ingredients"
+    },
+    "lowFodmap": {
+      "name": "Low-FODMAP",
+      "description": "Excludes common FODMAP triggers"
+    },
+    "lactose": {
+      "name": "Lactose Intolerance",
+      "description": "Choose how to handle dairy",
+      "reminder": "Dairy stays in recipes — you'll see a Lactaid reminder",
+      "exclude": "Exclude dairy entirely — treats dairy like an allergen"
+    },
+    "alcohol": {
+      "name": "No Alcohol",
+      "description": "Remove alcohol from recipes and pairings",
+      "noCooking": "Alcohol-free cooking — alcohol removed from recipes, alcoholic pairings hidden",
+      "excludeEntirely": "Exclude entirely — treats alcohol like an allergen, filtered from all results"
+    },
+    "lowHistamine": {
+      "name": "Low Histamine",
+      "description": "Filters out high-histamine ingredients — fermented foods, aged cheeses, cured meats, alcohol, and common histamine triggers.",
+      "disclaimer": "This is a dietary filter based on common low-histamine guidelines. It is not medical advice. Always consult a healthcare professional for diagnosis and treatment of histamine intolerance or MCAS."
+    }
+  },
+  "feedback": {
+    "rateThis": "Rate this recipe",
+    "highlight": "Highlight of the dish",
+    "leaveOut": "Would leave out",
+    "whatWorked": "What worked",
+    "whatDidnt": "What didn't",
+    "skip": "Skip",
+    "submit": "Submit feedback"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "done": "Done",
+    "back": "Back",
+    "close": "Close",
+    "confirm": "Confirm",
+    "signIn": "Sign in",
+    "or": "or",
+    "minutes": "{count} minutes",
+    "servings": "{count} servings",
+    "people": "{count} people"
+  },
+  "safeFoods": {
+    "title": "Safe Foods Mode",
+    "description": "For MCAS, severe allergies, or highly restricted diets. Only ingredients on your safe list will appear in recipes.",
+    "liquidPlaceholder": "Liquid of choice",
+    "seasoningPlaceholder": "Seasoning of choice",
+    "addSafeFood": "Add safe food",
+    "noSafeFoods": "No safe foods added yet"
+  },
+  "share": {
+    "title": "Share recipe",
+    "copied": "Link copied to clipboard",
+    "sharedRecipe": "Shared Recipe",
+    "noLongerAvailable": "This recipe is no longer available.",
+    "disclaimer": "Drink pairings shown without allergen filtering — check ingredients carefully."
+  }
+}

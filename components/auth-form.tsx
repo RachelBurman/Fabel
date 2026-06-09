@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { signIn, signUp } from '@/lib/auth-client'
 import { Input } from '@/components/ui/input'
+import { useTranslations } from 'next-intl'
 
 interface AuthFormProps {
   onSuccess?: () => void
@@ -16,6 +17,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const t = useTranslations('auth')
 
   const handleSubmit = async () => {
     setError(null)
@@ -49,13 +51,13 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   return (
     <div className="p-4 space-y-3">
       <p className="text-sm font-semibold text-foreground">
-        {mode === 'signin' ? 'Sign in to Fable' : 'Create your account'}
+        {mode === 'signin' ? t('signIn') : t('signUp')}
       </p>
 
       {mode === 'signup' && (
         <Input
           type="text"
-          placeholder="Your name"
+          placeholder={t('name')}
           value={name}
           onChange={e => setName(e.target.value)}
           disabled={loading}
@@ -65,7 +67,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       )}
       <Input
         type="email"
-        placeholder="Email"
+        placeholder={t('email')}
         value={email}
         onChange={e => setEmail(e.target.value)}
         disabled={loading}
@@ -74,7 +76,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
       />
       <Input
         type="password"
-        placeholder="Password"
+        placeholder={t('password')}
         value={password}
         onChange={e => setPassword(e.target.value)}
         disabled={loading}
@@ -91,28 +93,28 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
         className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
       >
         {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-        {mode === 'signin' ? 'Sign in' : 'Create account'}
+        {loading ? (mode === 'signin' ? t('signingIn') : t('signingUp')) : (mode === 'signin' ? t('signIn') : t('signUp'))}
       </button>
 
       <p className="text-xs text-center text-muted-foreground">
         {mode === 'signin' ? (
           <>
-            Don&apos;t have an account?{' '}
+            {t('dontHaveAccount')}{' '}
             <button
               onClick={() => { setMode('signup'); setError(null) }}
               className="underline hover:text-foreground transition-colors"
             >
-              Sign up
+              {t('signUp')}
             </button>
           </>
         ) : (
           <>
-            Already have an account?{' '}
+            {t('alreadyHaveAccount')}{' '}
             <button
               onClick={() => { setMode('signin'); setError(null) }}
               className="underline hover:text-foreground transition-colors"
             >
-              Sign in
+              {t('signIn')}
             </button>
           </>
         )}

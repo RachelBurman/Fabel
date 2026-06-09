@@ -16,6 +16,7 @@ import allergenMapData from '@/data/allergen-map.json'
 import { useSubstitutes, type SubstitutesInput } from '@/lib/hooks/use-substitutes'
 import { useExtractIngredients } from '@/lib/hooks/use-extract-ingredients'
 import { type GeneratedRecipe } from '@/lib/types'
+import { useTranslations } from 'next-intl'
 
 const allergenMap = allergenMapData as Record<string, string[]>
 
@@ -179,6 +180,7 @@ export function SubstitutesScreen({
   const { preferences } = useFable()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
+  const t = useTranslations('substitutes')
 
   const singleSubstituteMutation = useSubstitutes()
   const substitutesListMutation = useSubstitutes()
@@ -471,8 +473,8 @@ export function SubstitutesScreen({
             <div className="flex gap-1 mb-6 p-1 bg-secondary rounded-xl">
               {(
                 [
-                  { id: 'from-kitchen' as const, label: 'From my kitchen', icon: ChefHat },
-                  { id: 'from-recipe'  as const, label: 'From a recipe',   icon: Utensils },
+                  { id: 'from-kitchen' as const, label: t('fromKitchen'), icon: ChefHat },
+                  { id: 'from-recipe'  as const, label: t('fromRecipe'),  icon: Utensils },
                 ] as const
               ).map(({ id, label, icon: Icon }) => (
                 <button
@@ -520,7 +522,7 @@ export function SubstitutesScreen({
                   onChange={(e) => setCurrentText(e.target.value)}
                   placeholder={
                     inputMode === 'full-recipe'
-                      ? "Paste a full recipe here — title, ingredients, method and all. We'll extract just the ingredients."
+                      ? t('pasteRecipe')
                       : 'One ingredient per line, e.g:\n1 pound ground beef\n2 cups salsa\n3 cloves garlic'
                   }
                   className="w-full h-36 text-sm bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -784,7 +786,7 @@ export function SubstitutesScreen({
                             <p className="text-sm font-medium text-foreground">{sub.similarityToOriginal}%</p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Context fit</p>
+                            <p className="text-xs text-muted-foreground">{t('contextFit')}</p>
                             <p className="text-sm font-medium text-foreground">{sub.contextFit}%</p>
                           </div>
                           {onSubstituteSelected && sourceRecipe && selectedIngredient && (
@@ -818,7 +820,7 @@ export function SubstitutesScreen({
                                 {applyingSubstitute === sub.name ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : (
-                                  <>Use this <ArrowRight className="w-3 h-3" /></>
+                                  <>{t('useThis')} <ArrowRight className="w-3 h-3" /></>
                                 )}
                               </button>
                             </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -69,6 +70,17 @@ const OCCASIONS: { value: string; label: string }[] = [
   { value: 'Meal Prep',      label: 'Meal Prep' },
   { value: 'Celebration',    label: 'Celebration' },
 ]
+
+const OCCASION_I18N_KEYS: Record<string, string> = {
+  'Weeknight': 'weeknight',
+  'Dinner Party': 'dinnerParty',
+  'Street Food': 'streetFood',
+  'Comfort Food': 'comfortFood',
+  'Packed Lunch': 'packedLunch',
+  'Romantic Dinner': 'romanticDinner',
+  'Meal Prep': 'mealPrep',
+  'Celebration': 'celebration',
+}
 
 const EQUIPMENT_OPTIONS: { value: string; label: string; defaultOn: boolean }[] = [
   { value: 'hob',         label: '🔥 Hob',           defaultOn: true  },
@@ -221,6 +233,9 @@ interface IngredientsScreenProps {
 }
 
 export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubstitutes, onOpenAuth }: IngredientsScreenProps) {
+  const t = useTranslations('recipe')
+  const tK = useTranslations('kitchen')
+  const tSub = useTranslations('substitutes')
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
   const { preferences, addIngredient, removeIngredient, setIngredients, effectiveAllergens, effectiveCustomAllergens, toggleKitchenEquipment } = useFable()
@@ -461,7 +476,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       type="text"
-                      placeholder="Search 1,790 ingredients…"
+                      placeholder={tK('searchPlaceholder')}
                       maxLength={100}
                       value={inputValue}
                       onChange={e => { setInputValue(e.target.value); setShowDropdown(e.target.value.length > 0) }}
@@ -568,7 +583,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                         <div>
                           <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
                           <div className="flex flex-wrap gap-2">
-                            {AREAS.map(({ value, emoji, label }) => (
+                            {AREAS.map(({ value, emoji }) => (
                               <button
                                 key={value}
                                 onClick={() => setPendingArea(value)}
@@ -579,7 +594,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                                     : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
                                 )}
                               >
-                                <span>{emoji}</span>{label}
+                                <span>{emoji}</span>{tK(`areas.${value}`)}
                               </button>
                             ))}
                           </div>
@@ -700,7 +715,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                               {showLactoseTag && (allergenMap[ingredient.name] ?? []).includes('milk') && (
                                 <span className="text-xs opacity-75" title="Contains lactose">🥛</span>
                               )}
-                              {isRed && <span className="text-xs font-medium opacity-90">Use today!</span>}
+                              {isRed && <span className="text-xs font-medium opacity-90">{tK('expiry.useToday')}!</span>}
                               <X className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 shrink-0" />
                             </motion.button>
                           )
@@ -782,9 +797,9 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
                   {/* Meal type */}
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Meal type</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('mealType')}</h3>
                     <div className="flex flex-wrap gap-2">
-                      {MEAL_TYPES.map(({ value, label }) => (
+                      {MEAL_TYPES.map(({ value }) => (
                         <button
                           key={value}
                           onClick={() => setMealType(value)}
@@ -794,16 +809,16 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                               ? 'bg-primary/15 text-primary border border-primary/30'
                               : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                           )}
-                        >{label}</button>
+                        >{t(`mealTypes.${value}`)}</button>
                       ))}
                     </div>
                   </div>
 
                   {/* Cook time */}
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Cook time</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('cookTime')}</h3>
                     <div className="flex flex-wrap gap-2">
-                      {COOK_TIMES.map(({ value, label }) => (
+                      {COOK_TIMES.map(({ value }) => (
                         <button
                           key={value}
                           onClick={() => setCookTime(value)}
@@ -813,14 +828,14 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                               ? 'bg-primary/15 text-primary border border-primary/30'
                               : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                           )}
-                        >{label}</button>
+                        >{t(`cookTimes.${value}`)}</button>
                       ))}
                     </div>
                   </div>
 
                   {/* Cuisine */}
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Cuisine</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('cuisine')}</h3>
                     <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => setCuisine('')}
@@ -831,7 +846,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                             : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                         )}
                       >Any cuisine</button>
-                      {visibleCuisines.map(({ value, label }) => (
+                      {visibleCuisines.map(({ value }) => (
                         <button
                           key={value}
                           onClick={() => setCuisine(cuisine === value ? '' : value)}
@@ -841,7 +856,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                               ? 'bg-primary/15 text-primary border border-primary/30'
                               : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                           )}
-                        >{label}</button>
+                        >{t(`cuisines.${value}`)}</button>
                       ))}
                       {!showAllCuisines && (
                         <button
@@ -864,9 +879,9 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
                   {/* Occasion */}
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Occasion</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('occasion')}</h3>
                     <div className="flex flex-wrap gap-2">
-                      {OCCASIONS.map(({ value, label }) => (
+                      {OCCASIONS.map(({ value }) => (
                         <button
                           key={value}
                           onClick={() => setOccasion(occasion === value ? '' : value)}
@@ -876,14 +891,14 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                               ? 'bg-primary/15 text-primary border border-primary/30'
                               : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                           )}
-                        >{label}</button>
+                        >{t(`occasions.${OCCASION_I18N_KEYS[value] ?? value}`)}</button>
                       ))}
                     </div>
                   </div>
 
                   {/* Servings */}
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Servings</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('servings')}</h3>
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setServings(v => Math.max(1, v - 1))}
@@ -909,7 +924,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
                   {/* Kitchen equipment */}
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Kitchen equipment</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-2">{t('equipment')}</h3>
                     <div className="flex flex-wrap gap-2">
                       {EQUIPMENT_OPTIONS.map(({ value, label }) => {
                         const isOn = preferences.kitchenEquipment.includes(value)
@@ -932,7 +947,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   {/* Kitchen-only toggle */}
                   <div className="flex items-center justify-between gap-4 py-0.5">
                     <div>
-                      <p className="text-sm font-medium text-foreground">Use my kitchen only</p>
+                      <p className="text-sm font-medium text-foreground">{tK('useKitchenOnly')}</p>
                       <p className="text-xs text-muted-foreground">No extras — recipes use exactly what you&apos;ve added</p>
                     </div>
                     <button
@@ -976,7 +991,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     className="w-full rounded-full gap-2 py-6"
                   >
                     <Sparkles className="w-5 h-5" />
-                    Generate Recipe
+                    {t('generate')}
                   </Button>
                   <Button
                     size="lg"
@@ -986,7 +1001,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     className="w-full rounded-full gap-2"
                   >
                     <Layers className="w-5 h-5" />
-                    Show Pairings
+                    {t('findPairings')}
                   </Button>
                   <Button
                     size="lg"
@@ -996,7 +1011,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     className="w-full rounded-full gap-2"
                   >
                     <ArrowLeftRight className="w-5 h-5" />
-                    Find Substitutes
+                    {tSub('findSubstitutes')}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
                     {safeFoodsActive

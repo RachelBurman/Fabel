@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
 import { CollectionModal } from '@/components/collection-modal'
+import { useTranslations } from 'next-intl'
 
 // ─── Saved recipe card ─────────────────────────────────────────────────────────
 
@@ -146,6 +147,7 @@ interface CollectionDetailProps {
 function CollectionDetail({ collection, onBack, onBrowseSaved, onViewRecipe, onDelete }: CollectionDetailProps) {
   const { savedRecipes, removeFromCollection } = useFable()
   const recipes = savedRecipes.filter(r => collection.recipeIds.includes(r.id))
+  const tCollections = useTranslations('collections')
 
   return (
     <div>
@@ -194,12 +196,12 @@ function CollectionDetail({ collection, onBack, onBrowseSaved, onViewRecipe, onD
           className="flex flex-col items-center justify-center min-h-[calc(100dvh-16rem)] text-center"
         >
           <div className="text-5xl mb-6">📋</div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">This collection is empty</h3>
+          <h3 className="text-xl font-semibold text-foreground mb-2">{tCollections('empty')}</h3>
           <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-            Save recipes here to build your collection.
+            {tCollections('emptySubtitle')}
           </p>
           <Button onClick={onBrowseSaved} variant="outline" className="rounded-full gap-2">
-            Browse saved recipes <ArrowRight className="w-4 h-4" />
+            {tCollections('browseSaved')} <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>
       )}
@@ -217,6 +219,8 @@ interface SavedRecipesScreenProps {
 
 export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: SavedRecipesScreenProps) {
   const { savedRecipes, unsaveRecipe, collections, createCollection, deleteCollection } = useFable()
+  const t = useTranslations('saved')
+  const tCollections = useTranslations('collections')
 
   const [activeTab, setActiveTab] = useState<'saved' | 'collections'>('saved')
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null)
@@ -251,12 +255,12 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
           className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
         >
           <div className="text-5xl mb-6">🍽️</div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">No saved recipes yet</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('empty')}</h2>
           <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-            Generate your first recipe and save ones you love.
+            {t('emptySubtitle')}
           </p>
           <Button onClick={onGenerateRecipe} className="rounded-full gap-2">
-            Generate a recipe <ArrowRight className="w-4 h-4" />
+            {t('generateFirst')} <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>
       </div>
@@ -361,7 +365,7 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
                           className="rounded-full gap-1.5"
                         >
                           <Plus className="w-4 h-4" />
-                          New Collection
+                          {tCollections('newCollection')}
                         </Button>
                       )}
                     </div>
@@ -391,9 +395,9 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
                         <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
                           <FolderOpen className="w-10 h-10 text-muted-foreground" />
                         </div>
-                        <h2 className="text-xl font-semibold text-foreground mb-2">No collections yet</h2>
+                        <h2 className="text-xl font-semibold text-foreground mb-2">{tCollections('title')}</h2>
                         <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-                          Create a collection to organise your saved recipes
+                          {tCollections('emptySubtitle')}
                         </p>
                         <Button
                           variant="outline"
@@ -401,7 +405,7 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
                           className="rounded-full gap-1.5"
                         >
                           <Plus className="w-4 h-4" />
-                          New Collection
+                          {tCollections('newCollection')}
                         </Button>
                       </motion.div>
                     )}

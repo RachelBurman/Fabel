@@ -6,6 +6,8 @@ import { Toaster } from '@/components/ui/sonner'
 import { AuthMigrationHandler } from '@/components/auth-migration-handler'
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
 import { QueryProvider } from '@/components/query-provider'
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages } from 'next-intl/server'
 import './globals.css'
 
 const dmSans = DM_Sans({
@@ -54,22 +56,25 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const messages = await getMessages()
   return (
     <html lang="en" className="bg-background" suppressHydrationWarning>
       <body className={`${dmSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
-          <QueryProvider>
-            {children}
-            <Toaster />
-            <AuthMigrationHandler />
-            <ServiceWorkerRegistration />
-          </QueryProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
+            <QueryProvider>
+              {children}
+              <Toaster />
+              <AuthMigrationHandler />
+              <ServiceWorkerRegistration />
+            </QueryProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
