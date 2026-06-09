@@ -1,0 +1,322 @@
+{
+  "nav": {
+    "kitchen": "キッチン",
+    "recipe": "レシピ",
+    "discover": "発見",
+    "substitutes": "代替食材",
+    "history": "履歴",
+    "saved": "保存済み"
+  },
+  "auth": {
+    "signIn": "ログイン",
+    "signUp": "新規登録",
+    "signOut": "ログアウト",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "name": "お名前",
+    "guest": "ゲスト",
+    "guestTooltip": "ゲストとしてFableを使っています。ログインすると設定を複数のデバイスで保存できます。",
+    "signingIn": "ログイン中...",
+    "signingUp": "登録中...",
+    "continueAsGuest": "ゲストとして続ける",
+    "alreadyHaveAccount": "すでにアカウントをお持ちですか？",
+    "dontHaveAccount": "アカウントをお持ちでないですか？",
+    "createAccount": "アカウント作成"
+  },
+  "kitchen": {
+    "title": "マイキッチン",
+    "searchPlaceholder": "1,790種の食材を検索…",
+    "addIngredient": "食材を追加",
+    "empty": "キッチンに食材がありません",
+    "emptySubtitle": "食材を追加して、あなただけのレシピを作りましょう",
+    "areas": {
+      "fridge": "冷蔵庫",
+      "freezer": "冷凍庫",
+      "cupboard": "戸棚",
+      "pantry": "パントリー"
+    },
+    "expiry": {
+      "useToday": "今日使う",
+      "expiringSoon": "まもなく期限切れ",
+      "expires": "期限"
+    },
+    "useKitchenOnly": "キッチンの食材だけを使う",
+    "scanIngredients": "食材をスキャン",
+    "scanBarcode": "バーコードをスキャン"
+  },
+  "recipe": {
+    "title": "レシピ",
+    "generating": "レシピを生成中...",
+    "generate": "レシピを生成",
+    "findPairings": "ペアリングを探す",
+    "mealType": "食事の種類",
+    "cookTime": "調理時間",
+    "cuisine": "料理のジャンル",
+    "occasion": "シーン",
+    "servings": "人数",
+    "equipment": "調理器具",
+    "mealTypes": {
+      "snack": "おやつ",
+      "starter": "前菜",
+      "main": "メインディッシュ",
+      "dessert": "デザート"
+    },
+    "cookTimes": {
+      "quick": "時短（30分以内）",
+      "medium": "普通（30〜60分）",
+      "slow": "じっくり（60分以上）"
+    },
+    "cuisines": {
+      "chinese": "中華",
+      "korean": "韓国料理",
+      "spanish": "スペイン料理",
+      "italian": "イタリアン",
+      "japanese": "和食",
+      "indian": "インド料理",
+      "mexican": "メキシコ料理",
+      "french": "フレンチ",
+      "moroccan": "モロッコ料理",
+      "thai": "タイ料理",
+      "british": "イギリス料理",
+      "greek": "ギリシャ料理",
+      "turkish": "トルコ料理",
+      "surprise": "おまかせ"
+    },
+    "occasions": {
+      "weeknight": "平日の夕食",
+      "dinnerParty": "ディナーパーティー",
+      "streetFood": "屋台めし",
+      "comfortFood": "ほっとする一品",
+      "packedLunch": "お弁当",
+      "romanticDinner": "ロマンチックなディナー",
+      "mealPrep": "作り置き",
+      "celebration": "お祝い"
+    },
+    "nudges": {
+      "spicier": "もっと辛くする",
+      "vegetarian": "ベジタリアンにする",
+      "quicker": "もっと時短にする",
+      "differentCuisine": "別のジャンルにする",
+      "surpriseMe": "おまかせ"
+    },
+    "refine": "このレシピをブラッシュアップ",
+    "regenerate": "新しいレシピで最初からやり直す",
+    "allergenSafe": "アレルゲン対応済み",
+    "containsDairy": "乳製品が含まれています — 食前にLactaidの服用をご検討ください。",
+    "lowHistamineBanner": "低ヒスタミンフィルターが有効です — このレシピはよくあるヒスタミントリガーを避けています。医療アドバイスについては必ず医療専門家にご相談ください。",
+    "alcoholBanner": "このレシピにはアルコールが含まれている可能性があります — 調理前に食材をご確認ください。",
+    "ingredients": "材料",
+    "method": "作り方",
+    "drinkPairings": "ドリンクペアリング",
+    "macros": "栄養情報",
+    "macrosDisclaimer": "推定値です。専門家による栄養アドバイスの代わりにはなりません。",
+    "save": "レシピを保存",
+    "saved": "保存済み",
+    "share": "シェア",
+    "whySafe": "なぜ私に安全なの？",
+    "whySafeGuest": "このレシピが安全な理由を見るにはログインしてください",
+    "communityRecipe": "コミュニティのレシピを表示中です — ログインしてAIによるあなただけのレシピを生成しましょう。",
+    "noMatchingRecipes": "一致するレシピが見つかりません — Fableにログインしてください"
+  },
+  "brief": {
+    "thinking": "考え中...",
+    "loadingHints": {
+      "checking": "お好みの履歴を確認中...",
+      "finding": "安全な食材を探しています...",
+      "crafting": "レシピを作っています...",
+      "personalising": "あなた好みにカスタマイズ中..."
+    }
+  },
+  "discover": {
+    "title": "発見",
+    "subtitle": "今週のトレンド · あなたに安全",
+    "excluding": "除外中",
+    "tasteProfile": "あなたの好みプロフィール",
+    "youLove": "好きなもの",
+    "youAvoid": "避けているもの",
+    "flavourTerritory": "フレーバーテリトリー",
+    "flavourTerritorySubtitle": "あなたの好みが向かっている方向",
+    "flavourTerritoryTooltip": "あなたのお気に入りフレーバーの共通点をマッピングして見つけた、好きなものに近い食材です。",
+    "basedOn": "直近{count}件のレシピをもとに",
+    "suggestedForYou": "あなたへのおすすめ",
+    "trendingForYou": "あなたのトレンド",
+    "trendingGlobally": "グローバルトレンド",
+    "mostLoved": "人気の食材",
+    "trendingPairings": "トレンドのペアリング"
+  },
+  "substitutes": {
+    "title": "代替食材",
+    "fromKitchen": "キッチンから",
+    "fromRecipe": "レシピから",
+    "pasteRecipe": "レシピをここに貼り付けてください...",
+    "findSubstitutes": "代替食材を探す",
+    "useThis": "これを使う →",
+    "inKitchen": "キッチンにある",
+    "allergenSwap": "アレルゲン交換",
+    "missing": "手元にない",
+    "contextFit": "レシピとの相性"
+  },
+  "history": {
+    "title": "レシピ履歴",
+    "empty": "レシピがまだありません",
+    "emptySubtitle": "最初のレシピを生成して、履歴を作りましょう。",
+    "generateFirst": "レシピを生成する →",
+    "signInForHistory": "履歴をセッション間で保持するにはログインしてください"
+  },
+  "saved": {
+    "title": "保存済みレシピ",
+    "empty": "保存済みのレシピがまだありません",
+    "emptySubtitle": "最初のレシピを生成して、お気に入りを保存しましょう。",
+    "generateFirst": "レシピを生成する →"
+  },
+  "collections": {
+    "title": "コレクション",
+    "empty": "このコレクションは空です",
+    "emptySubtitle": "レシピを保存してコレクションを作りましょう。",
+    "browseSaved": "保存済みレシピを見る →",
+    "newCollection": "新しいコレクション",
+    "addToCollection": "コレクションに追加"
+  },
+  "settings": {
+    "title": "設定",
+    "allergens": "アレルゲン",
+    "dietPresets": "食事・ライフスタイル",
+    "cookingStyle": "料理スタイル",
+    "spiceTolerance": "辛さの許容度",
+    "adventurousness": "冒険度は？",
+    "theme": "テーマ",
+    "tabs": "表示タブ",
+    "discoverSettings": "発見セクション",
+    "onboarding": "チュートリアル",
+    "restartOnboarding": "チュートリアルをやり直す",
+    "deleteAccount": "アカウントとすべてのデータを削除",
+    "deleteConfirmTitle": "アカウントを削除しますか？",
+    "deleteConfirmBody": "アカウント、キッチン、保存済みレシピ、好みプロフィール、すべての個人データが完全に削除されます。この操作は取り消せません。",
+    "deleteConfirm": "完全に削除する",
+    "deleteCancel": "キャンセル",
+    "themes": {
+      "light": "ライト",
+      "dark": "ダーク",
+      "system": "自動"
+    }
+  },
+  "onboarding": {
+    "skip": "スキップ",
+    "next": "次へ",
+    "letsGo": "はじめよう",
+    "slides": {
+      "welcome": {
+        "title": "Fableへようこそ",
+        "subtitle": "安全な食材。大胆なフレーバー。みんなのための料理。"
+      },
+      "allergens": {
+        "title": "アレルゲンの設定",
+        "subtitle": "避けたいものを教えてください。すべてのレシピを安全に保ちます。"
+      },
+      "cookingStyle": {
+        "title": "料理スタイルの設定",
+        "subtitle": "設定からいつでも変更できます。"
+      },
+      "kitchen": {
+        "title": "マイキッチン",
+        "subtitle": "手元にある食材を追加して、それに合ったレシピを作ります。"
+      },
+      "recipe": {
+        "title": "レシピを生成",
+        "subtitle": "あなただけのアレルゲン対応レシピを数秒で。"
+      },
+      "safeFoods": {
+        "title": "セーフフードモード",
+        "subtitle": "MCAS、重篤なアレルギー、厳しい食事制限のある方向け。食べられるものを細かく定義できます。"
+      }
+    }
+  },
+  "spiceLevels": {
+    "none": "辛いのは苦手",
+    "mild": "少しだけ辛め",
+    "medium": "ほどよい辛さ",
+    "hot": "激辛でどうぞ"
+  },
+  "adventurous": {
+    "familiar": "いつもの味でいい",
+    "occasional": "たまにはサプライズも",
+    "adventurous": "新しい世界へ連れてって"
+  },
+  "presets": {
+    "vegan": {
+      "name": "ビーガン",
+      "description": "すべての動物性食品を除外"
+    },
+    "vegetarian": {
+      "name": "ベジタリアン",
+      "description": "肉と魚を除外"
+    },
+    "keto": {
+      "name": "ケトジェニック",
+      "description": "糖質の高い食材を除外"
+    },
+    "lowFodmap": {
+      "name": "低FODMAP",
+      "description": "よくあるFODMAPトリガーを除外"
+    },
+    "lactose": {
+      "name": "乳糖不耐症",
+      "description": "乳製品の扱い方を選択",
+      "reminder": "乳製品はレシピに残ります — Lactaidのリマインダーが表示されます",
+      "exclude": "乳製品を完全に除外 — アレルゲンと同様に扱います"
+    },
+    "alcohol": {
+      "name": "アルコールなし",
+      "description": "レシピとペアリングからアルコールを除外",
+      "noCooking": "アルコールフリー調理 — レシピからアルコールを除外、アルコール系ペアリングを非表示",
+      "excludeEntirely": "完全に除外 — アレルゲンと同様に扱い、すべての結果からフィルタリング"
+    },
+    "lowHistamine": {
+      "name": "低ヒスタミン",
+      "description": "ヒスタミンが多い食材をフィルタリングします — 発酵食品、熟成チーズ、加工肉、アルコール、一般的なヒスタミントリガーを除外。",
+      "disclaimer": "これは一般的な低ヒスタミンガイドラインに基づく食事フィルターです。医療アドバイスではありません。ヒスタミン不耐症やMCASの診断・治療については、必ず医療専門家にご相談ください。"
+    }
+  },
+  "feedback": {
+    "rateThis": "このレシピを評価",
+    "highlight": "料理のハイライト",
+    "leaveOut": "次回は省きたい",
+    "whatWorked": "よかったところ",
+    "whatDidnt": "いまいちだったところ",
+    "skip": "スキップ",
+    "submit": "フィードバックを送信"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "error": "問題が発生しました",
+    "retry": "もう一度試す",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "done": "完了",
+    "back": "戻る",
+    "close": "閉じる",
+    "confirm": "確認",
+    "signIn": "ログイン",
+    "or": "または",
+    "minutes": "{count}分",
+    "servings": "{count}人前",
+    "people": "{count}人"
+  },
+  "safeFoods": {
+    "title": "セーフフードモード",
+    "description": "MCAS、重篤なアレルギー、厳しい食事制限のある方向け。セーフリストに登録した食材だけがレシピに使われます。",
+    "liquidPlaceholder": "好みの液体",
+    "seasoningPlaceholder": "好みの調味料",
+    "addSafeFood": "セーフフードを追加",
+    "noSafeFoods": "まだセーフフードが登録されていません"
+  },
+  "share": {
+    "title": "レシピをシェア",
+    "copied": "リンクをコピーしました",
+    "sharedRecipe": "シェアされたレシピ",
+    "noLongerAvailable": "このレシピは現在利用できません。",
+    "disclaimer": "ドリンクペアリングはアレルゲンフィルタリングなしで表示されます — 食材をよくご確認ください。"
+  }
+}

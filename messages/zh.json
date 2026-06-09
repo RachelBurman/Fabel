@@ -1,0 +1,322 @@
+{
+  "nav": {
+    "kitchen": "我的厨房",
+    "recipe": "食谱",
+    "discover": "发现",
+    "substitutes": "食材替换",
+    "history": "历史记录",
+    "saved": "已收藏"
+  },
+  "auth": {
+    "signIn": "登录",
+    "signUp": "注册",
+    "signOut": "退出登录",
+    "email": "邮箱",
+    "password": "密码",
+    "name": "你的名字",
+    "guest": "访客",
+    "guestTooltip": "你正在以访客身份使用 Fable。登录后可在多设备间同步你的偏好设置。",
+    "signingIn": "正在登录...",
+    "signingUp": "正在注册...",
+    "continueAsGuest": "以访客身份继续",
+    "alreadyHaveAccount": "已有账号？",
+    "dontHaveAccount": "还没有账号？",
+    "createAccount": "创建账号"
+  },
+  "kitchen": {
+    "title": "我的厨房",
+    "searchPlaceholder": "搜索 1,790 种食材…",
+    "addIngredient": "添加食材",
+    "empty": "你的厨房还是空的",
+    "emptySubtitle": "添加食材，获取专属食谱",
+    "areas": {
+      "fridge": "冰箱",
+      "freezer": "冷冻室",
+      "cupboard": "储物柜",
+      "pantry": "食品储藏室"
+    },
+    "expiry": {
+      "useToday": "今天用掉",
+      "expiringSoon": "即将到期",
+      "expires": "到期"
+    },
+    "useKitchenOnly": "仅使用我厨房里的食材",
+    "scanIngredients": "扫描食材",
+    "scanBarcode": "扫描条形码"
+  },
+  "recipe": {
+    "title": "食谱",
+    "generating": "正在生成食谱...",
+    "generate": "生成食谱",
+    "findPairings": "搭配推荐",
+    "mealType": "餐型",
+    "cookTime": "烹饪时长",
+    "cuisine": "菜系",
+    "occasion": "场合",
+    "servings": "份量",
+    "equipment": "厨房设备",
+    "mealTypes": {
+      "snack": "小吃",
+      "starter": "前菜",
+      "main": "主菜",
+      "dessert": "甜点"
+    },
+    "cookTimes": {
+      "quick": "快手（<30分钟）",
+      "medium": "适中（30-60分钟）",
+      "slow": "慢炖（60分钟以上）"
+    },
+    "cuisines": {
+      "chinese": "中式",
+      "korean": "韩式",
+      "spanish": "西班牙式",
+      "italian": "意式",
+      "japanese": "日式",
+      "indian": "印度式",
+      "mexican": "墨西哥式",
+      "french": "法式",
+      "moroccan": "摩洛哥式",
+      "thai": "泰式",
+      "british": "英式",
+      "greek": "希腊式",
+      "turkish": "土耳其式",
+      "surprise": "随机惊喜"
+    },
+    "occasions": {
+      "weeknight": "平日晚餐",
+      "dinnerParty": "宴客聚餐",
+      "streetFood": "街头小吃",
+      "comfortFood": "治愈美食",
+      "packedLunch": "便当",
+      "romanticDinner": "浪漫晚餐",
+      "mealPrep": "备餐",
+      "celebration": "庆祝聚会"
+    },
+    "nudges": {
+      "spicier": "再辣一点",
+      "vegetarian": "改成素食版",
+      "quicker": "做得更快一点",
+      "differentCuisine": "换个菜系",
+      "surpriseMe": "给我个惊喜"
+    },
+    "refine": "优化这道食谱",
+    "regenerate": "重新生成一道食谱",
+    "allergenSafe": "过敏原安全",
+    "containsDairy": "含有乳制品——建议食用前服用 Lactaid。",
+    "lowHistamineBanner": "低组胺过滤已启用——本食谱避免了常见的组胺触发食材。医疗建议请咨询专业医生。",
+    "alcoholBanner": "本食谱可能含有酒精——烹饪前请仔细查看食材。",
+    "ingredients": "食材",
+    "method": "做法",
+    "drinkPairings": "饮品搭配",
+    "macros": "营养信息",
+    "macrosDisclaimer": "仅供参考，不能替代专业营养建议。",
+    "save": "收藏食谱",
+    "saved": "已收藏",
+    "share": "分享",
+    "whySafe": "为什么这道食谱适合我？",
+    "whySafeGuest": "登录后查看这道食谱为什么适合你",
+    "communityRecipe": "你正在查看社区食谱——登录 Fable，用 AI 生成专属个性化食谱。",
+    "noMatchingRecipes": "未找到符合条件的食谱——请登录 Fable"
+  },
+  "brief": {
+    "thinking": "思考中...",
+    "loadingHints": {
+      "checking": "正在查看你的口味历史...",
+      "finding": "正在寻找安全食材...",
+      "crafting": "正在为你制作食谱...",
+      "personalising": "正在为你个性化定制..."
+    }
+  },
+  "discover": {
+    "title": "发现",
+    "subtitle": "本周热门 · 安全适合你",
+    "excluding": "已排除",
+    "tasteProfile": "你的口味档案",
+    "youLove": "你喜欢",
+    "youAvoid": "你不吃",
+    "flavourTerritory": "口味领域",
+    "flavourTerritorySubtitle": "你的口味正在走向哪里",
+    "flavourTerritoryTooltip": "与你所有喜爱食材相近的食材——通过分析你最爱的口味共同点找到的。",
+    "basedOn": "基于你最近 {count} 道食谱",
+    "suggestedForYou": "为你推荐",
+    "trendingForYou": "你的热门趋势",
+    "trendingGlobally": "全球热门",
+    "mostLoved": "最受欢迎的食材",
+    "trendingPairings": "热门搭配"
+  },
+  "substitutes": {
+    "title": "食材替换",
+    "fromKitchen": "来自我的厨房",
+    "fromRecipe": "来自食谱",
+    "pasteRecipe": "把你的食谱粘贴在这里...",
+    "findSubstitutes": "查找替换食材",
+    "useThis": "用这个 →",
+    "inKitchen": "厨房有货",
+    "allergenSwap": "过敏原替换",
+    "missing": "缺少",
+    "contextFit": "场景匹配度"
+  },
+  "history": {
+    "title": "食谱历史",
+    "empty": "还没有食谱",
+    "emptySubtitle": "生成你的第一道食谱，历史记录会显示在这里。",
+    "generateFirst": "生成一道食谱 →",
+    "signInForHistory": "登录后可跨会话保留历史记录"
+  },
+  "saved": {
+    "title": "收藏的食谱",
+    "empty": "还没有收藏的食谱",
+    "emptySubtitle": "生成你的第一道食谱，把喜欢的收藏起来。",
+    "generateFirst": "生成一道食谱 →"
+  },
+  "collections": {
+    "title": "合集",
+    "empty": "这个合集是空的",
+    "emptySubtitle": "把食谱保存到这里，建立你的合集。",
+    "browseSaved": "浏览收藏的食谱 →",
+    "newCollection": "新建合集",
+    "addToCollection": "添加到合集"
+  },
+  "settings": {
+    "title": "设置",
+    "allergens": "过敏原",
+    "dietPresets": "饮食与生活方式",
+    "cookingStyle": "烹饪风格",
+    "spiceTolerance": "辣度偏好",
+    "adventurousness": "探索欲望",
+    "theme": "外观",
+    "tabs": "显示的标签",
+    "discoverSettings": "发现页模块",
+    "onboarding": "新手引导",
+    "restartOnboarding": "重新查看教程",
+    "deleteAccount": "删除我的账号及所有数据",
+    "deleteConfirmTitle": "确认删除账号？",
+    "deleteConfirmBody": "此操作将永久删除你的账号、厨房、收藏食谱、口味档案及所有个人数据，且无法恢复。",
+    "deleteConfirm": "永久删除",
+    "deleteCancel": "取消",
+    "themes": {
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
+    }
+  },
+  "onboarding": {
+    "skip": "跳过",
+    "next": "下一步",
+    "letsGo": "出发吧",
+    "slides": {
+      "welcome": {
+        "title": "欢迎使用 Fable",
+        "subtitle": "安全食材。大胆风味。人人皆宜的美食。"
+      },
+      "allergens": {
+        "title": "你的过敏原",
+        "subtitle": "告诉我们需要避开什么，我们会确保每道食谱都对你安全。"
+      },
+      "cookingStyle": {
+        "title": "你的烹饪风格",
+        "subtitle": "你随时可以在设置中修改这些内容。"
+      },
+      "kitchen": {
+        "title": "你的厨房",
+        "subtitle": "添加你有的食材，我们会围绕它们来创作食谱。"
+      },
+      "recipe": {
+        "title": "生成食谱",
+        "subtitle": "个性化、过敏原安全的食谱，几秒钟即可生成。"
+      },
+      "safeFoods": {
+        "title": "安全食材模式",
+        "subtitle": "适用于 MCAS、严重过敏或高度受限饮食。精确定义你能吃的食材。"
+      }
+    }
+  },
+  "spiceLevels": {
+    "none": "不要辣",
+    "mild": "微微有点辣",
+    "medium": "中等辣度",
+    "hot": "越辣越好"
+  },
+  "adventurous": {
+    "familiar": "保持熟悉的口味",
+    "occasional": "偶尔来点惊喜",
+    "adventurous": "带我去探索新口味"
+  },
+  "presets": {
+    "vegan": {
+      "name": "纯素",
+      "description": "不含任何动物产品"
+    },
+    "vegetarian": {
+      "name": "素食",
+      "description": "不含肉类和鱼类"
+    },
+    "keto": {
+      "name": "生酮",
+      "description": "不含高碳水化合物食材"
+    },
+    "lowFodmap": {
+      "name": "低 FODMAP",
+      "description": "避免常见的 FODMAP 触发食材"
+    },
+    "lactose": {
+      "name": "乳糖不耐受",
+      "description": "选择如何处理乳制品",
+      "reminder": "食谱中保留乳制品——你会看到 Lactaid 提醒",
+      "exclude": "完全排除乳制品——将乳制品视为过敏原处理"
+    },
+    "alcohol": {
+      "name": "无酒精",
+      "description": "从食谱和搭配推荐中去除酒精",
+      "noCooking": "无酒精烹饪——食谱中去除酒精，隐藏含酒精饮品搭配",
+      "excludeEntirely": "完全排除——将酒精视为过敏原，从所有结果中过滤"
+    },
+    "lowHistamine": {
+      "name": "低组胺",
+      "description": "过滤高组胺食材——包括发酵食品、陈年奶酪、腌制肉类、酒精及常见组胺触发物。",
+      "disclaimer": "这是基于常见低组胺饮食指南的过滤功能，不构成医疗建议。如需诊断和治疗组胺不耐受或 MCAS，请咨询专业医生。"
+    }
+  },
+  "feedback": {
+    "rateThis": "给这道食谱评分",
+    "highlight": "这道菜的亮点",
+    "leaveOut": "下次会去掉的",
+    "whatWorked": "做得好的地方",
+    "whatDidnt": "不太满意的地方",
+    "skip": "跳过",
+    "submit": "提交反馈"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "出了点问题",
+    "retry": "重试",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "done": "完成",
+    "back": "返回",
+    "close": "关闭",
+    "confirm": "确认",
+    "signIn": "登录",
+    "or": "或",
+    "minutes": "{count} 分钟",
+    "servings": "{count} 份",
+    "people": "{count} 人"
+  },
+  "safeFoods": {
+    "title": "安全食材模式",
+    "description": "适用于 MCAS、严重过敏或高度受限饮食。食谱中只会出现你安全列表上的食材。",
+    "liquidPlaceholder": "自选液体",
+    "seasoningPlaceholder": "自选调味料",
+    "addSafeFood": "添加安全食材",
+    "noSafeFoods": "还没有添加安全食材"
+  },
+  "share": {
+    "title": "分享食谱",
+    "copied": "链接已复制到剪贴板",
+    "sharedRecipe": "共享食谱",
+    "noLongerAvailable": "这道食谱已不再可用。",
+    "disclaimer": "饮品搭配未经过敏原过滤——请仔细查看食材。"
+  }
+}
