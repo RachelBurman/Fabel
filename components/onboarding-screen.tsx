@@ -59,7 +59,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-dvh bg-background flex flex-col overflow-hidden">
       <AnimatePresence mode="wait">
         {step === 'welcome' ? (
           <motion.div
@@ -145,9 +145,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col px-6 py-8 md:py-12"
+            className="flex-1 min-h-0 overflow-y-auto px-6 py-8 md:py-12"
           >
-            <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
+            <div className="max-w-2xl mx-auto w-full">
               {/* Header */}
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
@@ -491,9 +491,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.4 }}
-            className="flex-1 flex flex-col px-6 py-8 md:py-12"
+            className="flex-1 min-h-0 overflow-y-auto px-6 py-8 md:py-12"
           >
-            <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
+            <div className="max-w-2xl mx-auto w-full">
               <div className="text-center mb-8">
                 <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2 text-balance">
                   {t('slides.cookingStyle.title')}
@@ -560,7 +560,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-4 border-t border-border mt-auto">
+              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-4 border-t border-border mt-6">
                 <Button
                   size="lg"
                   onClick={handleContinue}
