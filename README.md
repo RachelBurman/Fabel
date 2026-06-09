@@ -505,11 +505,11 @@ In-memory (loaded at server startup)
 - ✅ **Discover tab data isolation on sign-out** — `DiscoverSection` was reading `userId` from `localStorage` once on mount and never updating; the `useInsights` query key did not include auth state, so React Query's 1-hour stale cache kept serving the signed-in user's personalized taste profile and trending data after sign-out. Fixed by exposing `userId` and `isSignedIn` from `FableContext` and including `isSignedIn` in the `useInsights` query key — matching the pattern used by every other query. The cache key flips on sign-out, triggering an immediate refetch that returns anonymous data with no session.
 - ✅ **Discover insights weekly fallback** — `trendingRecipeTypes` and `trendingPairings` in `fable-ingredient-insights` are never written by the feedback-processor Lambda (it only updates `trendingIngredients`), and the seed script used a hardcoded week string that goes stale when the week rolls over. `/api/insights` now falls back to the all-time record for both fields when the current weekly record is missing or empty, so "Trending for you" and "Trending pairings" remain populated without manual re-seeding each week.
 - ✅ **Lambda IAM least-privilege policies** — all four Lambda execution roles updated with tighter custom IAM policies scoped to specific DynamoDB table ARNs; replaces broad `AmazonDynamoDBFullAccess` managed policy attachment.
+- ✅ **i18n framework (next-intl)** — English and Spanish locale support via `next-intl ^4.13.0`; locale auto-detected from `Accept-Language` header by middleware (`localePrefix: 'never'` — URL structure unchanged, no language switcher UI); `messages/en.json` and `messages/es.json` cover all UI chrome (nav, auth, kitchen, recipe controls, discover, substitutes, history, saved, settings, onboarding slides, diet preset cards, safe foods, share); recipe content, Claude outputs, and Epicure ingredient names remain English-only; adding a third language requires only a new `messages/xx.json` — no code changes; architecture note for Devpost: "Supports Epicure's 7 languages by design — English and Spanish ship for the hackathon."
 
 ### In Progress
 
 ### Near Term
-- [ ] i18n framework — next-intl, English + Spanish for hackathon; architecture supports Epicure's 7 languages; UI strings only (recipe output language is post-hackathon)
 
 ### Post-Hackathon / Future
 - [ ] Better Auth + AWS RDS Postgres — replace Neon with RDS for a full AWS architecture story; schema identical, connection string swap
