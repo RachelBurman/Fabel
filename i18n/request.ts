@@ -1,24 +1,26 @@
 import { getRequestConfig } from 'next-intl/server';
-import { cookies, headers } from 'next/headers';
+import { headers } from 'next/headers';
 
 const locales = ['en', 'es', 'fr', 'de', 'it', 'zh', 'ja'];
 
-export default getRequestConfig(async () => {
-  // Prefer explicit locale cookie (set when user switches language)
-  const cookieStore = await cookies();
-  const cookieLocale = cookieStore.get('NEXT_LOCALE')?.value;
-  if (cookieLocale && locales.includes(cookieLocale)) {
-    return {
-      locale: cookieLocale,
-      messages: (await import(`../messages/${cookieLocale}.json`)).default,
-    };
-  }
+function parseAcceptLanguage(header: string): string {
+  const parts = header.split(',').map(part => {
+    const [tag, q] = part.trim().split(';q=');
+    return { tag: tag.trim().toLowerCase(), q: q ? parseFloat(q) : 1.0 };
+  }).sort((a, b) => b.q - a.q);
 
-  // Fall back to Accept-Language header
+  for (const { tag } of parts) {
+    const exact = locales.find(l => l === tag);
+    if (exact) return exact;
+    const prefix = locales.find(l => tag.startsWith(l + '-'));
+    if (prefix) return prefix;
+  }
+  return 'en';
+}
+
+export default getRequestConfig(async () => {
   const headerStore = await headers();
-  const acceptLanguage = headerStore.get('accept-language') ?? '';
-  const detected = locales.find(l => acceptLanguage.toLowerCase().startsWith(l));
-  const locale = detected ?? 'en';
+  const locale = parseAcceptLanguage(headerStore.get('accept-language') ?? '');
 
   return {
     locale,
