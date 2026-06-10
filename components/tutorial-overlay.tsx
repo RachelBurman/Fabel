@@ -250,44 +250,47 @@ export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
 
         {/* Slide body — tap anywhere to advance */}
         <div
-          className="flex-1 min-h-0 overflow-hidden flex flex-col justify-center gap-7 px-6 cursor-pointer select-none"
+          className="flex-1 min-h-0 overflow-y-auto flex flex-col px-6 cursor-pointer select-none"
           onClick={handleSlideBodyClick}
         >
-          {/* Visual */}
-          <div className="shrink-0 overflow-hidden">
+          {/* Inner wrapper: my-auto centers when content fits; scrollable when it doesn't */}
+          <div className="my-auto flex flex-col gap-7 py-6">
+            {/* Visual */}
+            <div className="overflow-hidden">
+              <AnimatePresence mode="wait" custom={direction}>
+                <motion.div
+                  key={`visual-${slide.id}`}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                >
+                  {slide.visual}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* Text */}
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
-                key={`visual-${slide.id}`}
+                key={`text-${slide.id}`}
                 custom={direction}
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
                 exit="exit"
+                className="text-center"
               >
-                {slide.visual}
+                <h2 className="text-2xl font-semibold text-foreground mb-3 leading-tight text-balance">
+                  {slide.headline}
+                </h2>
+                <p className="text-muted-foreground leading-relaxed text-pretty">
+                  {slide.body}
+                </p>
               </motion.div>
             </AnimatePresence>
           </div>
-
-          {/* Text */}
-          <AnimatePresence mode="wait" custom={direction}>
-            <motion.div
-              key={`text-${slide.id}`}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              className="text-center"
-            >
-              <h2 className="text-2xl font-semibold text-foreground mb-3 leading-tight text-balance">
-                {slide.headline}
-              </h2>
-              <p className="text-muted-foreground leading-relaxed text-pretty">
-                {slide.body}
-              </p>
-            </motion.div>
-          </AnimatePresence>
         </div>
 
         {/* Footer — dots + navigation */}
