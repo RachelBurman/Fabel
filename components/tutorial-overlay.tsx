@@ -50,14 +50,16 @@ function AllergenVisual() {
     { icon: '🌱', name: 'Mustard', active: false },
     { icon: '🐚', name: 'Molluscs', active: false },
     { icon: '⚗️', name: 'Sulphites', active: false },
+    { icon: '🌻', name: 'Sesame', active: false },
+    { icon: '🌸', name: 'Lupin', active: false },
   ]
   return (
-    <div className="grid grid-cols-6 gap-1.5 px-1">
+    <div className="h-full grid grid-cols-7 grid-rows-2 gap-1.5 px-1">
       {allergens.map((a, i) => (
         <div
           key={i}
           className={cn(
-            'aspect-square flex flex-col items-center justify-center gap-0.5 rounded-xl border-2 text-center',
+            'flex flex-col items-center justify-center gap-0.5 rounded-xl border-2 text-center min-h-0',
             a.active ? 'border-primary bg-primary/10' : 'border-border bg-card',
           )}
         >
@@ -250,47 +252,45 @@ export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
 
         {/* Slide body — tap anywhere to advance */}
         <div
-          className="flex-1 min-h-0 overflow-y-auto flex flex-col px-6 cursor-pointer select-none"
+          className="flex-1 min-h-0 overflow-hidden flex flex-col gap-6 px-6 py-6 cursor-pointer select-none"
           onClick={handleSlideBodyClick}
         >
-          {/* Inner wrapper: my-auto centers when content fits; scrollable when it doesn't */}
-          <div className="my-auto flex flex-col gap-7 py-6">
-            {/* Visual */}
-            <div className="overflow-hidden">
-              <AnimatePresence mode="wait" custom={direction}>
-                <motion.div
-                  key={`visual-${slide.id}`}
-                  custom={direction}
-                  variants={slideVariants}
-                  initial="enter"
-                  animate="center"
-                  exit="exit"
-                >
-                  {slide.visual}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-
-            {/* Text */}
+          {/* Visual — fills all remaining space; AllergenVisual uses h-full to scale into it */}
+          <div className="flex-1 min-h-0 overflow-hidden">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
-                key={`text-${slide.id}`}
+                key={`visual-${slide.id}`}
                 custom={direction}
                 variants={slideVariants}
                 initial="enter"
                 animate="center"
                 exit="exit"
-                className="text-center"
+                className="w-full h-full"
               >
-                <h2 className="text-2xl font-semibold text-foreground mb-3 leading-tight text-balance">
-                  {slide.headline}
-                </h2>
-                <p className="text-muted-foreground leading-relaxed text-pretty">
-                  {slide.body}
-                </p>
+                {slide.visual}
               </motion.div>
             </AnimatePresence>
           </div>
+
+          {/* Text — fixed at bottom, never grows */}
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={`text-${slide.id}`}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="shrink-0 text-center"
+            >
+              <h2 className="text-2xl font-semibold text-foreground mb-3 leading-tight text-balance">
+                {slide.headline}
+              </h2>
+              <p className="text-muted-foreground leading-relaxed text-pretty">
+                {slide.body}
+              </p>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Footer — dots + navigation */}
