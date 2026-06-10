@@ -7,8 +7,10 @@ import { AuthMigrationHandler } from '@/components/auth-migration-handler'
 import { ServiceWorkerRegistration } from '@/components/service-worker-registration'
 import { QueryProvider } from '@/components/query-provider'
 import { NextIntlClientProvider } from 'next-intl'
-import { getMessages } from 'next-intl/server'
+import { getMessages, getLocale } from 'next-intl/server'
 import './globals.css'
+
+export const dynamic = 'force-dynamic'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -61,9 +63,10 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getLocale()
   const messages = await getMessages()
   return (
-    <html lang="en" className="bg-background" suppressHydrationWarning>
+    <html lang={locale} className="bg-background" suppressHydrationWarning>
       <body className={`${dmSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true}>
