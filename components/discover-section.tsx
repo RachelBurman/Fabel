@@ -18,14 +18,14 @@ function formatCustomAllergen(name: string): string {
   return name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
-const SIGNAL_DISPLAY_LABELS: Record<string, string> = {
-  'Too complex':          'simpler recipes',
-  'Too simple':           'more ambitious recipes',
-  'Wrong cuisine vibe':   'different cuisines',
-  'Great cuisine choice': 'similar cuisines',
-  'Too many ingredients': 'fewer ingredients',
-  'Quick to make':        'quick to make',
-  'Took too long':        'shorter cook time',
+const SIGNAL_KEY_MAP: Record<string, string> = {
+  'Too complex':          'signals.tooComplex',
+  'Too simple':           'signals.tooSimple',
+  'Wrong cuisine vibe':   'signals.wrongCuisine',
+  'Great cuisine choice': 'signals.greatCuisine',
+  'Too many ingredients': 'signals.tooManyIngredients',
+  'Quick to make':        'signals.quickToMake',
+  'Took too long':        'signals.tookTooLong',
 }
 
 interface TasteProfile {
@@ -136,14 +136,14 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
               )}
               {data.tasteProfile.formatSignals?.length > 0 && (
                 <div className="flex items-start gap-2">
-                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">Your preferences</span>
+                  <span className="text-xs text-muted-foreground w-28 pt-0.5 shrink-0">{t('yourPreferences')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {data.tasteProfile.formatSignals.map((signal, i) => {
-                      const label = SIGNAL_DISPLAY_LABELS[signal]
-                      if (!label) return null
+                      const key = SIGNAL_KEY_MAP[signal]
+                      if (!key) return null
                       return (
                         <span key={i} className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary text-foreground">
-                          {label}
+                          {t(key as Parameters<typeof t>[0])}
                         </span>
                       )
                     })}
@@ -210,7 +210,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No data yet — like some recipes to see trends.</p>
+              <p className="text-sm text-muted-foreground">{t('noDataYet')}</p>
             )}
           </div>
         )}
@@ -234,7 +234,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No global trends yet.</p>
+              <p className="text-sm text-muted-foreground">{t('noGlobalTrends')}</p>
             )}
           </div>
         )}
@@ -262,7 +262,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No all-time data yet.</p>
+              <p className="text-sm text-muted-foreground">{t('noAllTimeData')}</p>
             )}
           </div>
         )}
@@ -286,7 +286,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No pairing trends yet.</p>
+              <p className="text-sm text-muted-foreground">{t('noPairingsData')}</p>
             )}
           </div>
         )}
@@ -295,7 +295,7 @@ export function DiscoverSection({ onSelectCuisine, onSelectOccasion, onSeedIngre
           && !discoverSettings.showTrendingGlobally
           && !discoverSettings.showMostLoved
           && !discoverSettings.showTrendingPairings && (
-          <p className="text-sm text-muted-foreground">All sub-sections are hidden. Turn them on in Settings.</p>
+          <p className="text-sm text-muted-foreground">{t('allHidden')}</p>
         )}
 
       </div>

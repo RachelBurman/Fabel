@@ -26,6 +26,7 @@ function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, r
   const canView = Boolean(recipe.fullRecipe)
   const { collections } = useFable()
   const isInAnyCollection = collections.some(c => c.recipeIds.includes(recipe.id))
+  const tSaved = useTranslations('saved')
 
   return (
     <motion.div
@@ -49,7 +50,7 @@ function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, r
 
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/40 backdrop-blur-sm text-white rounded-full">
           <Heart className="w-3.5 h-3.5 fill-current" />
-          <span className="text-xs font-medium">Saved</span>
+          <span className="text-xs font-medium">{tSaved('savedBadge')}</span>
         </div>
 
         {/* Action buttons */}
@@ -82,7 +83,7 @@ function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, r
           </div>
           <div className="flex items-center gap-1.5">
             <Users className="w-4 h-4" />
-            <span>{recipe.servings} servings</span>
+            <span>{tSaved('servings', { count: recipe.servings })}</span>
           </div>
         </div>
       </div>
@@ -101,6 +102,7 @@ interface CollectionCardProps {
 function CollectionCard({ collection, previewRecipes, onClick }: CollectionCardProps) {
   const count = collection.recipeIds.length
   const strips = previewRecipes.slice(0, 3)
+  const t = useTranslations('collections')
 
   return (
     <motion.div
@@ -125,7 +127,7 @@ function CollectionCard({ collection, previewRecipes, onClick }: CollectionCardP
         {/* Overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent flex flex-col justify-end p-4">
           <p className="text-white/70 text-xs font-medium mb-0.5">
-            {count === 0 ? 'Empty' : `${count} recipe${count !== 1 ? 's' : ''}`}
+            {count === 0 ? t('emptyPreview') : count !== 1 ? t('recipesCount', { count }) : t('recipeCount', { count })}
           </p>
           <h3 className="text-white font-semibold text-sm leading-snug">{collection.name}</h3>
         </div>
@@ -162,7 +164,7 @@ function CollectionDetail({ collection, onBack, onBrowseSaved, onViewRecipe, onD
         <div className="flex-1 min-w-0">
           <h2 className="text-xl font-semibold text-foreground truncate">{collection.name}</h2>
           <p className="text-sm text-muted-foreground">
-            {recipes.length === 0 ? 'No recipes' : `${recipes.length} recipe${recipes.length !== 1 ? 's' : ''}`}
+            {recipes.length === 0 ? tCollections('noRecipes') : recipes.length !== 1 ? tCollections('recipesCount', { count: recipes.length }) : tCollections('recipeCount', { count: recipes.length })}
           </p>
         </div>
         <button
@@ -296,7 +298,9 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    {tab === 'saved' ? `All Saved${savedRecipes.length > 0 ? ` (${savedRecipes.length})` : ''}` : `Collections${collections.length > 0 ? ` (${collections.length})` : ''}`}
+                    {tab === 'saved'
+                      ? (savedRecipes.length > 0 ? t('allSavedWithCount', { count: savedRecipes.length }) : t('allSaved'))
+                      : (collections.length > 0 ? t('collectionsWithCount', { count: collections.length }) : tCollections('title'))}
                   </button>
                 ))}
               </div>
@@ -347,14 +351,14 @@ export function SavedRecipesScreen({ onBack, onViewRecipe, onGenerateRecipe }: S
                             value={newCollectionName}
                             onChange={e => setNewCollectionName(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') handleCreateCollection(); if (e.key === 'Escape') setIsCreatingCollection(false) }}
-                            placeholder="Collection name…"
+                            placeholder={tCollections('collectionPlaceholder')}
                             className="flex-1 text-sm bg-card border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
                           />
                           <Button size="sm" onClick={handleCreateCollection} disabled={!newCollectionName.trim()} className="rounded-xl">
-                            Create
+                            {tCollections('create')}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => { setIsCreatingCollection(false); setNewCollectionName('') }} className="rounded-xl">
-                            Cancel
+                            {tCollections('cancelCreate')}
                           </Button>
                         </div>
                       ) : (

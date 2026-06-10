@@ -97,7 +97,7 @@ export function SidebarNavigation({ currentScreen, onNavigate }: BottomNavigatio
             style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#15803d' }}
           >
             <ShieldCheck className="w-3 h-3" />
-            <span>Safe</span>
+            <span>{t('safeFoods')}</span>
           </motion.div>
         )}
       </div>
@@ -145,6 +145,8 @@ export function Header({ onSettingsClick }: HeaderProps) {
   const safeFoodsActive = preferences.safeFoodsMode && preferences.safeIngredients.length > 0
   const colorMode = preferences.colorMode
   const tAuth = useTranslations('auth')
+  const tNav = useTranslations('nav')
+  const tSettings = useTranslations('settings')
 
   const [guestOpen, setGuestOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -184,7 +186,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
   }
 
   const displayName = isLoaded && isSignedIn
-    ? (session?.user?.name?.split(' ')?.[0] || session?.user?.email?.split('@')[0] || 'Account').slice(0, 12)
+    ? (session?.user?.name?.split(' ')?.[0] || session?.user?.email?.split('@')[0] || tSettings('account')).slice(0, 12)
     : tAuth('guest')
 
   const pillInitial = isLoaded && isSignedIn && session?.user?.name
@@ -209,7 +211,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
               style={{ backgroundColor: 'rgba(34,197,94,0.12)', color: '#15803d' }}
             >
               <ShieldCheck className="w-3 h-3" />
-              <span className="hidden xs:inline">Safe Foods</span>
+              <span className="hidden xs:inline">{tNav('safeFoods')}</span>
             </motion.div>
           )}
         </div>
@@ -256,7 +258,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
-                        {session?.user?.name || session?.user?.email?.split('@')[0] || 'Account'}
+                        {session?.user?.name || session?.user?.email?.split('@')[0] || tSettings('account')}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {session?.user?.email}
@@ -346,7 +348,7 @@ export function Header({ onSettingsClick }: HeaderProps) {
           <button
             onClick={handleColorModeCycle}
             aria-label="Cycle theme: light, dark, auto"
-            title={colorMode === 'light' ? 'Light mode' : colorMode === 'dark' ? 'Dark mode' : 'Auto (system)'}
+            title={colorMode === 'light' ? tSettings('themes.light') : colorMode === 'dark' ? tSettings('themes.dark') : tSettings('themes.system')}
             className="w-10 h-10 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
           >
             {colorMode === 'dark' ? <Moon className="w-5 h-5" /> : colorMode === 'light' ? <Sun className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}

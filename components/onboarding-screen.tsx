@@ -108,8 +108,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               className="grid gap-4 mb-12 w-full max-w-sm"
             >
               {[
-                { icon: ShieldCheck, text: 'Allergen-safe recipes' },
-                { icon: Leaf, text: 'Fresh ingredient matching' },
+                { icon: ShieldCheck, text: t('featureAllergenSafe') },
+                { icon: Leaf, text: t('featureFreshIngredients') },
               ].map((feature, i) => (
                 <div
                   key={i}
@@ -133,7 +133,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onClick={handleContinue}
                 className="rounded-full px-8 gap-2"
               >
-                Get Started
+                {t('getStarted')}
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </motion.div>
@@ -165,17 +165,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   className="flex items-center justify-between w-full text-left group mb-3"
                 >
                   <h3 className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                    Diet &amp; Lifestyle
+                    {t('dietAndLifestyle')}
                   </h3>
                   <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
                     {preferences.activePresets.length > 0 || preferences.lactoseIntolerant || preferences.alcoholMode !== 'none' || preferences.lowHistamine
                       ? [
                           ...preferences.activePresets.map(id => DIET_PRESETS[id]?.label ?? id),
-                          ...(preferences.lactoseIntolerant ? ['Lactose'] : []),
-                          ...(preferences.alcoholMode !== 'none' ? ['No Alcohol'] : []),
-                          ...(preferences.lowHistamine ? ['Low Histamine'] : []),
-                        ].join(', ') + ' active'
-                      : 'None active'}
+                          ...(preferences.lactoseIntolerant ? [tPresets('lactose.shortLabel')] : []),
+                          ...(preferences.alcoholMode !== 'none' ? [tPresets('alcohol.shortLabel')] : []),
+                          ...(preferences.lowHistamine ? [tPresets('lowHistamine.shortLabel')] : []),
+                        ].join(', ') + t('restrictionsSuffix')
+                      : t('noneActive')}
                     <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
                   </span>
                 </button>
@@ -238,10 +238,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                                 <p className="text-sm font-medium text-foreground">{tPresets('lactose.name')}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
-                                    ? 'Dairy allowed — Lactaid reminder shown on recipes'
+                                    ? tPresets('lactose.activeInclude')
                                     : preferences.lactoseIntolerant
-                                    ? 'Dairy excluded from all results'
-                                    : 'Shows a Lactaid reminder on dairy-containing recipes'}
+                                    ? tPresets('lactose.activeExclude')
+                                    : tPresets('lactose.inactive')}
                                 </p>
                               </div>
                             </div>
@@ -273,8 +273,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                               >
                                 <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
                                   {([
-                                    { value: 'include' as const, label: 'Include dairy with reminders', desc: tPresets('lactose.reminder') },
-                                    { value: 'exclude' as const, label: 'Exclude dairy entirely', desc: tPresets('lactose.exclude') },
+                                    { value: 'include' as const, label: tPresets('lactose.includeLabel'), desc: tPresets('lactose.includeDesc') },
+                                    { value: 'exclude' as const, label: tPresets('lactose.excludeLabel'), desc: tPresets('lactose.excludeDesc') },
                                   ]).map(({ value, label, desc }) => (
                                     <button
                                       key={value}
@@ -316,10 +316,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                                 <p className="text-sm font-medium text-foreground">{tPresets('alcohol.name')}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {preferences.alcoholMode === 'no_cooking'
-                                    ? 'Alcohol-free cooking — drink pairings hidden'
+                                    ? tPresets('alcohol.noCookingActive')
                                     : preferences.alcoholMode === 'exclude_entirely'
-                                    ? 'Alcohol excluded from all results'
-                                    : 'Remove or exclude alcohol from recipes and pairings'}
+                                    ? tPresets('alcohol.excludeActive')
+                                    : tPresets('alcohol.inactive')}
                                 </p>
                               </div>
                             </div>
@@ -351,8 +351,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                               >
                                 <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
                                   {([
-                                    { value: 'no_cooking' as const, label: '🍷 Alcohol-free cooking', desc: tPresets('alcohol.noCooking') },
-                                    { value: 'exclude_entirely' as const, label: '🚫 Exclude entirely', desc: tPresets('alcohol.excludeEntirely') },
+                                    { value: 'no_cooking' as const, label: tPresets('alcohol.noCookingLabel'), desc: tPresets('alcohol.noCookingDesc') },
+                                    { value: 'exclude_entirely' as const, label: tPresets('alcohol.excludeLabel'), desc: tPresets('alcohol.excludeDesc') },
                                   ]).map(({ value, label, desc }) => (
                                     <button
                                       key={value}
@@ -470,15 +470,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center pt-4 border-t border-border">
                 <p className="text-sm text-muted-foreground">
                   {preferences.allergens.length === 0
-                    ? 'No allergens selected'
-                    : `${preferences.allergens.length} allergen${preferences.allergens.length > 1 ? 's' : ''} selected`}
+                    ? t('noAllergensSelected')
+                    : preferences.allergens.length > 1
+                    ? t('allergensSelected', { count: preferences.allergens.length })
+                    : t('allergenSelected', { count: preferences.allergens.length })}
                 </p>
                 <Button
                   size="lg"
                   onClick={handleContinue}
                   className="rounded-full px-8 gap-2"
                 >
-                  Continue
+                  {t('continue')}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -505,7 +507,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
               {/* Spice tolerance */}
               <div className="mb-8">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">How do you feel about spice?</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">{t('spiceHeading')}</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {([
                     { value: 'none' as const, emoji: '🌿' },
@@ -534,7 +536,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
               {/* Adventurousness */}
               <div className="mb-8">
-                <h3 className="text-sm font-medium text-muted-foreground mb-3">How adventurous are you feeling?</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">{t('adventurousnessHeading')}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {([
                     { value: 'familiar' as const, emoji: '🏠' },
@@ -566,7 +568,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   onClick={handleContinue}
                   className="rounded-full px-8 gap-2"
                 >
-                  Continue
+                  {t('continue')}
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </div>
@@ -608,8 +610,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               transition={{ delay: 0.3, duration: 0.35 }}
               className="text-lg text-muted-foreground text-center max-w-md mb-4 text-pretty"
             >
-              Tell us exactly what you <span className="text-foreground font-medium">can</span>{' '}eat and
-              we&apos;ll work only within those ingredients — nothing outside your safe list.
+              {t('safeFoodsDescPre')} <span className="text-foreground font-medium">{t('safeFoodsCanEat')}</span>{' '}{t('safeFoodsDescPost')}
             </motion.p>
 
             <motion.p
@@ -618,7 +619,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               transition={{ delay: 0.4, duration: 0.35 }}
               className="text-sm text-muted-foreground text-center max-w-sm mb-10"
             >
-              Ideal for MCAS, severe allergies, or highly restricted therapeutic diets.
+              {t('safeFoodsIdealFor')}
             </motion.p>
 
             <motion.div
@@ -633,7 +634,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 className="w-full rounded-full gap-2 py-6"
               >
                 <ShieldCheck className="w-5 h-5" />
-                Yes, set up my safe foods list
+                {t('safeFoodsSetUp')}
               </Button>
               <Button
                 size="lg"
@@ -641,7 +642,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 onClick={handleSkipSafeFoods}
                 className="w-full rounded-full gap-2"
               >
-                No thanks, continue to the app
+                {t('safeFoodsSkip')}
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </motion.div>
@@ -658,7 +659,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             <div className="max-w-2xl mx-auto w-full flex flex-col flex-1">
               <SafeFoodsScreen
                 onDone={handleSafeFoodsDone}
-                doneLabel="Save & Start Cooking"
+                doneLabel={t('safeFoodsDoneLabel')}
               />
             </div>
           </motion.div>

@@ -61,17 +61,17 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
       const res = await fetch('/api/user/account', { method: 'DELETE' })
       const data = await res.json() as { success?: boolean; errors?: string[]; error?: string }
       if (!res.ok) {
-        setDeleteError(data.error ?? 'Deletion failed. Please try again.')
+        setDeleteError(data.error ?? t('deletionFailed'))
         return
       }
       // Clear all local state then sign out
       localStorage.clear()
       await signOut()
       setShowDeleteModal(false)
-      toast.success('Your account and all data have been permanently deleted.')
+      toast.success(t('deleteSuccessToast'))
       onDone()
     } catch {
-      setDeleteError('Something went wrong. Please try again.')
+      setDeleteError(t('deleteSomethingWrong'))
     } finally {
       setIsDeleting(false)
     }
@@ -83,12 +83,12 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
   const headerSubtitle = (() => {
     const parts: string[] = []
     if (activePresetLabels.length > 0) parts.push(activePresetLabels.join(', '))
-    if (preferences.lactoseIntolerant) parts.push('Lactose intolerance')
-    if (preferences.alcoholMode !== 'none') parts.push('No alcohol')
-    if (preferences.lowHistamine) parts.push('Low histamine')
-    if (allergenCount > 0) parts.push(`${allergenCount} allergen${allergenCount > 1 ? 's' : ''}`)
-    if (parts.length === 0) return 'No restrictions selected'
-    return `${parts.join(' + ')} active`
+    if (preferences.lactoseIntolerant) parts.push(tPresets('lactose.shortLabel'))
+    if (preferences.alcoholMode !== 'none') parts.push(tPresets('alcohol.shortLabel'))
+    if (preferences.lowHistamine) parts.push(tPresets('lowHistamine.shortLabel'))
+    if (allergenCount > 0) parts.push(allergenCount > 1 ? t('allergensShort', { count: allergenCount }) : t('allergenShort', { count: allergenCount }))
+    if (parts.length === 0) return t('noRestrictionsSelected')
+    return `${parts.join(' + ')}${t('restrictionsSuffix')}`
   })()
 
   return (
@@ -121,11 +121,11 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                 {anyDietActive
                   ? [
                       ...activePresetLabels,
-                      ...(preferences.lactoseIntolerant ? ['Lactose'] : []),
-                      ...(preferences.alcoholMode !== 'none' ? ['No Alcohol'] : []),
-                      ...(preferences.lowHistamine ? ['Low Histamine'] : []),
-                    ].join(', ') + ' active'
-                  : 'None active'}
+                      ...(preferences.lactoseIntolerant ? [tPresets('lactose.shortLabel')] : []),
+                      ...(preferences.alcoholMode !== 'none' ? [tPresets('alcohol.shortLabel')] : []),
+                      ...(preferences.lowHistamine ? [tPresets('lowHistamine.shortLabel')] : []),
+                    ].join(', ') + t('restrictionsSuffix')
+                  : t('noneActive')}
                 <ChevronDown className={cn('w-4 h-4 transition-transform duration-200', isDietExpanded && 'rotate-180')} />
               </span>
             </button>
@@ -185,13 +185,13 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                         <div className="flex items-center gap-3">
                           <span className="text-xl">🥛</span>
                           <div>
-                            <p className="text-sm font-medium text-foreground">Lactose Intolerance</p>
+                            <p className="text-sm font-medium text-foreground">{tPresets('lactose.title')}</p>
                             <p className="text-xs text-muted-foreground">
                               {preferences.lactoseIntolerant && preferences.lactoseMode === 'include'
-                                ? 'Dairy allowed — Lactaid reminder shown on recipes'
+                                ? tPresets('lactose.activeInclude')
                                 : preferences.lactoseIntolerant
-                                ? 'Dairy excluded from all results'
-                                : 'Shows a Lactaid reminder on dairy-containing recipes'}
+                                ? tPresets('lactose.activeExclude')
+                                : tPresets('lactose.inactive')}
                             </p>
                           </div>
                         </div>
@@ -223,8 +223,8 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                           >
                             <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
                               {([
-                                { value: 'include' as const, label: 'Include dairy with reminders', desc: "Dairy stays in recipes — you'll see a Lactaid reminder" },
-                                { value: 'exclude' as const, label: 'Exclude dairy entirely', desc: 'Treats dairy like an allergen, filtered from all results' },
+                                { value: 'include' as const, label: tPresets('lactose.includeLabel'), desc: tPresets('lactose.includeDesc') },
+                                { value: 'exclude' as const, label: tPresets('lactose.excludeLabel'), desc: tPresets('lactose.excludeDesc') },
                               ]).map(({ value, label, desc }) => (
                                 <button
                                   key={value}
@@ -263,13 +263,13 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                         <div className="flex items-center gap-3">
                           <span className="text-xl">🍷</span>
                           <div>
-                            <p className="text-sm font-medium text-foreground">No Alcohol</p>
+                            <p className="text-sm font-medium text-foreground">{tPresets('alcohol.title')}</p>
                             <p className="text-xs text-muted-foreground">
                               {preferences.alcoholMode === 'no_cooking'
-                                ? 'Alcohol-free cooking — drink pairings hidden'
+                                ? tPresets('alcohol.noCookingActive')
                                 : preferences.alcoholMode === 'exclude_entirely'
-                                ? 'Alcohol excluded from all results'
-                                : 'Remove or exclude alcohol from recipes and pairings'}
+                                ? tPresets('alcohol.excludeActive')
+                                : tPresets('alcohol.inactive')}
                             </p>
                           </div>
                         </div>
@@ -301,8 +301,8 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                           >
                             <div className="px-4 pb-3 pt-1 space-y-1 border-t border-amber-500/20">
                               {([
-                                { value: 'no_cooking' as const, label: '🍷 Alcohol-free cooking', desc: 'Alcohol removed from recipes — cooking wine, beer, and spirits replaced with non-alcoholic alternatives. Alcoholic drink pairings hidden.' },
-                                { value: 'exclude_entirely' as const, label: '🚫 Exclude entirely', desc: 'Treats alcohol like an allergen — filtered from all results including marinades, sauces, and flavourings. Alcoholic drink pairings hidden.' },
+                                { value: 'no_cooking' as const, label: tPresets('alcohol.noCookingLabel'), desc: tPresets('alcohol.noCookingDesc') },
+                                { value: 'exclude_entirely' as const, label: tPresets('alcohol.excludeLabel'), desc: tPresets('alcohol.excludeDesc') },
                               ]).map(({ value, label, desc }) => (
                                 <button
                                   key={value}
@@ -373,7 +373,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
           </div>
 
           {/* EU Big 14 grid */}
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">EU Big 14 Allergens</h2>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">{t('euBig14')}</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-2 mb-3">
             {ALLERGENS.map((allergen, index) => {
               const isSelected = preferences.allergens.includes(allergen.id)
@@ -478,11 +478,11 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5" style={{ color: '#16a34a' }} />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Safe Foods Mode</p>
+                  <p className="text-sm font-semibold text-foreground">{t('safeFoodsModeTitle')}</p>
                   <p className="text-xs text-muted-foreground">
                     {preferences.safeIngredients.length === 0
-                      ? 'No safe ingredients configured'
-                      : `${preferences.safeIngredients.length} ingredients on your safe list`}
+                      ? t('safeFoodsModeEmpty')
+                      : t('safeFoodsModeCount', { count: preferences.safeIngredients.length })}
                   </p>
                 </div>
               </div>
@@ -504,14 +504,13 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
 
             {!safeFoodsActive && (
               <p className="text-xs text-muted-foreground mb-3">
-                For MCAS, severe allergies, or highly restricted diets. Build a list of
-                ingredients you can safely eat and we&apos;ll generate recipes exclusively from it.
+                {t('safeFoodsModeDesc')}
               </p>
             )}
 
             <Button variant="outline" size="sm" onClick={onManageSafeFoods} className="w-full rounded-full gap-2">
               <ShieldCheck className="w-4 h-4" />
-              {preferences.safeIngredients.length === 0 ? 'Set up safe foods list' : 'Manage safe foods list'}
+              {preferences.safeIngredients.length === 0 ? t('safeFoodsSetup') : t('safeFoodsManage')}
             </Button>
           </div>
 
@@ -521,8 +520,8 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               <div className="flex items-center gap-2">
                 <BarChart2 className="w-5 h-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-semibold text-foreground">Show nutritional information</p>
-                  <p className="text-xs text-muted-foreground">Calories, protein, carbs and fat per serving</p>
+                  <p className="text-sm font-semibold text-foreground">{t('macrosTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('macrosDesc')}</p>
                 </div>
               </div>
               <button
@@ -548,13 +547,13 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                   onClick={onOpenAuth}
                   className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
                 >
-                  Sign in
+                  {t('macrosSignInLink')}
                 </button>
-                {' '}to see nutritional information.
+                {' '}{t('macrosSignInSuffix')}
               </p>
             ) : (
               <p className="text-xs text-muted-foreground mt-2.5">
-                Calorie and macro information is hidden by default out of respect for users in eating disorder recovery.
+                {t('macrosHiddenDesc')}
               </p>
             )}
           </div>
@@ -565,7 +564,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               {colorMode === 'dark' ? <Moon className="w-5 h-5 text-muted-foreground" /> : colorMode === 'light' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Monitor className="w-5 h-5 text-muted-foreground" />}
               <div>
                 <p className="text-sm font-semibold text-foreground">{t('theme')}</p>
-                <p className="text-xs text-muted-foreground">{colorMode === 'system' ? 'Follows your device setting' : colorMode === 'dark' ? 'Always dark' : 'Always light'}</p>
+                <p className="text-xs text-muted-foreground">{colorMode === 'system' ? t('themeFollowsDevice') : colorMode === 'dark' ? t('themeAlwaysDark') : t('themeAlwaysLight')}</p>
               </div>
             </div>
             <div className="flex rounded-lg overflow-hidden border border-border bg-secondary">
@@ -595,14 +594,14 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
           <div className="py-4 border-t border-border">
             <div className="flex items-center gap-2 mb-3">
               <Compass className="w-5 h-5 text-muted-foreground" />
-              <p className="text-sm font-semibold text-foreground">Discover</p>
+              <p className="text-sm font-semibold text-foreground">{t('discoverSectionTitle')}</p>
             </div>
             {([
-              { key: 'showDiscover' as const,         label: 'Show Discover section',    desc: 'Trending insights above the generation flow' },
-              { key: 'showTrendingForYou' as const,   label: 'Show Trending for you',    desc: 'Recipe types popular with your allergen profile' },
-              { key: 'showTrendingGlobally' as const, label: 'Show Trending globally',   desc: 'Most liked ingredients across all users' },
-              { key: 'showMostLoved' as const,        label: 'Show Most loved ingredients', desc: 'All-time top ingredients for your profile' },
-              { key: 'showTrendingPairings' as const, label: 'Show Trending pairings',   desc: 'Popular drink and cuisine combinations' },
+              { key: 'showDiscover' as const,         label: t('discover.showDiscover'),         desc: t('discover.showDiscoverDesc') },
+              { key: 'showTrendingForYou' as const,   label: t('discover.showTrendingForYou'),   desc: t('discover.showTrendingForYouDesc') },
+              { key: 'showTrendingGlobally' as const, label: t('discover.showTrendingGlobally'), desc: t('discover.showTrendingGloballyDesc') },
+              { key: 'showMostLoved' as const,        label: t('discover.showMostLoved'),        desc: t('discover.showMostLovedDesc') },
+              { key: 'showTrendingPairings' as const, label: t('discover.showTrendingPairings'), desc: t('discover.showTrendingPairingsDesc') },
             ]).map(({ key, label, desc }) => {
               const isOn = preferences.discoverSettings[key]
               return (
@@ -636,10 +635,10 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               <Layout className="w-5 h-5 text-muted-foreground" />
               <p className="text-sm font-semibold text-foreground">{t('tabs')}</p>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">At least 2 tabs must remain visible.</p>
+            <p className="text-xs text-muted-foreground mb-3">{t('tabsMinimum')}</p>
             {ALL_TABS.map((tabId) => {
               const labelMap: Record<string, string> = {
-                kitchen: 'Kitchen', recipe: 'Recipe', discover: 'Discover', substitutes: 'Substitutes', history: 'History', saved: 'Saved',
+                kitchen: t('tabLabels.kitchen'), recipe: t('tabLabels.recipe'), discover: t('tabLabels.discover'), substitutes: t('tabLabels.substitutes'), history: t('tabLabels.history'), saved: t('tabLabels.saved'),
               }
               const isVisible = preferences.visibleTabs.includes(tabId)
               const wouldViolateMin = isVisible && preferences.visibleTabs.length <= 2
@@ -680,7 +679,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                 <PlayCircle className="w-5 h-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-semibold text-foreground">{t('onboarding')}</p>
-                  <p className="text-xs text-muted-foreground">Revisit the intro slideshow</p>
+                  <p className="text-xs text-muted-foreground">{t('revisitSlideshow')}</p>
                 </div>
               </div>
               <Button
@@ -700,10 +699,10 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Trash2 className="w-5 h-5 text-destructive/70" />
-                  <p className="text-sm font-semibold text-foreground">Account</p>
+                  <p className="text-sm font-semibold text-foreground">{t('account')}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Permanently delete your account and all associated data.
+                  {t('accountDeleteDesc')}
                 </p>
                 <Button
                   variant="outline"
@@ -711,14 +710,14 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                   onClick={() => { setShowDeleteModal(true); setDeleteError(null) }}
                   className="rounded-full text-xs border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
-                  Delete my account and all data
+                  {t('deleteAccount')}
                 </Button>
               </div>
             ) : (
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1">Account</p>
+                <p className="text-sm font-semibold text-foreground mb-1">{t('account')}</p>
                 <p className="text-xs text-muted-foreground mb-3">
-                  You&apos;re using Fable as a guest. Sign in to create an account — your current kitchen and preferences will carry over.
+                  {t('accountGuest')}
                 </p>
                 <Button
                   variant="outline"
@@ -726,7 +725,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                   onClick={onOpenAuth}
                   className="rounded-full text-xs"
                 >
-                  Sign in to Fable
+                  {t('accountSignIn')}
                 </Button>
               </div>
             )}
@@ -735,7 +734,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
           {/* Done */}
           <div className="pt-4 border-t border-border mt-auto">
             <Button size="lg" onClick={onDone} className="w-full rounded-full py-6">
-              Done
+              {t('done')}
             </Button>
           </div>
 
@@ -761,9 +760,9 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
             transition={{ duration: 0.2 }}
             className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-2xl"
           >
-            <h2 className="text-lg font-semibold text-foreground mb-2">Delete your account?</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-2">{t('deleteConfirmTitle')}</h2>
             <p className="text-sm text-muted-foreground mb-5">
-              This will permanently delete your account, kitchen, saved recipes, taste profile, and all personal data. This cannot be undone.
+              {t('deleteConfirmBody')}
             </p>
 
             {deleteError && (
@@ -777,7 +776,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                 onClick={() => setShowDeleteModal(false)}
                 disabled={isDeleting}
               >
-                Cancel
+                {t('deleteCancel')}
               </Button>
               <Button
                 onClick={handleDeleteAccount}
@@ -785,7 +784,7 @@ export function AllergenScreen({ onDone, onManageSafeFoods, onRestartTutorial, o
                 className="flex-1 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
               >
                 {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Delete permanently
+                {t('deleteConfirm')}
               </Button>
             </div>
           </motion.div>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { displayName } from '@/components/ingredients-screen'
 import { useIngredientSearch } from '@/lib/hooks/use-ingredient-search'
+import { useTranslations } from 'next-intl'
 
 interface SafeFoodsScreenProps {
   onDone: () => void
@@ -21,11 +22,13 @@ interface SafeFoodsScreenProps {
 
 export function SafeFoodsScreen({
   onDone,
-  doneLabel = 'Done',
+  doneLabel,
   fullPage = false,
   onBack,
 }: SafeFoodsScreenProps) {
   const { preferences, addSafeIngredient, removeSafeIngredient } = useFable()
+  const t = useTranslations('safeFoods')
+  const tSettings = useTranslations('settings')
 
   const [inputValue, setInputValue] = useState('')
   const [debouncedInput, setDebouncedInput] = useState('')
@@ -87,9 +90,9 @@ export function SafeFoodsScreen({
             </Button>
           )}
           <div>
-            <h1 className="text-2xl font-semibold text-foreground">Safe Foods List</h1>
+            <h1 className="text-2xl font-semibold text-foreground">{t('pageTitle')}</h1>
             <p className="text-sm text-muted-foreground">
-              {count === 0 ? 'No ingredients added yet' : `${count} ingredient${count !== 1 ? 's' : ''} on your safe list`}
+              {count === 0 ? t('noIngredientsYet') : count !== 1 ? t('ingredientCountPlural', { count }) : t('ingredientCount', { count })}
             </p>
           </div>
         </div>
@@ -102,10 +105,10 @@ export function SafeFoodsScreen({
             <ShieldCheck className="w-8 h-8" style={{ color: '#16a34a' }} />
           </div>
           <h2 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
-            Your safe ingredients
+            {t('yourSafeIngredients')}
           </h2>
           <p className="text-muted-foreground text-pretty max-w-md mx-auto">
-            Add every ingredient you can safely eat. We'll work exclusively within this list.
+            {t('addDesc')}
           </p>
         </div>
       )}
@@ -116,7 +119,7 @@ export function SafeFoodsScreen({
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search 1,790 ingredients…"
+            placeholder={t('searchPlaceholder')}
             value={inputValue}
             onChange={e => {
               setInputValue(e.target.value)
@@ -137,7 +140,7 @@ export function SafeFoodsScreen({
       {count > 0 ? (
         <div className="flex-1 mb-6">
           <h3 className="text-sm font-medium text-muted-foreground mb-3">
-            Safe ingredients ({count})
+            {t('ingredientsHeading', { count })}
           </h3>
           <div className="flex flex-wrap gap-2">
             <AnimatePresence mode="popLayout">
@@ -166,9 +169,9 @@ export function SafeFoodsScreen({
       ) : (
         <div className="flex-1 flex items-center justify-center text-center py-8">
           <div>
-            <p className="text-muted-foreground">No safe ingredients added yet</p>
+            <p className="text-muted-foreground">{t('noIngredientsEmpty')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Search above to start building your list
+              {t('searchToStart')}
             </p>
           </div>
         </div>
@@ -178,7 +181,7 @@ export function SafeFoodsScreen({
       <div className="pt-4 border-t border-border mt-auto">
         <Button size="lg" onClick={onDone} className="w-full rounded-full py-6 gap-2">
           <ShieldCheck className="w-5 h-5" />
-          {doneLabel}{count > 0 ? ` — ${count} ingredients` : ''}
+          {count > 0 ? t('doneWithCount', { count }) : (doneLabel ?? tSettings('done'))}
         </Button>
       </div>
 

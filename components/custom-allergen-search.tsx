@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { displayName } from '@/components/ingredients-screen'
 import { useIngredientSearch } from '@/lib/hooks/use-ingredient-search'
+import { useTranslations } from 'next-intl'
 
 export function CustomAllergenSearch() {
   const { preferences, toggleCustomAllergen } = useFable()
+  const t = useTranslations('settings')
 
   // Auto-expand if the user already has custom allergens selected
   const [isExpanded, setIsExpanded] = useState(() => preferences.customAllergens.length > 0)
@@ -67,10 +69,10 @@ export function CustomAllergenSearch() {
         className="flex items-center justify-between w-full text-left group"
       >
         <span className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
-          Have a specific allergy?
+          {t('customAllergen.haveAllergy')}
         </span>
         <span className="flex items-center gap-1 text-sm font-medium text-primary">
-          {isExpanded ? 'Close' : 'Search ingredients'}
+          {isExpanded ? t('customAllergen.close') : t('customAllergen.searchIngredients')}
           <ChevronDown
             className={cn(
               'w-4 h-4 transition-transform duration-200',
@@ -95,7 +97,7 @@ export function CustomAllergenSearch() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="e.g. garlic, sesame oil, tofu…"
+                placeholder={t('customAllergen.placeholder')}
                 value={query}
                 onChange={e => {
                   setQuery(e.target.value)

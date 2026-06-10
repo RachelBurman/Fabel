@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { X, ChevronLeft, ChevronRight, ShieldCheck, Leaf } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { markTutorialComplete, TUTORIAL_SLIDE_COUNT } from '@/lib/tutorial'
+import { useTranslations } from 'next-intl'
 
 interface TutorialOverlayProps {
   onDismiss: () => void
@@ -69,17 +70,18 @@ function AllergenVisual() {
 }
 
 function KitchenVisual() {
+  const tKitchen = useTranslations('kitchen')
   const sections = [
-    { icon: '❄️', label: 'Fridge', items: ['Chicken', 'Spinach', 'Yogurt'] },
-    { icon: '🫙', label: 'Cupboard', items: ['Pasta', 'Rice', 'Olive Oil'] },
+    { icon: '❄️', labelKey: 'fridge' as const, items: ['Chicken', 'Spinach', 'Yogurt'] },
+    { icon: '🫙', labelKey: 'cupboard' as const, items: ['Pasta', 'Rice', 'Olive Oil'] },
   ]
   return (
     <div className="grid grid-cols-2 gap-2 px-1">
       {sections.map(section => (
-        <div key={section.label} className="bg-card border border-border rounded-2xl p-3">
+        <div key={section.labelKey} className="bg-card border border-border rounded-2xl p-3">
           <div className="flex items-center gap-1.5 mb-2.5">
             <span className="text-base leading-none">{section.icon}</span>
-            <span className="text-xs font-semibold text-foreground">{section.label}</span>
+            <span className="text-xs font-semibold text-foreground">{tKitchen(`areas.${section.labelKey}` as Parameters<typeof tKitchen>[0])}</span>
           </div>
           <div className="space-y-1.5">
             {section.items.map((item, i) => (
@@ -96,6 +98,8 @@ function KitchenVisual() {
 }
 
 function RecipeVisual() {
+  const tRecipe = useTranslations('recipe')
+  const tTutorial = useTranslations('tutorial')
   return (
     <div className="px-1">
       <div className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm">
@@ -115,9 +119,9 @@ function RecipeVisual() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>30 min</span>
             <span>·</span>
-            <span>2 servings</span>
+            <span>{tRecipe('cardServings', { count: 2 })}</span>
             <span>·</span>
-            <span className="text-primary font-medium">Safe for you ✓</span>
+            <span className="text-primary font-medium">{tTutorial('safeForYou')}</span>
           </div>
         </div>
       </div>
@@ -126,14 +130,15 @@ function RecipeVisual() {
 }
 
 function SafeFoodsVisual() {
+  const tTutorial = useTranslations('tutorial')
   const foods = ['Rice', 'Chicken Breast', 'Olive Oil', 'Carrots', 'Courgette']
   return (
     <div className="px-1">
       <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border" style={{ backgroundColor: 'rgba(34,197,94,0.06)' }}>
           <ShieldCheck className="w-4 h-4" style={{ color: '#16a34a' }} />
-          <span className="text-xs font-semibold text-foreground">Safe Foods List</span>
-          <span className="ml-auto text-xs font-semibold" style={{ color: '#16a34a' }}>Active</span>
+          <span className="text-xs font-semibold text-foreground">{tTutorial('safeFoodsList')}</span>
+          <span className="ml-auto text-xs font-semibold" style={{ color: '#16a34a' }}>{tTutorial('active')}</span>
         </div>
         {foods.map((food, i) => (
           <div key={food} className={cn('flex items-center gap-3 px-4 py-2.5', i < foods.length - 1 && 'border-b border-border')}>
@@ -150,38 +155,8 @@ function SafeFoodsVisual() {
 
 // ── Slides data ─────────────────────────────────────────────────────────────────
 
-const SLIDES = [
-  {
-    id: 'welcome',
-    visual: <WelcomeVisual />,
-    headline: "Most recipe apps weren't built for you.",
-    body: "Fable is different. Built for people with allergies, intolerances, and restricted diets — we keep you safe without compromising on flavour.",
-  },
-  {
-    id: 'allergens',
-    visual: <AllergenVisual />,
-    headline: 'Tell us what to avoid. Once.',
-    body: "Pick from the EU Big 14 allergens or search all 1,790 ingredients. We'll never suggest anything unsafe.",
-  },
-  {
-    id: 'kitchen',
-    visual: <KitchenVisual />,
-    headline: "Add what you have. We'll build around it.",
-    body: 'Track your fridge, freezer and cupboards. Fable prioritises ingredients before they expire.',
-  },
-  {
-    id: 'recipe',
-    visual: <RecipeVisual />,
-    headline: 'Safe ingredients. Bold flavours.',
-    body: "Generate personalised recipes with AI — or browse community recipes as a guest. Sign in to unlock AI generation tailored to your taste.",
-  },
-  {
-    id: 'safe-foods',
-    visual: <SafeFoodsVisual />,
-    headline: 'For highly restricted diets.',
-    body: 'Define exactly what you can safely eat. Fable builds every recipe strictly within your safe list — no assumptions, no surprises.',
-  },
-] as const
+const SLIDE_IDS = ['welcome', 'allergens', 'kitchen', 'recipe', 'safe-foods'] as const
+const SLIDE_VISUALS = [WelcomeVisual, AllergenVisual, KitchenVisual, RecipeVisual, SafeFoodsVisual]
 
 // ── Animation variants ──────────────────────────────────────────────────────────
 
@@ -207,8 +182,19 @@ const slideVariants = {
 export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [direction, setDirection] = useState(1)
+  const t = useTranslations('tutorial')
 
   const isLastSlide = currentSlide === TUTORIAL_SLIDE_COUNT - 1
+
+  const slides = SLIDE_IDS.map((id, i) => {
+    const Visual = SLIDE_VISUALS[i]
+    return {
+      id,
+      visual: <Visual />,
+      headline: t(`slides.${id}.headline` as Parameters<typeof t>[0]),
+      body: t(`slides.${id}.body` as Parameters<typeof t>[0]),
+    }
+  })
 
   const handleDismiss = useCallback(() => {
     markTutorialComplete()
@@ -234,7 +220,7 @@ export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
     handleNext()
   }, [handleNext])
 
-  const slide = SLIDES[currentSlide]
+  const slide = slides[currentSlide]
 
   return (
     <motion.div
@@ -257,7 +243,7 @@ export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
             className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-full hover:bg-secondary"
             aria-label="Skip tutorial"
           >
-            Skip
+            {t('skip')}
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -344,15 +330,15 @@ export function TutorialOverlay({ onDismiss }: TutorialOverlayProps) {
               aria-label="Previous slide"
             >
               <ChevronLeft className="w-4 h-4" />
-              Back
+              {t('back')}
             </button>
 
             <button
               onClick={handleNext}
               className="flex items-center gap-1.5 text-sm font-semibold px-6 py-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              aria-label={isLastSlide ? "Let's go" : 'Next slide'}
+              aria-label={isLastSlide ? t('letsGo') : t('next')}
             >
-              {isLastSlide ? "Let's go" : 'Next'}
+              {isLastSlide ? t('letsGo') : t('next')}
               {!isLastSlide && <ChevronRight className="w-4 h-4" />}
             </button>
           </div>

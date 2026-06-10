@@ -85,20 +85,6 @@ interface GeneratedRecipeScreenProps {
 }
 
 
-const RECIPE_POSITIVES = [
-  'Perfect complexity',
-  'Great cuisine choice',
-  'Right amount of ingredients',
-  'Quick to make',
-]
-
-const RECIPE_NEGATIVES = [
-  'Too complex',
-  'Too simple',
-  'Wrong cuisine vibe',
-  'Too many ingredients',
-  'Took too long',
-]
 
 // Countable items that must always be displayed as whole numbers
 const WHOLE_UNITS = new Set([
@@ -142,14 +128,14 @@ function getDrinkEmoji(key: string): string {
 const NUDGE_BUTTONS: {
   type: NudgeType
   emoji: string
-  label: string
+  labelKey: string
   hiddenWhen: (p: { spiceTolerance?: string; dietaryPresets?: string[]; cookTime?: string }) => boolean
 }[] = [
-  { type: 'spicier',    emoji: '🌶️', label: 'Make it spicier',   hiddenWhen: p => p.spiceTolerance === 'hot' },
-  { type: 'vegetarian', emoji: '🥗', label: 'Make it vegetarian', hiddenWhen: p => !!(p.dietaryPresets?.includes('vegetarian') || p.dietaryPresets?.includes('vegan')) },
-  { type: 'quicker',    emoji: '⚡', label: 'Make it quicker',    hiddenWhen: p => p.cookTime === 'quick' },
-  { type: 'cuisine',    emoji: '🌍', label: 'Different cuisine',  hiddenWhen: () => false },
-  { type: 'surprise',   emoji: '🔄', label: 'Surprise me',        hiddenWhen: () => false },
+  { type: 'spicier',    emoji: '🌶️', labelKey: 'nudges.spicier',          hiddenWhen: p => p.spiceTolerance === 'hot' },
+  { type: 'vegetarian', emoji: '🥗', labelKey: 'nudges.vegetarian',        hiddenWhen: p => !!(p.dietaryPresets?.includes('vegetarian') || p.dietaryPresets?.includes('vegan')) },
+  { type: 'quicker',    emoji: '⚡', labelKey: 'nudges.quicker',           hiddenWhen: p => p.cookTime === 'quick' },
+  { type: 'cuisine',    emoji: '🌍', labelKey: 'nudges.differentCuisine',  hiddenWhen: () => false },
+  { type: 'surprise',   emoji: '🔄', labelKey: 'nudges.surpriseMe',        hiddenWhen: () => false },
 ]
 
 interface RecipeBriefCardProps {
@@ -175,10 +161,11 @@ function RecipeBriefCard({
   dietaryPresets,
   cookTime,
 }: RecipeBriefCardProps) {
+  const t = useTranslations('recipe')
   const fallbackHints = [
-    "Safe ingredients. Bold flavours. Food for everyone.",
-    "Fable uses Epicure — the largest multilingual food embedding model ever built.",
-    "The more you cook with Fable, the better it knows your taste.",
+    t('loadingHint1'),
+    t('loadingHint2'),
+    t('loadingHint3'),
   ]
   // Keep hints in a ref so the rotation timer never resets when the brief updates
   const hintsRef = useRef(brief.loadingHints.length > 0 ? brief.loadingHints : fallbackHints)
@@ -220,7 +207,7 @@ function RecipeBriefCard({
       >
         <div className="absolute top-0 right-0 w-36 h-36 rounded-full opacity-30" style={{ background: 'rgba(251,191,36,0.32)', filter: 'blur(40px)', transform: 'translate(24px,-24px)' }} />
         <p className="relative text-white/70 text-xs font-medium uppercase tracking-widest mb-1">
-          I&apos;m thinking…
+          {t('thinkingLabel')}
         </p>
         {brief.direction ? (
           <motion.p
@@ -286,7 +273,7 @@ function RecipeBriefCard({
                 )}
               >
                 <span>{btn.emoji}</span>
-                <span>{btn.label}</span>
+                <span>{t(btn.labelKey as Parameters<typeof t>[0])}</span>
                 {activeNudge === btn.type && <span className="ml-0.5">✓</span>}
               </button>
             ))}
@@ -334,6 +321,21 @@ export function GeneratedRecipeScreen({
   const isLoading = loadingStep !== null
   const t = useTranslations('recipe')
   const tFeedback = useTranslations('feedback')
+  const tCommon = useTranslations('common')
+
+  const recipePositiveChips = [
+    t('positives.perfectComplexity'),
+    t('positives.greatCuisine'),
+    t('positives.rightIngredients'),
+    t('positives.quickToMake'),
+  ]
+  const recipeNegativeChips = [
+    t('negatives.tooComplex'),
+    t('negatives.tooSimple'),
+    t('negatives.wrongCuisine'),
+    t('negatives.tooManyIngredients'),
+    t('negatives.tookTooLong'),
+  ]
 
   const [cuisinePickerOpen, setCuisinePickerOpen] = useState(false)
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
@@ -516,12 +518,12 @@ export function GeneratedRecipeScreen({
           className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
         >
           <div className="text-5xl mb-6">🍽️</div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">No recipe yet</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('emptyTitle')}</h2>
           <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-            Head to Ingredients to build your kitchen and generate your first recipe.
+            {t('emptyDesc')}
           </p>
           <Button onClick={onGoToIngredients} className="rounded-full">
-            Go to Ingredients
+            {t('goToIngredients')}
           </Button>
         </motion.div>
       </div>
@@ -541,10 +543,10 @@ export function GeneratedRecipeScreen({
             <div className="text-5xl mb-6">🥘</div>
             <h2 className="text-xl font-semibold text-foreground mb-2">{t('noMatchingRecipes')}</h2>
             <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-              We couldn&apos;t find a community recipe that matches your requirements. Sign in to generate a personalised recipe with AI.
+              {t('noMatchingRecipesDesc')}
             </p>
             <Button onClick={onOpenAuth} className="rounded-full mb-3">{t('noMatchingRecipes')}</Button>
-            <Button onClick={onBack} variant="outline" className="rounded-full">Go Back</Button>
+            <Button onClick={onBack} variant="outline" className="rounded-full">{t('goBack')}</Button>
           </motion.div>
         </div>
       )
@@ -557,12 +559,12 @@ export function GeneratedRecipeScreen({
           className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
         >
           <div className="text-5xl mb-6">🍳</div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">Couldn&apos;t generate a recipe</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('errorTitle')}</h2>
           <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-            Something went wrong. Try again or adjust your ingredients.
+            {t('errorDesc')}
           </p>
           <Button onClick={onBack} variant="outline" className="rounded-full">
-            Go Back
+            {t('goBack')}
           </Button>
         </motion.div>
       </div>
@@ -593,7 +595,7 @@ export function GeneratedRecipeScreen({
               className="fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-3xl px-6 pt-6 pb-10 max-h-[70vh] overflow-y-auto"
             >
               <div className="w-10 h-1 rounded-full bg-border mx-auto mb-5" />
-              <h3 className="text-base font-semibold text-foreground mb-4">Choose a cuisine</h3>
+              <h3 className="text-base font-semibold text-foreground mb-4">{t('chooseCuisine')}</h3>
               <div className="flex flex-wrap gap-2">
                 {CUISINES.map(({ value, label }) => (
                   <button
@@ -636,7 +638,7 @@ export function GeneratedRecipeScreen({
             {/* Show title while loading (recipe title lives in the gradient hero) */}
             {isLoading && !isRefining && (
               <h1 className="flex-1 text-xl md:text-2xl font-semibold text-foreground">
-                Generating Recipe…
+                {t('generating')}
               </h1>
             )}
 
@@ -731,7 +733,7 @@ export function GeneratedRecipeScreen({
                         className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <X className="w-3 h-3" />
-                        Cancel refinement
+                        {t('cancelRefinement')}
                       </button>
                     </div>
                   )}
@@ -763,7 +765,7 @@ export function GeneratedRecipeScreen({
               <RecipeGradient title={recipe.title} className="w-full h-52 rounded-2xl">
                 <div className="absolute inset-0 flex flex-col justify-end p-5">
                   <p className="text-white/60 text-xs font-medium uppercase tracking-widest mb-1.5">
-                    Recipe
+                    {t('recipeLabel')}
                   </p>
                   <h2 className="text-white text-xl md:text-2xl font-bold leading-snug text-balance drop-shadow">
                     {recipe.title}
@@ -798,7 +800,7 @@ export function GeneratedRecipeScreen({
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs whitespace-nowrap border border-transparent bg-secondary text-muted-foreground hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-all duration-200"
                       >
                         <span>{btn.emoji}</span>
-                        <span>{btn.label}</span>
+                        <span>{t(btn.labelKey as Parameters<typeof t>[0])}</span>
                       </button>
                     ))}
                   </div>
@@ -818,7 +820,7 @@ export function GeneratedRecipeScreen({
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                       <span className="text-base shrink-0">✅</span>
                       <p className="text-sm text-amber-700 dark:text-amber-400">
-                        Swapped <span className="font-medium">{substitutionBanner.original}</span> → <span className="font-medium">{substitutionBanner.substitute}</span>
+                        {t('swapBanner', { original: substitutionBanner.original, substitute: substitutionBanner.substitute })}
                       </p>
                     </div>
                   </motion.div>
@@ -837,7 +839,7 @@ export function GeneratedRecipeScreen({
                   >
                     <div className="rounded-2xl border border-border bg-card p-4">
                       <div className="flex items-start justify-between gap-3 mb-2">
-                        <p className="text-sm font-semibold text-foreground">Why this is safe for you 🛡️</p>
+                        <p className="text-sm font-semibold text-foreground">{t('whySafeExplainer')}</p>
                         <button
                           onClick={() => setSafeExplainOpen(false)}
                           className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
@@ -865,9 +867,7 @@ export function GeneratedRecipeScreen({
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">🍳</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    <span className="font-medium">You&apos;ve reached your recipe limit for now</span>
-                    {' '}— here&apos;s a community recipe that matches your preferences.{' '}
-                    Resets at {new Date(rateLimitInfo.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}.
+                    {t('rateLimitBannerText', { time: new Date(rateLimitInfo.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) })}
                   </p>
                 </div>
               )}
@@ -876,9 +876,8 @@ export function GeneratedRecipeScreen({
                 <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-base shrink-0">⚠️</span>
                   <p className="text-sm text-amber-700 dark:text-amber-400">
-                    <span className="font-medium">Some steps may require equipment you haven&apos;t selected:</span>
-                    {' '}{missingEquipment.join(', ')}.{' '}
-                    You may need to adapt these steps.
+                    <span className="font-medium">{t('missingEquipmentTitle')}</span>
+                    {' '}{t('missingEquipmentList', { equipment: missingEquipment.join(', ') })}
                   </p>
                 </div>
               )}
@@ -920,7 +919,7 @@ export function GeneratedRecipeScreen({
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
-                  <span>{recipe.servings} servings</span>
+                  <span>{tCommon('servings', { count: recipe.servings })}</span>
                 </div>
                 {recipe.allergenFree && (
                   <div className="flex items-center gap-2 text-primary">
@@ -936,21 +935,21 @@ export function GeneratedRecipeScreen({
               )}
               {showMacros && recipe.macros && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-foreground">Estimated nutritional information</p>
+                  <p className="text-sm font-medium text-foreground">{t('macrosTitle')}</p>
                   <div className="grid grid-cols-4 gap-3 py-4 border border-border rounded-2xl px-4 text-center">
                     {[
-                      { label: 'Calories', value: String(recipe.macros.calories), unit: 'kcal' },
-                      { label: 'Protein',  value: String(recipe.macros.protein),  unit: 'g' },
-                      { label: 'Carbs',    value: String(recipe.macros.carbs),    unit: 'g' },
-                      { label: 'Fat',      value: String(recipe.macros.fat),      unit: 'g' },
-                    ].map(({ label, value, unit }) => (
-                      <div key={label}>
+                      { key: 'calories', value: String(recipe.macros.calories), unit: 'kcal' },
+                      { key: 'protein',  value: String(recipe.macros.protein),  unit: 'g' },
+                      { key: 'carbs',    value: String(recipe.macros.carbs),    unit: 'g' },
+                      { key: 'fat',      value: String(recipe.macros.fat),      unit: 'g' },
+                    ].map(({ key, value, unit }) => (
+                      <div key={key}>
                         <p className="text-base font-semibold text-foreground">{value}<span className="text-xs font-normal text-muted-foreground ml-0.5">{unit}</span></p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t(key as Parameters<typeof t>[0])}</p>
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-muted-foreground">Estimates based on ingredients and quantities — consult a nutritionist for precise values.</p>
+                  <p className="text-xs text-muted-foreground">{t('macrosDisclaimer')}</p>
                 </div>
               )}
 
@@ -978,10 +977,10 @@ export function GeneratedRecipeScreen({
                   </>
                 )}
                 {feedbackGiven === 'liked' && (
-                  <span className="text-sm text-primary font-medium">👍 Thanks for the feedback!</span>
+                  <span className="text-sm text-primary font-medium">{t('feedbackThanksPositive')}</span>
                 )}
                 {feedbackGiven === 'disliked' && (
-                  <span className="text-sm text-muted-foreground font-medium">👎 Thanks, we&apos;ll do better next time.</span>
+                  <span className="text-sm text-muted-foreground font-medium">{t('feedbackThanksNegative')}</span>
                 )}
               </div>
 
@@ -997,18 +996,18 @@ export function GeneratedRecipeScreen({
                   >
                     <div className="rounded-2xl border border-border bg-card p-4 space-y-5">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-foreground">Tell us more (optional)</p>
+                        <p className="text-sm font-semibold text-foreground">{t('surveyOptional')}</p>
                         <button
                           onClick={handleSurveySkip}
                           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
                         >
-                          Skip
+                          {tFeedback('skip')}
                         </button>
                       </div>
 
                       {/* Section 1: Highlight */}
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">✨ Highlight of the dish</p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">✨ {tFeedback('highlight')}</p>
                         <div className="flex flex-wrap gap-2">
                           {recipe?.ingredients.map(ing => (
                             <button
@@ -1029,7 +1028,7 @@ export function GeneratedRecipeScreen({
 
                       {/* Section 2: Would leave out */}
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">🚫 Would leave out</p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">🚫 {tFeedback('leaveOut')}</p>
                         <div className="flex flex-wrap gap-2">
                           {recipe?.ingredients.map(ing => (
                             <button
@@ -1050,9 +1049,9 @@ export function GeneratedRecipeScreen({
 
                       {/* Section 3: What worked */}
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">👌 What worked</p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">👌 {tFeedback('whatWorked')}</p>
                         <div className="flex flex-wrap gap-2">
-                          {RECIPE_POSITIVES.map(chip => (
+                          {recipePositiveChips.map(chip => (
                             <button
                               key={chip}
                               onClick={() => toggleRecipePositive(chip)}
@@ -1071,9 +1070,9 @@ export function GeneratedRecipeScreen({
 
                       {/* Section 4: What didn't */}
                       <div className="space-y-2">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">😬 What didn&apos;t</p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">😬 {tFeedback('whatDidnt')}</p>
                         <div className="flex flex-wrap gap-2">
-                          {RECIPE_NEGATIVES.map(chip => (
+                          {recipeNegativeChips.map(chip => (
                             <button
                               key={chip}
                               onClick={() => toggleRecipeNegative(chip)}
@@ -1095,7 +1094,7 @@ export function GeneratedRecipeScreen({
                         className="rounded-full w-full"
                         size="sm"
                       >
-                        Done
+                        {tCommon('done')}
                       </Button>
                     </div>
                   </motion.div>
@@ -1154,7 +1153,7 @@ export function GeneratedRecipeScreen({
                 {drinkPairingsLoading && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Finding drink pairings…</span>
+                    <span>{t('drinkPairingsLoading')}</span>
                   </div>
                 )}
                 {!drinkPairingsLoading && drinkPairings.length > 0 && (
@@ -1170,7 +1169,7 @@ export function GeneratedRecipeScreen({
                   </div>
                 )}
                 {!drinkPairingsLoading && drinkPairings.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No drink suggestions found.</p>
+                  <p className="text-sm text-muted-foreground">{t('drinkPairingsEmpty')}</p>
                 )}
               </section>
 
@@ -1182,11 +1181,11 @@ export function GeneratedRecipeScreen({
                       onClick={() => setShowRegenerateConfirm(true)}
                       className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
                     >
-                      🔄 Start fresh with a new recipe
+                      🔄 {t('regenerate')}
                     </button>
                   ) : (
                     <div className="flex flex-col items-center gap-3 w-full max-w-xs">
-                      <p className="text-sm text-foreground text-center">Replace this recipe?</p>
+                      <p className="text-sm text-foreground text-center">{t('replaceRecipeTitle')}</p>
                       <div className="flex gap-3 w-full">
                         <Button
                           variant="outline"
@@ -1194,14 +1193,14 @@ export function GeneratedRecipeScreen({
                           className="flex-1 rounded-full"
                           onClick={() => setShowRegenerateConfirm(false)}
                         >
-                          Keep this
+                          {t('keepThis')}
                         </Button>
                         <Button
                           size="sm"
                           className="flex-1 rounded-full"
                           onClick={() => { setShowRegenerateConfirm(false); onRegenerate() }}
                         >
-                          Start fresh
+                          {t('startFreshButton')}
                         </Button>
                       </div>
                     </div>

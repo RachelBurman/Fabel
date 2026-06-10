@@ -22,25 +22,25 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   const handleSubmit = async () => {
     setError(null)
     if (mode === 'signup' && name.length > 50) {
-      setError('Name must be 50 characters or fewer')
+      setError(t('nameTooLong'))
       return
     }
     if (email.length > 254) {
-      setError('Email must be 254 characters or fewer')
+      setError(t('emailTooLong'))
       return
     }
     if (password.length > 72) {
-      setError('Password must be 72 characters or fewer')
+      setError(t('passwordTooLong'))
       return
     }
     setLoading(true)
     try {
       if (mode === 'signin') {
         const { error: e } = await signIn.email({ email, password })
-        if (e) { setError(e.message ?? 'Sign in failed'); return }
+        if (e) { setError(e.message ?? t('signInFailed')); return }
       } else {
         const { error: e } = await signUp.email({ email, password, name })
-        if (e) { setError(e.message ?? 'Sign up failed'); return }
+        if (e) { setError(e.message ?? t('signUpFailed')); return }
       }
       onSuccess?.()
     } finally {

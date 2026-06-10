@@ -6,6 +6,7 @@ import { useFable } from '@/lib/fable-context'
 import { Clock, Users, Heart, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface RecipeCardProps {
   recipe: Recipe
@@ -14,6 +15,7 @@ interface RecipeCardProps {
 
 function RecipeCard({ recipe, index }: RecipeCardProps) {
   const { saveRecipe, unsaveRecipe, isRecipeSaved } = useFable()
+  const t = useTranslations('recipe')
   const isSaved = isRecipeSaved(recipe.id)
 
   const handleToggleSave = () => {
@@ -40,7 +42,7 @@ function RecipeCard({ recipe, index }: RecipeCardProps) {
         {/* Match Score Badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 bg-card/90 backdrop-blur-sm rounded-full border border-border">
           <ShieldCheck className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">{recipe.matchScore}% match</span>
+          <span className="text-sm font-medium text-foreground">{t('matchScore', { score: recipe.matchScore })}</span>
         </div>
 
         {/* Save Button */}
@@ -74,7 +76,7 @@ function RecipeCard({ recipe, index }: RecipeCardProps) {
           </div>
           <div className="flex items-center gap-1.5">
             <Users className="w-4 h-4" />
-            <span>{recipe.servings} servings</span>
+            <span>{t('cardServings', { count: recipe.servings })}</span>
           </div>
         </div>
       </div>
@@ -90,6 +92,7 @@ interface RecipeResultsScreenProps {
 
 export function RecipeResultsScreen({ recipes, isLoading, onBack }: RecipeResultsScreenProps) {
   const { preferences } = useFable()
+  const t = useTranslations('recipe')
 
   return (
     <div className="bg-background">
@@ -107,12 +110,14 @@ export function RecipeResultsScreen({ recipes, isLoading, onBack }: RecipeResult
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-semibold text-foreground text-balance">
-                Your Safe Recipes
+                {t('yourSafeRecipes')}
               </h1>
               <p className="text-muted-foreground">
                 {preferences.allergens.length > 0
-                  ? `Filtered to avoid ${preferences.allergens.length} allergen${preferences.allergens.length > 1 ? 's' : ''}`
-                  : 'All recipes shown'}
+                  ? preferences.allergens.length > 1
+                    ? t('filteredToAvoidPlural', { count: preferences.allergens.length })
+                    : t('filteredToAvoid', { count: preferences.allergens.length })
+                  : t('allRecipesShown')}
               </p>
             </div>
           </div>
@@ -149,11 +154,11 @@ export function RecipeResultsScreen({ recipes, isLoading, onBack }: RecipeResult
               className="flex flex-col items-center justify-center text-center min-h-[calc(100dvh-16rem)]"
             >
               <div className="text-5xl mb-6">🔍</div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">No recipes found</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-2">{t('noRecipesFound')}</h2>
               <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-                Try adding different ingredients or adjusting your allergen preferences.
+                {t('noRecipesFoundDesc')}
               </p>
-              <Button onClick={onBack} variant="outline" className="rounded-full">Go Back</Button>
+              <Button onClick={onBack} variant="outline" className="rounded-full">{t('goBack')}</Button>
             </motion.div>
           )}
         </div>

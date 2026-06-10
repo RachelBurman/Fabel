@@ -330,7 +330,7 @@ export function SubstitutesScreen({
           const time = rateLimitErr.resetAt
             ? new Date(rateLimitErr.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
             : 'soon'
-          setRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          setRateLimitMsg(t('rateLimit', { time }))
         } else {
           setResults([])
         }
@@ -368,7 +368,7 @@ export function SubstitutesScreen({
           const time = extracted.rateLimitResetAt
             ? new Date(extracted.rateLimitResetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
             : 'soon'
-          setRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          setRateLimitMsg(t('rateLimit', { time }))
           return
         }
         ingredientNames = extracted.ingredients
@@ -451,12 +451,12 @@ export function SubstitutesScreen({
           className="flex flex-col items-center justify-center min-h-[calc(100dvh-8rem)] px-6 text-center"
         >
           <div className="text-5xl mb-6">🧑‍🍳</div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">No ingredients yet</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">{t('noIngredientsYet')}</h2>
           <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-            Add ingredients to your kitchen first, then come back to find substitutes.
+            {t('noIngredientsSubtitle')}
           </p>
           <Button onClick={onNavigateToKitchen} className="rounded-full gap-2">
-            Add ingredients <ArrowRight className="w-4 h-4" />
+            {t('addIngredients')} <ArrowRight className="w-4 h-4" />
           </Button>
         </motion.div>
       </div>
@@ -500,8 +500,8 @@ export function SubstitutesScreen({
                 <div className="flex gap-1 p-1 bg-secondary rounded-lg">
                   {(
                     [
-                      { id: 'full-recipe'      as const, label: 'Paste full recipe' },
-                      { id: 'ingredients-only' as const, label: 'Ingredients only'  },
+                      { id: 'full-recipe'      as const, label: t('pasteFullRecipe') },
+                      { id: 'ingredients-only' as const, label: t('ingredientsOnly')  },
                     ] as const
                   ).map(({ id, label }) => (
                     <button
@@ -523,7 +523,7 @@ export function SubstitutesScreen({
                   placeholder={
                     inputMode === 'full-recipe'
                       ? t('pasteRecipe')
-                      : 'One ingredient per line, e.g:\n1 pound ground beef\n2 cups salsa\n3 cloves garlic'
+                      : t('ingredientsPlaceholder')
                   }
                   className="w-full h-36 text-sm bg-card border border-border rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
@@ -541,12 +541,12 @@ export function SubstitutesScreen({
                     {isParsing ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        {inputMode === 'full-recipe' ? 'Parsing recipe…' : 'Parsing ingredients…'}
+                        {inputMode === 'full-recipe' ? t('parsingRecipe') : t('parsingIngredients')}
                       </>
                     ) : (
                       <>
                         <RefreshCw className="w-4 h-4" />
-                        {inputMode === 'full-recipe' ? 'Parse Recipe' : 'Parse Ingredients'}
+                        {inputMode === 'full-recipe' ? t('parseRecipe') : t('parseIngredients')}
                       </>
                     )}
                   </Button>
@@ -558,7 +558,7 @@ export function SubstitutesScreen({
                       disabled={isParsing}
                     >
                       <X className="w-4 h-4" />
-                      Clear
+                      {t('clear')}
                     </Button>
                   )}
                 </div>
@@ -575,7 +575,7 @@ export function SubstitutesScreen({
               {isAnalysing && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-10 gap-3">
                   <Loader2 className="w-7 h-7 text-primary animate-spin" />
-                  <p className="text-sm text-muted-foreground">Analysing recipe…</p>
+                  <p className="text-sm text-muted-foreground">{t('analysingRecipe')}</p>
                 </motion.div>
               )}
 
@@ -587,17 +587,17 @@ export function SubstitutesScreen({
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {inKitchenCount > 0 && (
                       <span className="font-medium text-green-600 dark:text-green-400">
-                        ✅ {inKitchenCount} in your kitchen
+                        ✅ {inKitchenCount} {t('inYourKitchen')}
                       </span>
                     )}
                     {allergenCount > 0 && (
                       <span className="font-medium text-red-600 dark:text-red-400">
-                        🔄 {allergenCount} allergen{allergenCount > 1 ? 's' : ''} to swap
+                        🔄 {allergenCount} {allergenCount > 1 ? t('allergensToSwapPlural') : t('allergensToSwap')}
                       </span>
                     )}
                     {missingCount > 0 && (
                       <span className="font-medium text-amber-600 dark:text-amber-400">
-                        ⚠️ {missingCount} not in kitchen
+                        ⚠️ {missingCount} {t('notInKitchenCount')}
                       </span>
                     )}
                   </div>
@@ -614,7 +614,7 @@ export function SubstitutesScreen({
                             <p className="text-sm">
                               <span className="font-medium text-foreground">{item.displayName}</span>
                               {qty && <span className="text-muted-foreground">{qty}</span>}
-                              <span className="text-muted-foreground"> — in your kitchen</span>
+                              <span className="text-muted-foreground"> {t('inKitchenSuffix')}</span>
                             </p>
                           </div>
                         )
@@ -628,7 +628,7 @@ export function SubstitutesScreen({
                               <p className="text-sm">
                                 <span className="font-medium text-foreground">{item.displayName}</span>
                                 {qty && <span className="text-muted-foreground">{qty}</span>}
-                                <span className="text-muted-foreground"> — contains {item.allergenLabel}, no suitable substitute found — will be omitted</span>
+                                <span className="text-muted-foreground">{` — `}{t('noSubFoundNote', { allergen: item.allergenLabel })}</span>
                               </p>
                             </div>
                           )
@@ -640,16 +640,16 @@ export function SubstitutesScreen({
                               <p className="text-sm">
                                 <span className="font-medium text-foreground line-through opacity-60">{item.displayName}</span>
                                 {qty && <span className="text-muted-foreground opacity-60">{qty}</span>}
-                                <span className="text-xs text-red-600 dark:text-red-400 ml-2 no-underline">contains {item.allergenLabel}</span>
+                                <span className="text-xs text-red-600 dark:text-red-400 ml-2 no-underline">{t('containsAllergen', { allergen: item.allergenLabel })}</span>
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 {'→ '}
                                 <span className="font-medium text-foreground">{item.substitute.displayName}</span>
-                                <span className="text-xs ml-1">({item.substitute.combinedScore}% match)</span>
+                                <span className="text-xs ml-1">({t('scoreMatch', { score: item.substitute.combinedScore })})</span>
                                 {item.substitute.inKitchen && (
-                                  <span className="text-xs text-green-600 dark:text-green-400 ml-1">from your kitchen</span>
+                                  <span className="text-xs text-green-600 dark:text-green-400 ml-1">{t('fromKitchenNote')}</span>
                                 )}
-                                <span className="text-xs ml-1">— being swapped</span>
+                                <span className="text-xs ml-1">{t('beingSwapped')}</span>
                               </p>
                             </div>
                           </div>
@@ -663,7 +663,7 @@ export function SubstitutesScreen({
                           <p className="text-sm">
                             <span className="font-medium text-foreground">{item.displayName}</span>
                             {qty && <span className="text-muted-foreground">{qty}</span>}
-                            <span className="text-muted-foreground"> — not in kitchen, including anyway</span>
+                            <span className="text-muted-foreground"> {t('notInKitchenNote')}</span>
                           </p>
                         </div>
                       )
@@ -675,11 +675,11 @@ export function SubstitutesScreen({
                     <div className="space-y-2 pt-1">
                       <Button onClick={handleCookWithSubstitutions} className="w-full rounded-full gap-2 py-6" size="lg">
                         <Sparkles className="w-5 h-5" />
-                        Cook with these substitutions
+                        {t('cookWithSubstitutions')}
                       </Button>
                       {hasUnresolved && (
                         <p className="text-xs text-center text-muted-foreground">
-                          Allergen ingredients with no safe substitute will be omitted from the recipe.
+                          {t('unresolvedNote')}
                         </p>
                       )}
                     </div>
@@ -695,7 +695,7 @@ export function SubstitutesScreen({
               {kitchenIngredients.length > 0 && !isOpenedFromRecipe && (
                 <div className="mb-6">
                   <p className="text-sm text-muted-foreground mb-3">
-                    {selectedIngredient ? 'Tap another ingredient to swap instead' : 'Tap an ingredient to find substitutes'}
+                    {selectedIngredient ? t('tapToSwap') : t('tapToFind')}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <AnimatePresence mode="popLayout">
@@ -730,7 +730,7 @@ export function SubstitutesScreen({
               {isLoadingResults && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center py-12 gap-4">
                   <Loader2 className="w-8 h-8 text-primary animate-spin" />
-                  <p className="text-sm text-muted-foreground">Finding the best swaps…</p>
+                  <p className="text-sm text-muted-foreground">{t('findingSwaps')}</p>
                 </motion.div>
               )}
 
@@ -739,7 +739,7 @@ export function SubstitutesScreen({
                   <div className="flex items-center gap-2 mb-1">
                     <ArrowLeftRight className="w-4 h-4 text-primary shrink-0" />
                     <p className="text-sm font-medium text-foreground">
-                      Substitutes for <span className="text-primary">{epicureDisplay(selectedIngredient)}</span>
+                      {t('substitutesFor', { name: epicureDisplay(selectedIngredient) })}
                     </p>
                   </div>
 
@@ -760,29 +760,29 @@ export function SubstitutesScreen({
                             <h3 className="font-semibold text-foreground">{sub.displayName}</h3>
                             {isUrgent && (
                               <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                                🔴 Use today! — expires {sub.expiryDateDisplay}
+                                {t('useToday', { date: sub.expiryDateDisplay })}
                               </p>
                             )}
                             {isSoon && (
                               <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                                ⚠️ Use soon — expires {sub.expiryDateDisplay}
+                                {t('useSoon', { date: sub.expiryDateDisplay })}
                               </p>
                             )}
                           </div>
                           <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/10 text-primary">
-                            {sub.combinedScore}% match
+                            {t('scoreMatch', { score: sub.combinedScore })}
                           </span>
                         </div>
 
                         {sub.explanation ? (
                           <p className="text-sm text-muted-foreground leading-relaxed">{sub.explanation}</p>
                         ) : !isSignedIn ? (
-                          <p className="text-sm text-muted-foreground italic">Sign in to see why this substitution works.</p>
+                          <p className="text-sm text-muted-foreground italic">{t('signInForExplanation')}</p>
                         ) : null}
 
                         <div className="flex items-center gap-6 mt-3 pt-3 border-t border-border/50">
                           <div>
-                            <p className="text-xs text-muted-foreground">Similarity</p>
+                            <p className="text-xs text-muted-foreground">{t('similarity')}</p>
                             <p className="text-sm font-medium text-foreground">{sub.similarityToOriginal}%</p>
                           </div>
                           <div>
@@ -841,7 +841,7 @@ export function SubstitutesScreen({
               {!isLoadingResults && !rateLimitMsg && selectedIngredient && results.length === 0 && (
                 <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center py-12">
                   <p className="text-muted-foreground text-sm">
-                    No allergen-safe substitutes found for {epicureDisplay(selectedIngredient)}.
+                    {t('noSafeSubstitutes', { name: epicureDisplay(selectedIngredient) })}
                   </p>
                 </motion.div>
               )}

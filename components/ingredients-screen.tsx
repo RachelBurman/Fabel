@@ -170,6 +170,7 @@ function formatDate(dateStr: string): string {
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ step, onNavigate }: { step: 1 | 2; onNavigate: (s: 1 | 2) => void }) {
+  const tK = useTranslations('kitchen')
   return (
     <div className="flex items-center justify-center gap-3 mb-4">
       <button onClick={() => onNavigate(1)} className="flex items-center gap-2">
@@ -178,7 +179,7 @@ function StepIndicator({ step, onNavigate }: { step: 1 | 2; onNavigate: (s: 1 | 
           step === 1 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
         )}>1</div>
         <span className={cn('text-sm font-medium transition-colors', step === 1 ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
-          Kitchen
+          {tK('stepKitchen')}
         </span>
       </button>
       <div className="w-8 h-px bg-border" />
@@ -188,7 +189,7 @@ function StepIndicator({ step, onNavigate }: { step: 1 | 2; onNavigate: (s: 1 | 
           step === 2 ? 'bg-primary text-primary-foreground' : 'bg-secondary text-muted-foreground'
         )}>2</div>
         <span className={cn('text-sm font-medium transition-colors', step === 2 ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
-          Preferences
+          {tK('stepPreferences')}
         </span>
       </button>
     </div>
@@ -198,6 +199,7 @@ function StepIndicator({ step, onNavigate }: { step: 1 | 2; onNavigate: (s: 1 | 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
+  const tK = useTranslations('kitchen')
   return (
     <div className="text-center mb-5">
       <div
@@ -212,12 +214,10 @@ function IngredientsHeader({ safeFoodsActive }: { safeFoodsActive: boolean }) {
         />
       </div>
       <h1 className="text-xl md:text-2xl font-semibold text-foreground mb-1 text-balance">
-        {safeFoodsActive ? 'Which safe ingredients do you have today?' : "What's in your kitchen?"}
+        {safeFoodsActive ? tK('safeHeaderTitle') : tK('regularHeaderTitle')}
       </h1>
       <p className="text-sm text-muted-foreground text-pretty">
-        {safeFoodsActive
-          ? 'Pick from your safe list — recipes will use only these ingredients'
-          : "Add the ingredients you have and we'll find matching recipes"}
+        {safeFoodsActive ? tK('safeHeaderDesc') : tK('regularHeaderDesc')}
       </p>
     </div>
   )
@@ -351,27 +351,27 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
         const time = result.resetAt
           ? new Date(result.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
           : 'soon'
-        toast.error(`You've used your AI calls for this hour. Resets at ${time}.`)
+        toast.error(tK('photoRateLimitError', { time }))
         return
       }
       if (result.error) {
         if (result.error === 'Vision Lambda not configured') {
-          toast.error("Photo recognition isn't set up yet")
+          toast.error(tK('photoNotSetupError'))
         } else {
-          toast.error("Couldn't read that photo — try better lighting or a closer shot")
+          toast.error(tK('photoCantReadError'))
         }
         return
       }
       if (!result.ingredients || result.ingredients.length === 0) {
-        toast.error("No ingredients found — try a clearer photo")
+        toast.error(tK('photoNoIngredientsError'))
         return
       }
       setVisionResult({ ingredients: result.ingredients } as unknown as VisionResult)
     } catch (err) {
       if (err instanceof Error && err.message === 'heic-unsupported') {
-        toast.error("HEIC photos aren't supported on desktop — use your phone camera or convert to JPEG first")
+        toast.error(tK('photoHeicError'))
       } else {
-        toast.error("Something went wrong — please try again")
+        toast.error(tK('photoGenericError'))
       }
     } finally {
       setVisionLoading(false)
@@ -381,7 +381,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
   const handleVisionConfirm = useCallback((newItems: IngredientItem[]) => {
     setIngredients([...preferences.ingredients, ...newItems])
     setVisionResult(null)
-    toast.success(`Added ${newItems.length} ingredient${newItems.length !== 1 ? 's' : ''} to your kitchen`)
+    toast.success(newItems.length !== 1 ? tK('photoSuccessToastPlural', { count: newItems.length }) : tK('photoSuccessToast', { count: newItems.length }))
   }, [preferences.ingredients, setIngredients])
 
   const handleSelectFromSearch = useCallback((name: string) => {
@@ -509,19 +509,19 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   </div>
                   {visionLoading && (
                     <p className="text-xs text-muted-foreground mt-1.5 text-center animate-pulse">
-                      Analysing your kitchen…
+                      {tK('analysingKitchen')}
                     </p>
                   )}
                   {cameraAuthPrompt && !isSignedIn && (
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      📷 Photo scanning requires an account.{' '}
+                      {tK('cameraAuthPrompt')}{' '}
                       <button
                         onClick={onOpenAuth}
                         className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
                       >
-                        Sign in
+                        {tK('cameraAuthLink')}
                       </button>
-                      {' '}to scan your fridge.
+                      {' '}{tK('cameraAuthSuffix')}
                     </p>
                   )}
                 </div>
@@ -546,19 +546,19 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                         </div>
 
                         <div>
-                          <p className="text-xs text-muted-foreground mb-1">Specify type <span className="opacity-60">(optional)</span></p>
+                          <p className="text-xs text-muted-foreground mb-1">{tK('specifyType')} <span className="opacity-60">{tK('optional')}</span></p>
                           <input
                             type="text"
-                            placeholder="e.g. breast, thighs, ribeye, baby"
+                            placeholder={tK('subtypePlaceholder')}
                             value={pendingSubtype}
                             onChange={e => setPendingSubtype(e.target.value)}
                             className="w-full text-sm bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
                           />
-                          <p className="text-[11px] text-muted-foreground/60 mt-1">Helps generate more accurate recipes</p>
+                          <p className="text-[11px] text-muted-foreground/60 mt-1">{tK('typeHint')}</p>
                         </div>
 
                         <div>
-                          <p className="text-xs text-muted-foreground mb-1">Quantity</p>
+                          <p className="text-xs text-muted-foreground mb-1">{tK('quantity')}</p>
                           <div className="flex gap-2">
                             <input
                               type="number"
@@ -581,7 +581,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                         </div>
 
                         <div>
-                          <p className="text-xs text-muted-foreground mb-2">Where does it live?</p>
+                          <p className="text-xs text-muted-foreground mb-2">{tK('storageArea')}</p>
                           <div className="flex flex-wrap gap-2">
                             {AREAS.map(({ value, emoji }) => (
                               <button
@@ -601,7 +601,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                         </div>
 
                         <div>
-                          <p className="text-xs text-muted-foreground mb-2">Date</p>
+                          <p className="text-xs text-muted-foreground mb-2">{tK('dateLabel')}</p>
                           <div className="flex gap-2 mb-2">
                             {(['use-by', 'bought'] as const).map(dt => (
                               <button
@@ -614,7 +614,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                                     : 'bg-secondary text-secondary-foreground border-transparent hover:bg-secondary/80'
                                 )}
                               >
-                                {dt === 'use-by' ? 'Use by date' : 'Bought date'}
+                                {dt === 'use-by' ? tK('useByDate') : tK('boughtDate')}
                               </button>
                             ))}
                           </div>
@@ -652,9 +652,9 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                               </div>
                               {expectedExpiry && (
                                 <p className="text-[11px] text-muted-foreground pl-6">
-                                  Expected to last until{' '}
+                                  {tK('expectedExpiryPrefix')}{' '}
                                   <span className="font-medium text-foreground">{formatDate(expectedExpiry)}</span>
-                                  {' '}· {getShelfLifeDays(pendingName!)}d shelf life
+                                  {' '}· {getShelfLifeDays(pendingName!)}{tK('shelfLifeSuffix')}
                                 </p>
                               )}
                             </div>
@@ -663,9 +663,9 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
 
                         <Button size="sm" onClick={handleConfirmAdd} className="w-full rounded-full gap-2">
                           <Plus className="w-4 h-4" />
-                          Add {pendingSubtype
+                          {tK('addButton', { name: pendingSubtype
                             ? `${displayName(pendingName)} ${pendingSubtype}`
-                            : displayName(pendingName)}
+                            : displayName(pendingName) })}
                         </Button>
                       </div>
                     </motion.div>
@@ -676,7 +676,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                 {preferences.ingredients.length > 0 && (
                   <div className="mb-3">
                     <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                      Your ingredients ({preferences.ingredients.length})
+                      {tK('yourIngredients', { count: preferences.ingredients.length })}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       <AnimatePresence mode="popLayout">
@@ -728,8 +728,8 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                 {/* ── Quick-add chips ── */}
                 {(() => {
                   const label = safeFoodsActive
-                    ? preferences.ingredients.length === 0 ? 'Your safe ingredients:' : 'Add more from your safe list:'
-                    : preferences.ingredients.length === 0 ? 'Try adding:' : 'Quick add more:'
+                    ? preferences.ingredients.length === 0 ? tK('safeIngredientsList') : tK('addMoreFromSafe')
+                    : preferences.ingredients.length === 0 ? tK('tryAdding') : tK('quickAddMore')
 
                   const isFlagged = (name: string) =>
                     hasUserAllergen(name, effectiveAllergens, effectiveCustomAllergens)
@@ -764,7 +764,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     onClick={handleGoToStep2}
                     className="w-full rounded-full gap-2"
                   >
-                    Next
+                    {tK('nextButton')}
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 </div>
@@ -787,10 +787,10 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 self-start"
                 >
                   <ChevronLeft className="w-4 h-4" />
-                  Back to Kitchen
+                  {tK('backToKitchen')}
                 </button>
 
-                <h2 className="text-xl font-semibold text-foreground mb-6">Recipe Preferences</h2>
+                <h2 className="text-xl font-semibold text-foreground mb-6">{tK('recipePreferences')}</h2>
 
                 {/* ── Filters ── */}
                 <div className="space-y-4">
@@ -845,7 +845,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                             ? 'bg-primary/15 text-primary border border-primary/30'
                             : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
                         )}
-                      >Any cuisine</button>
+                      >{tK('anyCuisine')}</button>
                       {visibleCuisines.map(({ value }) => (
                         <button
                           key={value}
@@ -863,7 +863,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                           onClick={() => setCuisineExpanded(true)}
                           className="px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-secondary-foreground hover:bg-secondary/80"
                         >
-                          More cuisines +
+                          {tK('moreCuisines')}
                         </button>
                       )}
                       {cuisineExpanded && (
@@ -871,7 +871,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                           onClick={() => setCuisineExpanded(false)}
                           className="px-3 py-1.5 text-sm rounded-full transition-colors bg-secondary text-muted-foreground hover:bg-secondary/80"
                         >
-                          Show less
+                          {tK('showLess')}
                         </button>
                       )}
                     </div>
@@ -909,7 +909,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="w-16 text-center text-base font-medium text-foreground">
-                        {servings} {servings === 1 ? 'person' : 'people'}
+                        {servings} {servings === 1 ? tK('servingLabel') : tK('servingsLabel')}
                       </span>
                       <button
                         onClick={() => setServings(v => Math.min(12, v + 1))}
@@ -948,7 +948,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                   <div className="flex items-center justify-between gap-4 py-0.5">
                     <div>
                       <p className="text-sm font-medium text-foreground">{tK('useKitchenOnly')}</p>
-                      <p className="text-xs text-muted-foreground">No extras — recipes use exactly what you&apos;ve added</p>
+                      <p className="text-xs text-muted-foreground">{tK('noExtras')}</p>
                     </div>
                     <button
                       role="switch"
@@ -973,10 +973,10 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     <span className="shrink-0 mt-0.5">⚠️</span>
                     <div>
                       <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
-                        You may not have enough {servingWarnings.join(', ')} for {servings} servings
+                        {tK('servingWarning', { items: servingWarnings.join(', '), count: servings })}
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        Consider reducing servings or adding more
+                        {tK('servingWarningNote')}
                       </p>
                     </div>
                   </div>
@@ -1014,9 +1014,7 @@ export function IngredientsScreen({ onShowPairings, onGenerateRecipe, onFindSubs
                     {tSub('findSubstitutes')}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
-                    {safeFoodsActive
-                      ? 'Recipes will use only ingredients from your safe foods list'
-                      : "We'll find recipes that match your ingredients and avoid your allergens"}
+                    {safeFoodsActive ? tK('safeFoodsFooter') : tK('regularFooter')}
                   </p>
                 </div>
               </motion.div>

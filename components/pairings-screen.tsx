@@ -7,6 +7,7 @@ import { ArrowLeft, Check, Plus, ShieldCheck, AlertTriangle, Sparkles } from 'lu
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { displayName } from '@/components/ingredients-screen'
+import { useTranslations } from 'next-intl'
 
 interface PairingCardProps {
   suggestion: PairingSuggestion
@@ -18,6 +19,7 @@ interface PairingCardProps {
 function PairingCard({ suggestion, index, isAdded, onAdd }: PairingCardProps) {
   const { ingredient, score, allergens } = suggestion
   const matchPct = Math.round(score * 100)
+  const t = useTranslations('pairings')
 
   return (
     <motion.div
@@ -29,7 +31,7 @@ function PairingCard({ suggestion, index, isAdded, onAdd }: PairingCardProps) {
       {/* Score ring */}
       <div className="shrink-0 w-12 h-12 rounded-full bg-primary/10 flex flex-col items-center justify-center">
         <span className="text-xs font-bold text-primary leading-none">{matchPct}%</span>
-        <span className="text-[10px] text-primary/70 leading-none mt-0.5">match</span>
+        <span className="text-[10px] text-primary/70 leading-none mt-0.5">{t('matchLabel')}</span>
       </div>
 
       {/* Name + allergens */}
@@ -45,7 +47,7 @@ function PairingCard({ suggestion, index, isAdded, onAdd }: PairingCardProps) {
         ) : (
           <p className="text-xs text-primary mt-0.5 flex items-center gap-1">
             <ShieldCheck className="w-3 h-3 shrink-0" />
-            No allergens
+            {t('noAllergens')}
           </p>
         )}
       </div>
@@ -62,9 +64,9 @@ function PairingCard({ suggestion, index, isAdded, onAdd }: PairingCardProps) {
         )}
       >
         {isAdded ? (
-          <><Check className="w-3.5 h-3.5" /> Added</>
+          <><Check className="w-3.5 h-3.5" /> {t('added')}</>
         ) : (
-          <><Plus className="w-3.5 h-3.5" /> Add</>
+          <><Plus className="w-3.5 h-3.5" /> {t('add')}</>
         )}
       </button>
     </motion.div>
@@ -87,6 +89,7 @@ export function PairingsScreen({
   onGenerateFromPairings,
 }: PairingsScreenProps) {
   const { preferences } = useFable()
+  const t = useTranslations('pairings')
   const totalRestrictions =
     preferences.allergens.length + (preferences.customAllergens?.length ?? 0)
 
@@ -102,12 +105,14 @@ export function PairingsScreen({
             </Button>
             <div>
               <h1 className="text-2xl md:text-3xl font-semibold text-foreground">
-                Flavour Pairings
+                {t('title')}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {totalRestrictions > 0
-                  ? `Safe suggestions — ${totalRestrictions} restriction${totalRestrictions > 1 ? 's' : ''} applied`
-                  : 'Safe ingredient suggestions based on your kitchen'}
+                {totalRestrictions > 1
+                  ? t('safeWithRestrictions', { count: totalRestrictions })
+                  : totalRestrictions === 1
+                  ? t('safeWithOneRestriction')
+                  : t('safeBasedOnKitchen')}
               </p>
             </div>
           </div>
@@ -115,7 +120,7 @@ export function PairingsScreen({
           {/* Tip */}
           {!isLoading && suggestions.length > 0 && (
             <p className="text-xs text-muted-foreground mb-6 ml-14">
-              Add ingredients to your kitchen, then generate a recipe from all of them together.
+              {t('tip')}
             </p>
           )}
 
@@ -158,10 +163,10 @@ export function PairingsScreen({
                   className="w-full rounded-full gap-2 py-6"
                 >
                   <Sparkles className="w-5 h-5" />
-                  Generate Recipe from These Pairings
+                  {t('generateRecipe')}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-3">
-                  Claude will craft a recipe using your kitchen ingredients and these pairings
+                  {t('generateNote')}
                 </p>
               </div>
             </>
@@ -173,11 +178,11 @@ export function PairingsScreen({
               className="flex flex-col items-center justify-center text-center min-h-[calc(100dvh-16rem)]"
             >
               <div className="text-5xl mb-6">🔍</div>
-              <h2 className="text-xl font-semibold text-foreground mb-2">No pairings found</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-2">{t('emptyTitle')}</h2>
               <p className="text-muted-foreground max-w-xs mx-auto mb-8">
-                Try adding more ingredients or adjusting your allergen restrictions.
+                {t('emptySubtitle')}
               </p>
-              <Button onClick={onBack} variant="outline" className="rounded-full">Go Back</Button>
+              <Button onClick={onBack} variant="outline" className="rounded-full">{t('goBack')}</Button>
             </motion.div>
           )}
 

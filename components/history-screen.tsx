@@ -9,14 +9,17 @@ import { RecipeGradient } from '@/components/recipe-gradient'
 import { shareRecipe } from '@/lib/share-recipe'
 import { useTranslations } from 'next-intl'
 
-function relativeTime(ts: number): string {
-  const diff = Date.now() - ts
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h ago`
-  return `${Math.floor(hours / 24)}d ago`
+function useRelativeTime() {
+  const t = useTranslations('history')
+  return (ts: number): string => {
+    const diff = Date.now() - ts
+    const mins = Math.floor(diff / 60000)
+    if (mins < 1) return t('justNow')
+    if (mins < 60) return t('minutesAgo', { count: mins })
+    const hours = Math.floor(mins / 60)
+    if (hours < 24) return t('hoursAgo', { count: hours })
+    return t('daysAgo', { count: Math.floor(hours / 24) })
+  }
 }
 
 interface HistoryCardProps {
@@ -28,6 +31,8 @@ interface HistoryCardProps {
 function HistoryCard({ entry, index, onView }: HistoryCardProps) {
   const { recipe, timestamp } = entry
   const [sharing, setSharing] = useState(false)
+  const relativeTime = useRelativeTime()
+  const t = useTranslations('history')
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -73,7 +78,7 @@ function HistoryCard({ entry, index, onView }: HistoryCardProps) {
             </div>
             <div className="flex items-center gap-1.5">
               <Users className="w-3.5 h-3.5" />
-              <span>{recipe.servings} servings</span>
+              <span>{t('servings', { count: recipe.servings })}</span>
             </div>
           </div>
           <button
@@ -138,7 +143,7 @@ export function HistoryScreen({ history, onViewRecipe, onGenerateNew, onBack }: 
               <h1 className="text-2xl md:text-3xl font-semibold text-foreground">{t('title')}</h1>
             </div>
             <p className="text-muted-foreground text-sm">
-              {`${history.length} recipe${history.length > 1 ? 's' : ''} in your history`}
+              {history.length !== 1 ? t('recipesCount', { count: history.length }) : t('recipeCount', { count: history.length })}
             </p>
           </div>
 

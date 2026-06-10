@@ -3,9 +3,10 @@
     "kitchen": "Cucina",
     "recipe": "Ricetta",
     "discover": "Scopri",
-    "substitutes": "Sostituzioni",
+    "substitutes": "Sostituti",
     "history": "Cronologia",
-    "saved": "Salvate"
+    "saved": "Salvate",
+    "safeFoods": "Cibi sicuri"
   },
   "auth": {
     "signIn": "Accedi",
@@ -21,32 +22,88 @@
     "continueAsGuest": "Continua come ospite",
     "alreadyHaveAccount": "Hai già un account?",
     "dontHaveAccount": "Non hai un account?",
-    "createAccount": "Crea account"
+    "createAccount": "Crea account",
+    "nameTooLong": "Il nome non può superare i 50 caratteri",
+    "emailTooLong": "L'email non può superare i 254 caratteri",
+    "passwordTooLong": "La password non può superare i 72 caratteri",
+    "signInFailed": "Accesso fallito",
+    "signUpFailed": "Registrazione fallita"
   },
   "kitchen": {
-    "title": "La mia cucina",
+    "title": "La Mia Cucina",
     "searchPlaceholder": "Cerca tra 1.790 ingredienti…",
     "addIngredient": "Aggiungi ingrediente",
     "empty": "La tua cucina è vuota",
-    "emptySubtitle": "Aggiungi ingredienti per ricevere ricette personalizzate",
+    "emptySubtitle": "Aggiungi ingredienti per ricette personalizzate",
     "areas": {
-      "fridge": "Frigo",
+      "fridge": "Frigorifero",
       "freezer": "Freezer",
-      "cupboard": "Dispensa",
-      "pantry": "Credenza"
+      "cupboard": "Armadio",
+      "pantry": "Dispensa"
     },
     "expiry": {
-      "useToday": "Da consumare oggi",
+      "useToday": "Usa oggi",
       "expiringSoon": "In scadenza",
       "expires": "Scade"
     },
     "useKitchenOnly": "Usa solo la mia cucina",
     "scanIngredients": "Scansiona ingredienti",
-    "scanBarcode": "Scansiona codice a barre"
+    "scanBarcode": "Scansiona codice a barre",
+    "stepKitchen": "Cucina",
+    "stepPreferences": "Preferenze",
+    "safeHeaderTitle": "Quali ingredienti sicuri hai oggi?",
+    "regularHeaderTitle": "Cosa hai in cucina?",
+    "safeHeaderDesc": "Scegli dalla tua lista sicura — le ricette useranno solo questi ingredienti",
+    "regularHeaderDesc": "Aggiungi gli ingredienti che hai e troveremo ricette abbinate",
+    "analysingKitchen": "Analisi della tua cucina…",
+    "cameraAuthPrompt": "📷 La scansione foto richiede un account.",
+    "cameraAuthLink": "Accedi",
+    "cameraAuthSuffix": "per scansionare il tuo frigorifero.",
+    "specifyType": "Specifica tipo",
+    "optional": "(opzionale)",
+    "subtypePlaceholder": "es. bianco, cosce, costolette, baby",
+    "typeHint": "Aiuta a generare ricette più precise",
+    "quantity": "Quantità",
+    "storageArea": "Dove si trova?",
+    "dateLabel": "Data",
+    "useByDate": "Data di scadenza",
+    "boughtDate": "Data di acquisto",
+    "expectedExpiryPrefix": "Dovrebbe durare fino al",
+    "shelfLifeSuffix": "g di conservazione",
+    "addButton": "Aggiungi {name}",
+    "yourIngredients": "I tuoi ingredienti ({count})",
+    "safeIngredientsList": "I tuoi ingredienti sicuri:",
+    "addMoreFromSafe": "Aggiungi di più dalla tua lista sicura:",
+    "tryAdding": "Prova ad aggiungere:",
+    "quickAddMore": "Aggiunta rapida:",
+    "nextButton": "Avanti",
+    "backToKitchen": "Torna alla cucina",
+    "recipePreferences": "Preferenze ricetta",
+    "anyCuisine": "Qualsiasi cucina",
+    "moreCuisines": "Altre cucine +",
+    "showLess": "Mostra meno",
+    "noExtras": "Nessun extra — le ricette usano esattamente quello che hai aggiunto",
+    "servingWarning": "Potresti non avere abbastanza {items} per {count} porzioni",
+    "servingWarningNote": "Considera di ridurre le porzioni o aggiungerne di più",
+    "safeFoodsFooter": "Le ricette useranno solo gli ingredienti della tua lista cibi sicuri",
+    "regularFooter": "Troveremo ricette che corrispondono ai tuoi ingredienti ed evitano i tuoi allergeni",
+    "photoSuccessToast": "{count} ingrediente aggiunto alla tua cucina",
+    "photoSuccessToastPlural": "{count} ingredienti aggiunti alla tua cucina",
+    "photoRateLimitError": "Hai esaurito le tue chiamate AI per questa ora. Ripristino alle {time}.",
+    "photoNotSetupError": "Il riconoscimento foto non è ancora configurato",
+    "photoCantReadError": "Impossibile leggere questa foto — prova con più luce o avvicinati",
+    "photoNoIngredientsError": "Nessun ingrediente trovato — prova con una foto più nitida",
+    "photoHeicError": "Le foto HEIC non sono supportate su desktop — usa la fotocamera del tuo telefono o converti in JPEG",
+    "photoGenericError": "Qualcosa è andato storto — riprova",
+    "servingLabel": "persona",
+    "servingsLabel": "persone"
   },
   "recipe": {
     "title": "Ricetta",
-    "generating": "Generazione ricetta in corso...",
+    "generating": "Generazione ricetta...",
+    "loadingHint1": "Ingredienti sicuri. Sapori audaci. Cibo per tutti.",
+    "loadingHint2": "Fable usa Epicure — il più grande modello di incorporazione alimentare multilingue mai creato.",
+    "loadingHint3": "Più cucini con Fable, meglio conosce il tuo gusto.",
     "generate": "Genera ricetta",
     "findPairings": "Trova abbinamenti",
     "mealType": "Tipo di pasto",
@@ -56,15 +113,15 @@
     "servings": "Porzioni",
     "equipment": "Attrezzatura da cucina",
     "mealTypes": {
-      "snack": "Spuntino",
+      "snack": "Snack",
       "starter": "Antipasto",
-      "main": "Primo/Secondo",
-      "dessert": "Dessert"
+      "main": "Secondo",
+      "dessert": "Dolce"
     },
     "cookTimes": {
       "quick": "Veloce (<30 min)",
-      "medium": "Media (30-60 min)",
-      "slow": "Cottura lenta (60+ min)"
+      "medium": "Medio (30–60 min)",
+      "slow": "Lenta cottura (60 min+)"
     },
     "cuisines": {
       "chinese": "Cinese",
@@ -90,7 +147,7 @@
       "packedLunch": "Pranzo al sacco",
       "romanticDinner": "Cena romantica",
       "mealPrep": "Meal prep",
-      "celebration": "Festa"
+      "celebration": "Celebrazione"
     },
     "nudges": {
       "spicier": "Rendila più piccante",
@@ -99,111 +156,309 @@
       "differentCuisine": "Cucina diversa",
       "surpriseMe": "Sorprendimi"
     },
-    "refine": "Modifica questa ricetta",
+    "refine": "Raffina questa ricetta",
     "regenerate": "Ricomincia con una nuova ricetta",
-    "allergenSafe": "Sicura per gli allergeni",
-    "containsDairy": "Contiene latticini — valuta di prendere Lactaid prima di mangiare.",
-    "lowHistamineBanner": "Filtro basso istamino attivo — questa ricetta evita i principali fattori scatenanti dell'istamina. Consulta sempre un professionista sanitario per consigli medici.",
+    "allergenSafe": "Senza allergeni",
+    "containsDairy": "Contiene latticini — ricorda di prendere Lattasi prima di mangiare.",
+    "lowHistamineBanner": "Filtro basso istamino attivo — questa ricetta evita i comuni fattori scatenanti dell'istamina. Consulta sempre un medico.",
     "alcoholBanner": "Questa ricetta potrebbe contenere alcol — controlla gli ingredienti prima di cucinare.",
     "ingredients": "Ingredienti",
-    "method": "Procedimento",
-    "drinkPairings": "Abbinamenti con le bevande",
+    "method": "Preparazione",
+    "drinkPairings": "Abbinamenti bevande",
     "macros": "Informazioni nutrizionali",
-    "macrosDisclaimer": "Valori stimati. Non sostituiscono il consiglio di un dietista professionista.",
+    "macrosDisclaimer": "Solo valori stimati. Non sostituisce una consulenza dietetica professionale.",
     "save": "Salva ricetta",
     "saved": "Salvata",
     "share": "Condividi",
     "whySafe": "Perché è sicura per me?",
     "whySafeGuest": "Accedi per vedere perché questa ricetta è sicura per te",
-    "communityRecipe": "Stai visualizzando una ricetta della community — Accedi a Fable per generare una ricetta personalizzata con l'AI.",
-    "noMatchingRecipes": "Nessuna ricetta trovata — Accedi a Fable"
+    "communityRecipe": "Stai vedendo una ricetta della community — Accedi a Fable per generare una ricetta personalizzata con l'AI.",
+    "noMatchingRecipes": "Nessuna ricetta trovata — Accedi a Fable",
+    "noMatchingRecipesDesc": "Non abbiamo trovato una ricetta della community che corrisponda ai tuoi requisiti. Accedi per generare una ricetta personalizzata con l'AI.",
+    "positives": {
+      "perfectComplexity": "Complessità perfetta",
+      "greatCuisine": "Ottima scelta di cucina",
+      "rightIngredients": "Giusta quantità di ingredienti",
+      "quickToMake": "Veloce da preparare"
+    },
+    "negatives": {
+      "tooComplex": "Troppo complessa",
+      "tooSimple": "Troppo semplice",
+      "wrongCuisine": "Atmosfera culinaria sbagliata",
+      "tooManyIngredients": "Troppi ingredienti",
+      "tookTooLong": "Ha impiegato troppo tempo"
+    },
+    "emptyTitle": "Ancora nessuna ricetta",
+    "emptyDesc": "Vai alla scheda Cucina, aggiungi i tuoi ingredienti e genera una ricetta.",
+    "goToIngredients": "Vai agli ingredienti",
+    "errorTitle": "Impossibile generare la ricetta",
+    "errorDesc": "Si è verificato un errore durante la creazione della tua ricetta. Riprova.",
+    "goBack": "Indietro",
+    "yourSafeRecipes": "Le tue ricette sicure",
+    "filteredToAvoid": "Filtrato per evitare {count} allergene",
+    "filteredToAvoidPlural": "Filtrato per evitare {count} allergeni",
+    "allRecipesShown": "Tutte le ricette mostrate",
+    "noRecipesFound": "Nessuna ricetta trovata",
+    "noRecipesFoundDesc": "Prova ad aggiungere ingredienti diversi o a modificare le tue preferenze sugli allergeni.",
+    "matchScore": "{score}% di corrispondenza",
+    "cardServings": "{count} porzioni",
+    "chooseCuisine": "Scegli una cucina",
+    "cancelRefinement": "Annulla raffinamento",
+    "recipeLabel": "Ricetta",
+    "swapBanner": "Sostituito {original} → {substitute}",
+    "whySafeExplainer": "Perché è sicura per te 🛡️",
+    "rateLimitBannerText": "Hai esaurito le tue chiamate AI per questa ora. Ripristino alle {time}. Nel frattempo, ecco una ricetta della community.",
+    "missingEquipmentTitle": "Attrezzatura mancante",
+    "missingEquipmentList": "Potrebbe mancarti: {equipment}",
+    "macrosTitle": "Informazioni nutrizionali stimate",
+    "calories": "Calorie",
+    "protein": "Proteine",
+    "carbs": "Carboidrati",
+    "fat": "Grassi",
+    "feedbackThanksPositive": "👍 Grazie per il tuo feedback!",
+    "feedbackThanksNegative": "👎 Grazie, faremo meglio la prossima volta.",
+    "surveyOptional": "Dicci di più (opzionale)",
+    "drinkPairingsLoading": "Ricerca abbinamenti bevande…",
+    "drinkPairingsEmpty": "Nessun suggerimento di bevanda trovato.",
+    "replaceRecipeTitle": "Sostituire questa ricetta?",
+    "keepThis": "Tieni questa",
+    "startFreshButton": "Ricomincia da capo",
+    "thinkingLabel": "Sto pensando…",
+    "signInForNutrition": "Accedi per vedere le informazioni nutrizionali."
   },
   "brief": {
     "thinking": "STO PENSANDO...",
     "loadingHints": {
-      "checking": "Controllo la tua cronologia dei gusti...",
-      "finding": "Cerco ingredienti sicuri...",
+      "checking": "Controllo la tua cronologia gustativa...",
+      "finding": "Trovo ingredienti sicuri...",
       "crafting": "Creo la tua ricetta...",
-      "personalising": "La personalizzo per te..."
+      "personalising": "Personalizzo per te..."
     }
   },
   "discover": {
     "title": "Scopri",
-    "subtitle": "Di tendenza questa settimana · sicuro per te",
-    "excluding": "Esclusi",
-    "tasteProfile": "Il tuo profilo gusto",
+    "subtitle": "Tendenze questa settimana · sicure per te",
+    "excluding": "Escludendo",
+    "tasteProfile": "Il tuo profilo gustativo",
     "youLove": "Ami",
     "youAvoid": "Eviti",
-    "flavourTerritory": "Territorio di sapori",
-    "flavourTerritorySubtitle": "dove sta andando il tuo gusto",
-    "flavourTerritoryTooltip": "Ingredienti vicini a tutto ciò che ami — trovati mappando quello che i tuoi sapori preferiti hanno in comune.",
+    "flavourTerritory": "Territorio del sapore",
+    "flavourTerritorySubtitle": "dove punta il tuo gusto",
+    "flavourTerritoryTooltip": "Ingredienti vicini a tutto ciò che ami — trovati mappando ciò che i tuoi sapori preferiti hanno in comune.",
     "basedOn": "Basato sulle tue ultime {count} ricette",
-    "suggestedForYou": "Suggeriti per te",
-    "trendingForYou": "Di tendenza per te",
-    "trendingGlobally": "Di tendenza nel mondo",
+    "suggestedForYou": "Suggerito per te",
+    "trendingForYou": "Tendenze per te",
+    "trendingGlobally": "Tendenze globali",
     "mostLoved": "Ingredienti più amati",
-    "trendingPairings": "Abbinamenti di tendenza"
+    "trendingPairings": "Abbinamenti di tendenza",
+    "yourPreferences": "Le tue preferenze",
+    "noDataYet": "Ancora nessun dato — metti mi piace alle ricette per vedere le tendenze.",
+    "noGlobalTrends": "Ancora nessuna tendenza globale.",
+    "noAllTimeData": "Ancora nessun dato storico.",
+    "noPairingsData": "Ancora nessuna tendenza di abbinamento.",
+    "allHidden": "Tutte le sottosezioni sono nascoste. Attivale nelle Impostazioni.",
+    "signals": {
+      "tooComplex": "ricette più semplici",
+      "tooSimple": "ricette più ambiziose",
+      "wrongCuisine": "cucine diverse",
+      "greatCuisine": "cucine simili",
+      "tooManyIngredients": "meno ingredienti",
+      "quickToMake": "veloce da preparare",
+      "tookTooLong": "tempo di cottura più breve"
+    }
   },
   "substitutes": {
-    "title": "Sostituzioni",
+    "title": "Sostituti",
     "fromKitchen": "Dalla mia cucina",
     "fromRecipe": "Da una ricetta",
-    "pasteRecipe": "Incolla qui la tua ricetta...",
-    "findSubstitutes": "Trova sostituzioni",
+    "pasteRecipe": "Incolla la tua ricetta qui...",
+    "findSubstitutes": "Trova sostituti",
     "useThis": "Usa questo →",
     "inKitchen": "In cucina",
-    "allergenSwap": "Sostituzione allergeni",
+    "allergenSwap": "Sostituzione allergene",
     "missing": "Mancante",
-    "contextFit": "Adatto al contesto"
+    "contextFit": "Adatto al contesto",
+    "noIngredientsYet": "Ancora nessun ingrediente",
+    "noIngredientsSubtitle": "Aggiungi prima ingredienti alla tua cucina, poi torna per trovare sostituti.",
+    "addIngredients": "Aggiungi ingredienti",
+    "pasteFullRecipe": "Incolla ricetta completa",
+    "ingredientsOnly": "Solo ingredienti",
+    "ingredientsPlaceholder": "Un ingrediente per riga, es.:\n500g di carne macinata\n2 tazze di salsa\n3 spicchi d'aglio",
+    "parsingRecipe": "Analisi della ricetta…",
+    "parsingIngredients": "Analisi degli ingredienti…",
+    "parseRecipe": "Analizza ricetta",
+    "parseIngredients": "Analizza ingredienti",
+    "clear": "Cancella",
+    "analysingRecipe": "Analisi della ricetta…",
+    "inYourKitchen": "nella tua cucina",
+    "allergensToSwap": "allergene da sostituire",
+    "allergensToSwapPlural": "allergeni da sostituire",
+    "notInKitchenCount": "non in cucina",
+    "inKitchenSuffix": "— nella tua cucina",
+    "noSubFoundNote": "contiene {allergen}, nessun sostituto adatto trovato — verrà omesso",
+    "containsAllergen": "contiene {allergen}",
+    "beingSwapped": "— in sostituzione",
+    "fromKitchenNote": "dalla tua cucina",
+    "notInKitchenNote": "— non in cucina, incluso comunque",
+    "cookWithSubstitutions": "Cucina con questi sostituti",
+    "unresolvedNote": "Gli ingredienti con allergeni senza sostituto sicuro verranno omessi dalla ricetta.",
+    "tapToFind": "Tocca un ingrediente per trovare sostituti",
+    "tapToSwap": "Tocca un altro ingrediente da sostituire",
+    "findingSwaps": "Ricerca delle migliori sostituzioni…",
+    "substitutesFor": "Sostituti per {name}",
+    "useToday": "🔴 Usa oggi! — scade il {date}",
+    "useSoon": "⚠️ Usa presto — scade il {date}",
+    "similarity": "Similarità",
+    "scoreMatch": "{score}% di corrispondenza",
+    "signInForExplanation": "Accedi per vedere perché questa sostituzione funziona.",
+    "noSafeSubstitutes": "Nessun sostituto senza allergeni trovato per {name}.",
+    "rateLimit": "Hai esaurito le tue chiamate AI per questa ora. Ripristino alle {time}."
   },
   "history": {
     "title": "Cronologia ricette",
-    "empty": "Nessuna ricetta ancora",
+    "empty": "Ancora nessuna ricetta",
     "emptySubtitle": "Genera la tua prima ricetta per vedere la cronologia qui.",
     "generateFirst": "Genera una ricetta →",
-    "signInForHistory": "Accedi per mantenere la cronologia tra le sessioni"
+    "signInForHistory": "Accedi per mantenere la cronologia tra le sessioni",
+    "justNow": "proprio ora",
+    "minutesAgo": "{count} min fa",
+    "hoursAgo": "{count} ore fa",
+    "daysAgo": "{count} g fa",
+    "recipeCount": "{count} ricetta nella tua cronologia",
+    "recipesCount": "{count} ricette nella tua cronologia",
+    "servings": "{count} porzioni"
   },
   "saved": {
     "title": "Ricette salvate",
-    "empty": "Nessuna ricetta salvata ancora",
-    "emptySubtitle": "Genera la tua prima ricetta e salva quelle che ti piacciono.",
-    "generateFirst": "Genera una ricetta →"
+    "empty": "Ancora nessuna ricetta salvata",
+    "emptySubtitle": "Genera la tua prima ricetta e salva quelle che ami.",
+    "generateFirst": "Genera una ricetta →",
+    "savedBadge": "Salvata",
+    "allSaved": "Tutte salvate",
+    "allSavedWithCount": "Tutte salvate ({count})",
+    "collectionsWithCount": "Collezioni ({count})"
   },
   "collections": {
     "title": "Collezioni",
     "empty": "Questa collezione è vuota",
-    "emptySubtitle": "Salva le ricette qui per costruire la tua collezione.",
+    "emptySubtitle": "Salva ricette qui per costruire la tua collezione.",
     "browseSaved": "Sfoglia le ricette salvate →",
     "newCollection": "Nuova collezione",
-    "addToCollection": "Aggiungi alla collezione"
+    "addToCollection": "Aggiungi alla collezione",
+    "recipeCount": "{count} ricetta",
+    "recipesCount": "{count} ricette",
+    "emptyPreview": "Vuota",
+    "noRecipes": "Nessuna ricetta",
+    "create": "Crea",
+    "cancelCreate": "Annulla",
+    "collectionPlaceholder": "Nome della collezione…",
+    "addToCollectionModal": "Aggiungi alla collezione",
+    "noCollectionsYet": "Ancora nessuna collezione. Creane una qui sotto.",
+    "newCollectionLink": "Nuova collezione"
   },
   "settings": {
     "title": "Impostazioni",
     "allergens": "Allergeni",
-    "dietPresets": "Dieta e stile di vita",
+    "dietPresets": "Dieta e Stile di vita",
     "cookingStyle": "Stile di cucina",
-    "spiceTolerance": "Tolleranza al piccante",
-    "adventurousness": "Quanto sei avventuroso?",
+    "spiceTolerance": "Tolleranza piccante",
+    "adventurousness": "Spirito d'avventura?",
     "theme": "Aspetto",
     "tabs": "Schede visibili",
     "discoverSettings": "Sezioni Scopri",
     "onboarding": "Introduzione",
-    "restartOnboarding": "Riavvia il tutorial",
+    "restartOnboarding": "Riavvia tutorial",
     "deleteAccount": "Elimina il mio account e tutti i dati",
     "deleteConfirmTitle": "Eliminare il tuo account?",
-    "deleteConfirmBody": "Questa operazione eliminerà definitivamente il tuo account, la cucina, le ricette salvate, il profilo gusto e tutti i dati personali. Non sarà possibile annullarla.",
+    "deleteConfirmBody": "Questo eliminerà definitivamente il tuo account, cucina, ricette salvate, profilo gustativo e tutti i dati personali. Questa azione è irreversibile.",
     "deleteConfirm": "Elimina definitivamente",
     "deleteCancel": "Annulla",
     "themes": {
       "light": "Chiaro",
       "dark": "Scuro",
       "system": "Auto"
-    }
+    },
+    "euBig14": "I 14 principali allergeni UE",
+    "noRestrictionsSelected": "Nessuna restrizione selezionata",
+    "restrictionsSuffix": " attivo",
+    "noneActive": "Nessuno attivo",
+    "themeFollowsDevice": "Segue le impostazioni del dispositivo",
+    "themeAlwaysDark": "Sempre scuro",
+    "themeAlwaysLight": "Sempre chiaro",
+    "tabsMinimum": "Devono rimanere visibili almeno 2 schede.",
+    "revisitSlideshow": "Rivedi il diaporama introduttivo",
+    "account": "Account",
+    "accountDeleteDesc": "Elimina definitivamente il tuo account e tutti i dati associati.",
+    "accountGuest": "Stai usando Fable come ospite. Accedi per creare un account — la tua cucina e le preferenze attuali verranno trasferite.",
+    "accountSignIn": "Accedi a Fable",
+    "macrosTitle": "Mostra informazioni nutrizionali",
+    "macrosDesc": "Calorie, proteine, carboidrati e grassi per porzione",
+    "macrosHiddenDesc": "Le informazioni su calorie e macro sono nascoste per impostazione predefinita per rispetto agli utenti in recupero da disturbi alimentari.",
+    "macrosSignInLink": "Accedi",
+    "macrosSignInSuffix": "per vedere le informazioni nutrizionali.",
+    "safeFoodsModeTitle": "Modalità Cibi Sicuri",
+    "safeFoodsModeEmpty": "Nessun ingrediente sicuro configurato",
+    "safeFoodsModeCount": "{count} ingredienti nella tua lista sicura",
+    "safeFoodsSetup": "Configura lista cibi sicuri",
+    "safeFoodsManage": "Gestisci lista cibi sicuri",
+    "safeFoodsModeDesc": "Per MCAS, allergie gravi o diete molto restrittive. Crea una lista di ingredienti che puoi mangiare in sicurezza e genereremo ricette esclusivamente da essa.",
+    "discoverSectionTitle": "Scopri",
+    "discover": {
+      "showDiscover": "Mostra sezione Scopri",
+      "showDiscoverDesc": "Approfondimenti sulle tendenze sopra il feed di generazione",
+      "showTrendingForYou": "Mostra Tendenze per te",
+      "showTrendingForYouDesc": "Tipi di ricette popolari con il tuo profilo allergeni",
+      "showTrendingGlobally": "Mostra Tendenze globali",
+      "showTrendingGloballyDesc": "Ingredienti più amati da tutti gli utenti",
+      "showMostLoved": "Mostra Ingredienti più amati",
+      "showMostLovedDesc": "Ingredienti migliori di sempre per il tuo profilo",
+      "showTrendingPairings": "Mostra Abbinamenti di tendenza",
+      "showTrendingPairingsDesc": "Combinazioni popolari di bevande e cucine"
+    },
+    "tabLabels": {
+      "kitchen": "Cucina",
+      "recipe": "Ricetta",
+      "discover": "Scopri",
+      "substitutes": "Sostituti",
+      "history": "Cronologia",
+      "saved": "Salvate"
+    },
+    "allergenShort": "{count} allergene",
+    "allergensShort": "{count} allergeni",
+    "customAllergen": {
+      "haveAllergy": "Hai un'allergia specifica?",
+      "close": "Chiudi",
+      "searchIngredients": "Cerca ingredienti",
+      "placeholder": "es. aglio, olio di sesamo, tofu…"
+    },
+    "done": "Fatto",
+    "deletionFailed": "Eliminazione fallita. Riprova.",
+    "deleteSomethingWrong": "Qualcosa è andato storto. Riprova.",
+    "deleteSuccessToast": "Il tuo account e tutti i dati sono stati eliminati definitivamente."
   },
   "onboarding": {
     "skip": "Salta",
     "next": "Avanti",
-    "letsGo": "Iniziamo",
+    "letsGo": "Iniziamo!",
+    "getStarted": "Inizia",
+    "continue": "Continua",
+    "featureAllergenSafe": "Ricette senza allergeni",
+    "featureFreshIngredients": "Abbinamento di ingredienti freschi",
+    "dietAndLifestyle": "Dieta e stile di vita",
+    "restrictionsSuffix": " attivo",
+    "noneActive": "Nessuno attivo",
+    "noAllergensSelected": "Nessun allergene selezionato",
+    "allergenSelected": "{count} allergene selezionato",
+    "allergensSelected": "{count} allergeni selezionati",
+    "spiceHeading": "Come ti rapporti con le spezie?",
+    "adventurousnessHeading": "Quanto sei avventuroso?",
+    "safeFoodsDescPre": "Dicci esattamente cosa",
+    "safeFoodsCanEat": "puoi",
+    "safeFoodsDescPost": "mangiare e lavoreremo solo con quegli ingredienti — niente al di fuori della tua lista sicura.",
+    "safeFoodsIdealFor": "Ideale per MCAS, allergie gravi o diete terapeutiche molto restrittive.",
+    "safeFoodsSetUp": "Sì, configura la mia lista di alimenti sicuri",
+    "safeFoodsSkip": "No grazie, continua all'app",
+    "safeFoodsDoneLabel": "Salva e inizia a cucinare",
     "slides": {
       "welcome": {
         "title": "Benvenuto su Fable",
@@ -215,32 +470,32 @@
       },
       "cookingStyle": {
         "title": "Il tuo stile di cucina",
-        "subtitle": "Puoi cambiare queste impostazioni in qualsiasi momento."
+        "subtitle": "Puoi modificarli in qualsiasi momento nelle impostazioni."
       },
       "kitchen": {
         "title": "La tua cucina",
-        "subtitle": "Aggiungi quello che hai e creeremo ricette su misura."
+        "subtitle": "Aggiungi quello che hai e creeremo ricette attorno ad esso."
       },
       "recipe": {
         "title": "Genera ricette",
-        "subtitle": "Ricette personalizzate e sicure per gli allergeni in pochi secondi."
+        "subtitle": "Ricette personalizzate e sicure per gli allergici in pochi secondi."
       },
       "safeFoods": {
-        "title": "Modalità cibi sicuri",
+        "title": "Modalità Cibi Sicuri",
         "subtitle": "Per MCAS, allergie gravi o diete molto restrittive. Definisci esattamente cosa puoi mangiare."
       }
     }
   },
   "spiceLevels": {
     "none": "Niente piccante",
-    "mild": "Un tocco di calore",
-    "medium": "Piccante medio",
-    "hot": "Dai tutto!"
+    "mild": "Un po' di calore",
+    "medium": "Calore moderato",
+    "hot": "Molto piccante"
   },
   "adventurous": {
-    "familiar": "Resto su ciò che conosco",
-    "occasional": "Qualche sorpresa ogni tanto",
-    "adventurous": "Portami alla scoperta"
+    "familiar": "Rimango con ciò che conosco",
+    "occasional": "La sorpresa occasionale",
+    "adventurous": "Portami da qualche parte di nuovo"
   },
   "presets": {
     "vegan": {
@@ -256,35 +511,54 @@
       "description": "Esclude ingredienti ricchi di carboidrati"
     },
     "lowFodmap": {
-      "name": "Low-FODMAP",
-      "description": "Esclude i principali fattori scatenanti FODMAP"
+      "name": "Basso FODMAP",
+      "description": "Esclude i comuni fattori scatenanti FODMAP"
     },
     "lactose": {
       "name": "Intolleranza al lattosio",
       "description": "Scegli come gestire i latticini",
-      "reminder": "I latticini restano nelle ricette — vedrai un promemoria Lactaid",
-      "exclude": "Escludi i latticini del tutto — trattali come un allergene"
+      "reminder": "I latticini rimangono nelle ricette — vedrai un promemoria Lattasi",
+      "exclude": "Escludi completamente i latticini — trattati come un allergene",
+      "title": "Intolleranza al lattosio",
+      "shortLabel": "Intolleranza al lattosio",
+      "inactive": "Mostra un promemoria Lattasi sulle ricette contenenti latticini",
+      "activeInclude": "Latticini consentiti — promemoria Lattasi mostrato nelle ricette",
+      "activeExclude": "Latticini esclusi da tutti i risultati",
+      "includeLabel": "Includi latticini con promemoria",
+      "includeDesc": "I latticini rimangono nelle ricette — vedrai un promemoria Lattasi",
+      "excludeLabel": "Escludi completamente i latticini",
+      "excludeDesc": "Tratta i latticini come un allergene, filtrati da tutti i risultati"
     },
     "alcohol": {
       "name": "Senza alcol",
-      "description": "Rimuovi l'alcol dalle ricette e dagli abbinamenti",
-      "noCooking": "Cucina analcolica — alcol rimosso dalle ricette, abbinamenti alcolici nascosti",
-      "excludeEntirely": "Escludi del tutto — tratta l'alcol come un allergene, filtrato da tutti i risultati"
+      "description": "Rimuove l'alcol dalle ricette e dagli abbinamenti",
+      "noCooking": "Cucina senza alcol — alcol rimosso dalle ricette, abbinamenti alcolici nascosti",
+      "excludeEntirely": "Escludi completamente — tratta l'alcol come un allergene, filtrato da tutti i risultati",
+      "title": "Senza alcol",
+      "shortLabel": "Senza alcol",
+      "inactive": "Rimuovi o escludi l'alcol dalle ricette e dagli abbinamenti",
+      "noCookingActive": "Cucina senza alcol — abbinamenti bevande nascosti",
+      "excludeActive": "Alcol escluso da tutti i risultati",
+      "noCookingLabel": "🍷 Cucina senza alcol",
+      "noCookingDesc": "Alcol rimosso dalle ricette — vino da cucina, birra e liquori sostituiti con alternative analcoliche. Abbinamenti alcolici nascosti.",
+      "excludeLabel": "🚫 Escludi completamente",
+      "excludeDesc": "Tratta l'alcol come un allergene — filtrato da tutti i risultati incluse marinature, salse e aromi. Abbinamenti alcolici nascosti."
     },
     "lowHistamine": {
-      "name": "Basso istamino",
-      "description": "Filtra gli ingredienti ad alto contenuto di istamina — cibi fermentati, formaggi stagionati, carni stagionate, alcol e i principali fattori scatenanti dell'istamina.",
-      "disclaimer": "Questo è un filtro alimentare basato sulle comuni linee guida per una dieta a basso istamino. Non è un consiglio medico. Consulta sempre un professionista sanitario per la diagnosi e il trattamento dell'intolleranza all'istamina o della MCAS."
+      "name": "Basso istamine",
+      "description": "Filtra gli ingredienti ricchi di istamina — cibi fermentati, formaggi stagionati, carni lavorate, alcol e fattori scatenanti comuni.",
+      "disclaimer": "Questo è un filtro alimentare basato su linee guida comuni a basso contenuto di istamina. Non è un consiglio medico. Consulta sempre un medico.",
+      "shortLabel": "Basso istamine"
     }
   },
   "feedback": {
     "rateThis": "Valuta questa ricetta",
-    "highlight": "Il punto forte del piatto",
-    "leaveOut": "Togliere la prossima volta",
+    "highlight": "Punto di forza del piatto",
+    "leaveOut": "Lascerei fuori",
     "whatWorked": "Cosa ha funzionato",
     "whatDidnt": "Cosa non ha funzionato",
     "skip": "Salta",
-    "submit": "Invia feedback"
+    "submit": "Invia valutazione"
   },
   "common": {
     "loading": "Caricamento...",
@@ -305,18 +579,89 @@
     "people": "{count} persone"
   },
   "safeFoods": {
-    "title": "Modalità cibi sicuri",
-    "description": "Per MCAS, allergie gravi o diete molto restrittive. Solo gli ingredienti nella tua lista sicura appariranno nelle ricette.",
+    "title": "Modalità Cibi Sicuri",
+    "description": "Per MCAS, allergie gravi o diete molto restrittive. Solo gli ingredienti della tua lista sicura appariranno nelle ricette.",
     "liquidPlaceholder": "Liquido a scelta",
     "seasoningPlaceholder": "Condimento a scelta",
     "addSafeFood": "Aggiungi cibo sicuro",
-    "noSafeFoods": "Nessun cibo sicuro aggiunto ancora"
+    "noSafeFoods": "Ancora nessun cibo sicuro aggiunto",
+    "pageTitle": "Lista cibi sicuri",
+    "noIngredientsYet": "Ancora nessun ingrediente aggiunto",
+    "ingredientCount": "{count} ingrediente nella tua lista sicura",
+    "ingredientCountPlural": "{count} ingredienti nella tua lista sicura",
+    "yourSafeIngredients": "I tuoi ingredienti sicuri",
+    "addDesc": "Aggiungi ogni ingrediente che puoi mangiare in sicurezza. Lavoreremo esclusivamente all'interno di questa lista.",
+    "ingredientsHeading": "Ingredienti sicuri ({count})",
+    "noIngredientsEmpty": "Ancora nessun ingrediente sicuro aggiunto",
+    "searchToStart": "Cerca sopra per iniziare a costruire la tua lista",
+    "doneWithCount": "Fatto — {count} ingredienti",
+    "searchPlaceholder": "Cerca 1.790 ingredienti…"
   },
   "share": {
     "title": "Condividi ricetta",
     "copied": "Link copiato negli appunti",
     "sharedRecipe": "Ricetta condivisa",
     "noLongerAvailable": "Questa ricetta non è più disponibile.",
-    "disclaimer": "Gli abbinamenti di bevande sono mostrati senza filtro per gli allergeni — controlla attentamente gli ingredienti."
+    "disclaimer": "Gli abbinamenti bevande vengono mostrati senza filtraggio allergeni — controlla attentamente gli ingredienti."
+  },
+  "pairings": {
+    "title": "Abbinamenti di sapori",
+    "safeWithRestrictions": "Suggerimenti sicuri — {count} restrizioni applicate",
+    "safeWithOneRestriction": "Suggerimenti sicuri — 1 restrizione applicata",
+    "safeBasedOnKitchen": "Suggerimenti di ingredienti sicuri basati sulla tua cucina",
+    "tip": "Aggiungi ingredienti alla tua cucina, poi genera una ricetta con tutti insieme.",
+    "noAllergens": "Senza allergeni",
+    "add": "Aggiungi",
+    "added": "Aggiunto",
+    "emptyTitle": "Nessun abbinamento trovato",
+    "emptySubtitle": "Prova ad aggiungere più ingredienti o a modificare le restrizioni sugli allergeni.",
+    "goBack": "Indietro",
+    "generateRecipe": "Genera ricetta con questi abbinamenti",
+    "generateNote": "Claude creerà una ricetta usando gli ingredienti della tua cucina e questi abbinamenti",
+    "matchLabel": "corrispondenza"
+  },
+  "visionReview": {
+    "foundIngredients": "Abbiamo trovato {count} ingredienti",
+    "foundOneIngredient": "Abbiamo trovato 1 ingrediente",
+    "selectToAdd": "Seleziona cosa aggiungere alla tua cucina",
+    "storageArea": "Area di conservazione",
+    "guessed": "(stimato — tocca per cambiare)",
+    "uncertain": "Incerto",
+    "inKitchen": "In cucina",
+    "addIngredients": "Aggiungi {count} ingredienti",
+    "addOneIngredient": "Aggiungi 1 ingrediente",
+    "noIngredientsSelected": "Nessun ingrediente selezionato",
+    "cancel": "Annulla"
+  },
+  "tutorial": {
+    "skip": "Salta",
+    "back": "Indietro",
+    "next": "Avanti",
+    "letsGo": "Iniziamo!",
+    "safeForYou": "Sicuro per te ✓",
+    "safeFoodsList": "Lista alimenti sicuri",
+    "active": "Attivo",
+    "slides": {
+      "welcome": {
+        "headline": "La maggior parte delle app di ricette non è stata costruita per te.",
+        "body": "Fable è diverso. Progettato per persone con allergie, intolleranze e diete restrittive — ti manteniamo al sicuro senza compromettere il sapore."
+      },
+      "allergens": {
+        "headline": "Dicci cosa evitare. Una volta.",
+        "body": "Scegli tra i 14 principali allergeni UE o cerca tra 1.790 ingredienti. Non suggeriremo mai nulla di inadatto."
+      },
+      "kitchen": {
+        "headline": "Aggiungi quello che hai. Costruiamo attorno.",
+        "body": "Traccia il tuo frigorifero, freezer e armadi. Fable dà priorità agli ingredienti prima che scadano."
+      },
+      "recipe": {
+        "headline": "Ingredienti sicuri. Sapori audaci.",
+        "body": "Genera ricette personalizzate con l'AI — o sfoglia le ricette della community come ospite. Accedi per sbloccare la generazione AI adattata al tuo gusto."
+      },
+      "safeFoods": {
+        "headline": "Per diete molto restrittive.",
+        "body": "Definisci esattamente cosa puoi mangiare in sicurezza. Fable crea ogni ricetta strettamente all'interno della tua lista sicura — nessuna supposizione, nessuna sorpresa."
+      }
+    }
   }
 }

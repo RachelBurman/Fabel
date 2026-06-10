@@ -12,6 +12,7 @@ import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief, type RecipeSuggestion, type NudgeType } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
+import { useTranslations } from 'next-intl'
 import { useDislikedPatterns } from '@/lib/hooks/use-disliked-patterns'
 import { useRecipePairings } from '@/lib/hooks/use-recipe-pairings'
 import { useRecipeBrief } from '@/lib/hooks/use-recipe-brief'
@@ -46,6 +47,8 @@ type Screen =
 
 function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, completeTutorial, preferences, addIngredient, addToHistory, saveRecipe, unsaveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
+  const tRecipe = useTranslations('recipe')
+  const tKitchen = useTranslations('kitchen')
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
@@ -241,9 +244,9 @@ function FableAppContent() {
                 keyIngredients: [] as string[],
                 noveltyNote: pendingSuggestion.noveltyNote,
                 loadingHints: [
-                  'Safe ingredients. Bold flavours. Food for everyone.',
-                  'Fable uses Epicure — the largest multilingual food embedding model ever built.',
-                  'The more you cook with Fable, the better it knows your taste.',
+                  tRecipe('loadingHint1'),
+                  tRecipe('loadingHint2'),
+                  tRecipe('loadingHint3'),
                 ],
               } satisfies RecipeBrief,
             })
@@ -718,7 +721,7 @@ function FableAppContent() {
   useEffect(() => {
     if (!preferences.showMacros || !generatedRecipe || generatedRecipe.macros) return
     if (!isSignedIn) {
-      setMacrosRateLimitMsg('Sign in to see nutritional information.')
+      setMacrosRateLimitMsg(tRecipe('signInForNutrition'))
       return
     }
     setMacrosRateLimitMsg(null)
@@ -735,7 +738,7 @@ function FableAppContent() {
           const time = result.resetAt
             ? new Date(result.resetAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
             : 'soon'
-          setMacrosRateLimitMsg(`You've used your AI calls for this hour. Resets at ${time}.`)
+          setMacrosRateLimitMsg(tKitchen('photoRateLimitError', { time }))
           return
         }
         if (result.macros) {
@@ -896,7 +899,6 @@ function FableAppContent() {
                 fullPage
                 onBack={() => navigate('allergens')}
                 onDone={() => navigate('allergens')}
-                doneLabel="Done"
               />
             </motion.div>
           )}

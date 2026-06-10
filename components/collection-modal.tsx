@@ -6,6 +6,7 @@ import { Check, FolderPlus, Loader2, X } from 'lucide-react'
 import { useFable } from '@/lib/fable-context'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface CollectionModalProps {
   recipeId: string
@@ -14,6 +15,7 @@ interface CollectionModalProps {
 
 export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
   const { collections, createCollection, addToCollection, removeFromCollection } = useFable()
+  const t = useTranslations('collections')
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -77,7 +79,7 @@ export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-            <h2 className="text-base font-semibold text-foreground">Add to collection</h2>
+            <h2 className="text-base font-semibold text-foreground">{t('addToCollectionModal')}</h2>
             <button
               onClick={onClose}
               className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
@@ -90,7 +92,7 @@ export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
           <div className="max-h-64 overflow-y-auto">
             {collections.length === 0 && !isCreating && (
               <p className="text-sm text-muted-foreground text-center py-8 px-5">
-                No collections yet. Create one below.
+                {t('noCollectionsYet')}
               </p>
             )}
             {collections.map(collection => {
@@ -118,7 +120,7 @@ export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
                     {collection.name}
                   </span>
                   <span className="text-xs text-muted-foreground shrink-0">
-                    {collection.recipeIds.length} recipe{collection.recipeIds.length !== 1 ? 's' : ''}
+                    {collection.recipeIds.length !== 1 ? t('recipesCount', { count: collection.recipeIds.length }) : t('recipeCount', { count: collection.recipeIds.length })}
                   </span>
                 </button>
               )
@@ -135,7 +137,7 @@ export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleCreateAndAdd(); if (e.key === 'Escape') setIsCreating(false) }}
-                  placeholder="Collection name…"
+                  placeholder={t('collectionPlaceholder')}
                   className="flex-1 text-sm bg-background border border-border rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <Button
@@ -144,7 +146,7 @@ export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
                   disabled={!newName.trim() || creating}
                   className="rounded-xl shrink-0"
                 >
-                  {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                  {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : t('create')}
                 </Button>
                 <button
                   onClick={() => { setIsCreating(false); setNewName('') }}
@@ -159,7 +161,7 @@ export function CollectionModal({ recipeId, onClose }: CollectionModalProps) {
                 className="flex items-center gap-2 text-sm text-primary font-medium hover:text-primary/80 transition-colors"
               >
                 <FolderPlus className="w-4 h-4" />
-                New collection
+                {t('newCollectionLink')}
               </button>
             )}
           </div>

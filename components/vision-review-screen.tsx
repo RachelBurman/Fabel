@@ -12,12 +12,13 @@ import {
   type ReviewIngredient,
 } from '@/lib/vision-scanner'
 import { type IngredientArea, type IngredientItem } from '@/lib/types'
+import { useTranslations } from 'next-intl'
 
-const AREAS: { value: IngredientArea; emoji: string; label: string }[] = [
-  { value: 'fridge',   emoji: '🧊', label: 'Fridge' },
-  { value: 'freezer',  emoji: '❄️', label: 'Freezer' },
-  { value: 'cupboard', emoji: '🗄️', label: 'Cupboard' },
-  { value: 'pantry',   emoji: '🏠', label: 'Pantry' },
+const AREAS: { value: IngredientArea; emoji: string; labelKey: string }[] = [
+  { value: 'fridge',   emoji: '🧊', labelKey: 'fridge' },
+  { value: 'freezer',  emoji: '❄️', labelKey: 'freezer' },
+  { value: 'cupboard', emoji: '🗄️', labelKey: 'cupboard' },
+  { value: 'pantry',   emoji: '🏠', labelKey: 'pantry' },
 ]
 
 interface VisionReviewScreenProps {
@@ -33,6 +34,8 @@ export function VisionReviewScreen({
   onConfirm,
   onCancel,
 }: VisionReviewScreenProps) {
+  const t = useTranslations('visionReview')
+  const tKitchen = useTranslations('kitchen')
   const defaultArea: IngredientArea =
     result.inferredArea !== 'unknown' ? result.inferredArea : 'fridge'
 
@@ -72,10 +75,10 @@ export function VisionReviewScreen({
       <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            We found {result.ingredients.length} ingredient{result.ingredients.length !== 1 ? 's' : ''}
+            {result.ingredients.length !== 1 ? t('foundIngredients', { count: result.ingredients.length }) : t('foundOneIngredient')}
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Select what to add to your kitchen
+            {t('selectToAdd')}
           </p>
         </div>
         <button
@@ -90,7 +93,7 @@ export function VisionReviewScreen({
       {/* Area selector */}
       <div className="px-6 py-3 border-b border-border shrink-0">
         <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">Storage area</span>
+          <span className="text-sm text-muted-foreground">{t('storageArea')}</span>
           <div className="relative">
             <button
               onClick={() => setShowAreaPicker(p => !p)}
@@ -101,7 +104,7 @@ export function VisionReviewScreen({
                   : 'bg-secondary text-muted-foreground border-border'
               )}
             >
-              {areaConfig.emoji} {areaConfig.label}
+              {areaConfig.emoji} {tKitchen(`areas.${areaConfig.labelKey}` as Parameters<typeof tKitchen>[0])}
               <ChevronDown className="w-3 h-3" />
             </button>
             {showAreaPicker && (
@@ -115,14 +118,14 @@ export function VisionReviewScreen({
                       area === a.value && 'text-primary font-medium'
                     )}
                   >
-                    {a.emoji} {a.label}
+                    {a.emoji} {tKitchen(`areas.${a.labelKey}` as Parameters<typeof tKitchen>[0])}
                   </button>
                 ))}
               </div>
             )}
           </div>
           {!result.areaConfident && (
-            <span className="text-xs text-muted-foreground">(guessed — tap to change)</span>
+            <span className="text-xs text-muted-foreground">{t('guessed')}</span>
           )}
         </div>
       </div>
@@ -169,12 +172,12 @@ export function VisionReviewScreen({
             <div className="flex items-center gap-1.5 shrink-0">
               {!ing.confident && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  Uncertain
+                  {t('uncertain')}
                 </span>
               )}
               {ing.alreadyInKitchen && (
                 <span className="text-xs px-2 py-0.5 rounded-full bg-secondary text-muted-foreground border border-border">
-                  In kitchen
+                  {t('inKitchen')}
                 </span>
               )}
             </div>
@@ -190,15 +193,15 @@ export function VisionReviewScreen({
           disabled={checkedCount === 0}
         >
           {checkedCount > 0
-            ? `Add ${checkedCount} ingredient${checkedCount !== 1 ? 's' : ''}`
-            : 'No ingredients selected'}
+            ? checkedCount !== 1 ? t('addIngredients', { count: checkedCount }) : t('addOneIngredient')
+            : t('noIngredientsSelected')}
         </Button>
         <Button
           variant="ghost"
           onClick={onCancel}
           className="w-full rounded-full text-muted-foreground"
         >
-          Cancel
+          {t('cancel')}
         </Button>
       </div>
     </motion.div>
