@@ -12,7 +12,7 @@ import { getInsightProfileKey } from '@/lib/insight-profile'
 import { type SurveyResponse } from '@/lib/survey-signals'
 import { type GeneratedRecipe, type HistoryEntry, type PairingSuggestion, type IngredientItem, type RecipeBrief, type RecipeSuggestion, type NudgeType } from '@/lib/types'
 import { shouldShowTutorial, clearTutorialComplete } from '@/lib/tutorial'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useDislikedPatterns } from '@/lib/hooks/use-disliked-patterns'
 import { useRecipePairings } from '@/lib/hooks/use-recipe-pairings'
 import { useRecipeBrief } from '@/lib/hooks/use-recipe-brief'
@@ -49,6 +49,8 @@ function FableAppContent() {
   const { hasCompletedOnboarding, isLoadingProfile, completeTutorial, preferences, addIngredient, addToHistory, saveRecipe, unsaveRecipe, effectiveAllergens, effectiveCustomAllergens } = useFable()
   const tRecipe = useTranslations('recipe')
   const tKitchen = useTranslations('kitchen')
+  const locale = useLocale()
+  console.log('[i18n] detected locale:', locale)
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user
