@@ -88,7 +88,7 @@ export function SidebarNavigation({ currentScreen, onNavigate }: BottomNavigatio
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Leaf className="w-4 h-4 text-primary" />
         </div>
-        <span className="text-lg font-semibold text-foreground truncate">Fable</span>
+        <span className="text-lg font-semibold text-foreground shrink-0">Fable</span>
         {safeFoodsActive && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
@@ -198,11 +198,13 @@ export function Header({ onSettingsClick }: HeaderProps) {
       <div className="flex items-center justify-between h-16 px-6 md:justify-end">
 
         {/* Left: logo + Safe Foods badge — hidden on desktop (sidebar shows the logo) */}
-        <div className="flex items-center gap-2 min-w-0 flex-1 md:hidden">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <Leaf className="w-4 h-4 text-primary" />
+        <div className="flex items-center gap-2 flex-1 md:hidden">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <Leaf className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-lg font-semibold text-foreground">Fable</span>
           </div>
-          <span className="text-lg font-semibold text-foreground shrink-0">Fable</span>
           {safeFoodsActive && (
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
