@@ -195,7 +195,7 @@
   <rect x="377" y="615" width="468" height="62" rx="3" fill="#1a1000" stroke="#92400e" stroke-width="1"/>
   <text x="387" y="628" font-size="9" font-weight="700" fill="#fbbf24">fable-taste-profile-writer</text>
   <text x="387" y="641" font-size="8" fill="#9ca3af">← EventBridge Scheduler  (every 6 hours)</text>
-  <text x="387" y="653" font-size="8" fill="#9ca3af">→ queries needsRecompute GSI  →  drift-aware profile</text>
+  <text x="387" y="653" font-size="8" fill="#9ca3af">→ queries needsRecompute-lastComputedAt-index GSI  ·  drift-aware profile</text>
   <text x="387" y="665" font-size="8" fill="#9ca3af">→ Claude Haiku  →  tasteProfile  →  fable-users</text>
 
   <!-- Lambda 3 -->
