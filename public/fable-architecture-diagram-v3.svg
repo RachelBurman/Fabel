@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="970"
+     viewBox="0 0 1200 970"
+     font-family="'Inter','Segoe UI',system-ui,sans-serif">
+
+  <defs>
+    <marker id="ah" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+      <path d="M0,0 L0,5 L7,2.5 z" fill="#6b7280"/>
+    </marker>
+    <marker id="ah-amber" markerWidth="7" markerHeight="7" refX="5" refY="2.5" orient="auto">
+      <path d="M0,0 L0,5 L7,2.5 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <!-- PAGE BACKGROUND -->
+  <rect width="1200" height="970" fill="#111827"/>
+
+  <!-- TITLE -->
+  <text x="600" y="14" text-anchor="middle" font-size="11" font-weight="700"
+        fill="#8fbc8f" letter-spacing="2">FABLE — SYSTEM ARCHITECTURE</text>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LAYER 1: USERS                                      -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="10" y="20" width="1180" height="87" rx="6" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <text x="22" y="33" font-size="8" font-weight="600" fill="#4b5563" letter-spacing="1.5">LAYER 1  ·  USERS</text>
+
+  <!-- Guest User -->
+  <rect x="235" y="32" width="288" height="63" rx="5" fill="#0d1117" stroke="#374151" stroke-width="1.5"/>
+  <text x="379" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="#f1f5f9">👤  Guest User</text>
+  <text x="379" y="65" text-anchor="middle" font-size="9" fill="#9ca3af">Community recipes  ·  Epicure search</text>
+  <text x="379" y="79" text-anchor="middle" font-size="9" fill="#9ca3af">Kitchen management  ·  No sign-in required</text>
+
+  <!-- Authenticated User -->
+  <rect x="677" y="32" width="288" height="63" rx="5" fill="#0d1117" stroke="#8fbc8f" stroke-width="1.5"/>
+  <text x="821" y="50" text-anchor="middle" font-size="11" font-weight="600" fill="#f1f5f9">👤  Authenticated User</text>
+  <text x="821" y="65" text-anchor="middle" font-size="9" fill="#9ca3af">Full AI generation  ·  Taste profile  ·  History</text>
+  <text x="821" y="79" text-anchor="middle" font-size="9" fill="#9ca3af">Recipe refinement  ·  Personalised feed</text>
+
+  <!-- L1 → L2 -->
+  <line x1="600" y1="107" x2="600" y2="127" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
+  <text x="608" y="120" font-size="8" fill="#4b5563">HTTP</text>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LAYER 2: CLIENT (BROWSER)                           -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="10" y="129" width="1180" height="113" rx="6" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <text x="22" y="142" font-size="8" font-weight="600" fill="#4b5563" letter-spacing="1.5">LAYER 2  ·  CLIENT (BROWSER)</text>
+
+  <!-- Next.js App -->
+  <rect x="22" y="148" width="438" height="86" rx="5" fill="#0d1117" stroke="#8fbc8f" stroke-width="1.5"/>
+  <text x="241" y="164" text-anchor="middle" font-size="10" font-weight="700" fill="#8fbc8f">Next.js App</text>
+  <line x1="22" y1="169" x2="460" y2="169" stroke="#1f2937" stroke-width="1"/>
+  <text x="241" y="183" text-anchor="middle" font-size="9" fill="#f1f5f9">React 19  ·  TanStack Query v5  ·  Framer Motion</text>
+  <text x="241" y="197" text-anchor="middle" font-size="9" fill="#f1f5f9">next-intl  (7 languages: en es fr de it zh ja)</text>
+  <text x="241" y="211" text-anchor="middle" font-size="8" fill="#6b7280">FableContext  ·  28 query hooks  ·  force-dynamic layout</text>
+  <text x="241" y="225" text-anchor="middle" font-size="8" fill="#6b7280">Locale from Accept-Language header  ·  No URL prefix</text>
+
+  <!-- PWA -->
+  <rect x="474" y="148" width="216" height="86" rx="5" fill="#0d1117" stroke="#8fbc8f" stroke-width="1.5"/>
+  <text x="582" y="164" text-anchor="middle" font-size="10" font-weight="700" fill="#8fbc8f">PWA</text>
+  <line x1="474" y1="169" x2="690" y2="169" stroke="#1f2937" stroke-width="1"/>
+  <text x="582" y="183" text-anchor="middle" font-size="9" fill="#f1f5f9">Installable  ·  Offline shell</text>
+  <text x="582" y="197" text-anchor="middle" font-size="9" fill="#f1f5f9">Service worker  (sw.js)</text>
+  <text x="582" y="211" text-anchor="middle" font-size="8" fill="#6b7280">Network-first strategy</text>
+  <text x="582" y="225" text-anchor="middle" font-size="8" fill="#6b7280">Caches app shell offline</text>
+
+  <!-- zxing-js -->
+  <rect x="704" y="148" width="474" height="86" rx="5" fill="#0d1117" stroke="#374151" stroke-width="1.5"/>
+  <text x="941" y="164" text-anchor="middle" font-size="10" font-weight="700" fill="#f1f5f9">zxing-js  (Client-side Barcode)</text>
+  <line x1="704" y1="169" x2="1178" y2="169" stroke="#1f2937" stroke-width="1"/>
+  <text x="941" y="183" text-anchor="middle" font-size="9" fill="#f1f5f9">@zxing/browser  BrowserMultiFormatReader</text>
+  <text x="941" y="197" text-anchor="middle" font-size="9" fill="#9ca3af">EAN-8  ·  EAN-13  ·  UPC-A  ·  UPC-E  ·  Numeric-only guard</text>
+  <text x="941" y="211" text-anchor="middle" font-size="8" fill="#6b7280">Returns barcode string or null  ·  Never throws</text>
+  <text x="941" y="225" text-anchor="middle" font-size="8" fill="#6b7280">→  /api/scan-barcode  on success  ·  falls through to camera scan</text>
+
+  <!-- L2 → L3 -->
+  <line x1="600" y1="242" x2="600" y2="262" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LAYER 3: VERCEL                                     -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="10" y="264" width="1180" height="198" rx="6" fill="#1b2540" stroke="#2d4070" stroke-width="1.5"/>
+  <text x="22" y="277" font-size="8" font-weight="600" fill="#4a6090" letter-spacing="1.5">LAYER 3  ·  VERCEL  (NEXT.JS 16  ·  APP ROUTER)</text>
+
+  <!-- Auth box -->
+  <rect x="22" y="284" width="245" height="168" rx="5" fill="#0d1117" stroke="#2d4070" stroke-width="1.5"/>
+  <text x="144" y="300" text-anchor="middle" font-size="10" font-weight="700" fill="#93c5fd">Auth  (Neon Postgres)</text>
+  <line x1="22" y1="305" x2="267" y2="305" stroke="#1b2540" stroke-width="1"/>
+  <text x="144" y="319" text-anchor="middle" font-size="9" font-weight="600" fill="#f1f5f9">Better Auth 1.2.7</text>
+  <text x="144" y="333" text-anchor="middle" font-size="8" fill="#9ca3af">Email/password  ·  Session tokens</text>
+  <text x="35" y="350" font-size="8" fill="#6b7280">Tables:</text>
+  <text x="35" y="363" font-size="9" fill="#9ca3af">user  ·  session</text>
+  <text x="35" y="377" font-size="9" fill="#9ca3af">account  ·  verification</text>
+  <text x="144" y="396" text-anchor="middle" font-size="8" fill="#6b7280">Auth only — all app data in DynamoDB</text>
+  <text x="144" y="409" text-anchor="middle" font-size="8" fill="#6b7280">serverExternalPackages: ['better-auth']</text>
+  <text x="144" y="423" text-anchor="middle" font-size="8" fill="#6b7280">pinned: better-auth@1.2.7</text>
+  <text x="144" y="437" text-anchor="middle" font-size="8" fill="#4a6090">/api/auth/[...all]</text>
+  <text x="144" y="449" text-anchor="middle" font-size="8" fill="#4a6090">Guest migration: /api/user/migrate-guest</text>
+
+  <!-- API Routes box -->
+  <rect x="282" y="284" width="906" height="168" rx="5" fill="#0d1117" stroke="#2d4070" stroke-width="1.5"/>
+  <text x="735" y="300" text-anchor="middle" font-size="10" font-weight="700" fill="#93c5fd">API Routes  (Next.js App Router)</text>
+  <line x1="282" y1="305" x2="1188" y2="305" stroke="#1b2540" stroke-width="1"/>
+  <text x="580" y="318" text-anchor="middle" font-size="8" fill="#fbbf24">Rate-limited  ·  Auth-gated  ·  Prompt-cached (Anthropic SDK)</text>
+
+  <!-- Routes — left column -->
+  <text x="297" y="335" font-size="9" fill="#86efac">/api/auth/[...all]</text>
+  <text x="297" y="350" font-size="9" fill="#86efac">/api/generate-recipe</text>
+  <text x="297" y="365" font-size="9" fill="#86efac">/api/substitutes</text>
+  <text x="297" y="380" font-size="9" fill="#86efac">/api/drink-pairings</text>
+  <text x="297" y="395" font-size="9" fill="#86efac">/api/scan-barcode</text>
+  <text x="297" y="410" font-size="9" fill="#86efac">/api/feedback</text>
+  <text x="297" y="425" font-size="9" fill="#86efac">/api/recipe-share</text>
+
+  <!-- Routes — right column -->
+  <text x="540" y="335" font-size="9" fill="#86efac">/api/recipe-brief</text>
+  <text x="540" y="350" font-size="9" fill="#86efac">/api/recipe-safe-explain</text>
+  <text x="540" y="365" font-size="9" fill="#86efac">/api/recipe-update-ingredient</text>
+  <text x="540" y="380" font-size="9" fill="#86efac">/api/scan-ingredients</text>
+  <text x="540" y="395" font-size="9" fill="#86efac">/api/macros</text>
+  <text x="540" y="410" font-size="9" fill="#86efac">/api/insights</text>
+  <text x="540" y="425" font-size="9" fill="#86efac">/api/user/*</text>
+
+  <!-- Shared libs panel -->
+  <rect x="830" y="322" width="348" height="120" rx="3" fill="#111827" stroke="#1f2937" stroke-width="1"/>
+  <text x="844" y="335" font-size="8" font-weight="600" fill="#6b7280">Shared server-side libs:</text>
+  <text x="844" y="348" font-size="8" fill="#6b7280">lib/epicure.ts                (in-memory · no external call)</text>
+  <text x="844" y="361" font-size="8" fill="#6b7280">lib/safe-foods.ts             buildSafeSet · validateSafeFoods</text>
+  <text x="844" y="374" font-size="8" fill="#6b7280">lib/alcohol-ingredients.ts    ALCOHOL_INGREDIENT_KEYS</text>
+  <text x="844" y="387" font-size="8" fill="#6b7280">lib/high-histamine-ingredients.ts  85+ Epicure keys</text>
+  <text x="844" y="400" font-size="8" fill="#6b7280">lib/preference-profile.ts     buildPreferenceProfile</text>
+  <text x="844" y="413" font-size="8" fill="#6b7280">lib/community-recipe-fallback.ts  findFallbackRecipe</text>
+  <text x="844" y="426" font-size="8" fill="#6b7280">lib/rate-limiter.ts           dual-window · fail-open</text>
+  <text x="844" y="439" font-size="8" fill="#6b7280">lib/get-user-id.ts            requireAuth()</text>
+
+  <!-- L3 → L4 -->
+  <line x1="600" y1="462" x2="600" y2="482" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LAYER 4: AWS                                        -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="10" y="484" width="1180" height="338" rx="6" fill="#160f00" stroke="#FF9900" stroke-width="2" stroke-dasharray="8,4"/>
+  <text x="22" y="498" font-size="8" font-weight="600" fill="#FF9900" letter-spacing="1.5">LAYER 4  ·  AWS  (eu-west-2)</text>
+
+  <!-- ── DynamoDB Tables ── -->
+  <rect x="22" y="504" width="330" height="310" rx="5" fill="#0d1117" stroke="#FF9900" stroke-width="1.5"/>
+  <text x="187" y="520" text-anchor="middle" font-size="10" font-weight="700" fill="#FF9900">DynamoDB Tables</text>
+  <line x1="22" y1="525" x2="352" y2="525" stroke="#160f00" stroke-width="1"/>
+
+  <text x="32" y="541" font-size="9" font-weight="600" fill="#f1f5f9">fable-users</text>
+  <text x="32" y="553" font-size="8" fill="#6b7280">  ↳ GSI: needsRecompute-lastComputedAt</text>
+  <text x="32" y="564" font-size="8" fill="#6b7280">  ↳ allergens · ingredients · spiceTolerance</text>
+  <text x="32" y="575" font-size="8" fill="#6b7280">  ↳ adventurousness · alcoholMode · tasteProfile</text>
+  <line x1="32" y1="581" x2="342" y2="581" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="32" y="592" font-size="9" font-weight="600" fill="#f1f5f9">fable-saved-recipes</text>
+  <text x="32" y="604" font-size="8" fill="#6b7280">  ↳ Saved: no TTL  ·  Unsaved: 90-day TTL</text>
+  <line x1="32" y1="609" x2="342" y2="609" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="32" y="620" font-size="9" font-weight="600" fill="#fbbf24">fable-feedback</text>
+  <text x="32" y="632" font-size="8" fill="#fbbf24">  ↳ DynamoDB Stream enabled  ▶</text>
+  <line x1="32" y1="637" x2="342" y2="637" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="32" y="648" font-size="9" font-weight="600" fill="#f1f5f9">fable-collections</text>
+  <text x="32" y="660" font-size="8" fill="#6b7280">  ↳ userId+collectionId  ·  recipeIds[]</text>
+  <line x1="32" y1="665" x2="342" y2="665" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="32" y="676" font-size="9" font-weight="600" fill="#f1f5f9">fable-rate-limits</text>
+  <text x="32" y="688" font-size="8" fill="#6b7280">  ↳ Dual-window  ·  TTL auto-cleanup  ·  fail-open</text>
+  <line x1="32" y1="693" x2="342" y2="693" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="32" y="704" font-size="9" font-weight="600" fill="#f1f5f9">fable-recipe-shares</text>
+  <text x="32" y="716" font-size="8" fill="#6b7280">  ↳ Public shares  ·  90-day TTL  ·  anonymous</text>
+  <line x1="32" y1="721" x2="342" y2="721" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="32" y="732" font-size="9" font-weight="600" fill="#f1f5f9">fable-ingredient-insights</text>
+  <text x="32" y="744" font-size="8" fill="#6b7280">  ↳ allergenProfile PK  ·  timeWindow SK</text>
+  <text x="32" y="756" font-size="8" fill="#6b7280">  ↳ trendingIngredients · pairings · recipeTypes</text>
+
+  <!-- ── Lambda Functions ── -->
+  <rect x="367" y="504" width="488" height="310" rx="5" fill="#0d1117" stroke="#FF9900" stroke-width="1.5"/>
+  <text x="611" y="520" text-anchor="middle" font-size="10" font-weight="700" fill="#FF9900">Lambda Functions</text>
+  <text x="611" y="531" text-anchor="middle" font-size="8" fill="#6b7280">nodejs24.x  ·  CJS  ·  Least-privilege IAM</text>
+  <line x1="367" y1="536" x2="855" y2="536" stroke="#160f00" stroke-width="1"/>
+
+  <!-- Lambda 1 -->
+  <rect x="377" y="542" width="468" height="66" rx="3" fill="#1a1000" stroke="#92400e" stroke-width="1"/>
+  <text x="387" y="555" font-size="9" font-weight="700" fill="#fbbf24">fable-feedback-stream-processor</text>
+  <text x="387" y="568" font-size="8" fill="#9ca3af">← DynamoDB Stream on fable-feedback</text>
+  <text x="387" y="580" font-size="8" fill="#9ca3af">→ preferenceSignals → fable-users  (list_append)</text>
+  <text x="387" y="592" font-size="8" fill="#9ca3af">→ likeCount → fable-ingredient-insights  ·  needsRecompute = "true"</text>
+
+  <!-- Lambda 2 -->
+  <rect x="377" y="615" width="468" height="62" rx="3" fill="#1a1000" stroke="#92400e" stroke-width="1"/>
+  <text x="387" y="628" font-size="9" font-weight="700" fill="#fbbf24">fable-taste-profile-writer</text>
+  <text x="387" y="641" font-size="8" fill="#9ca3af">← EventBridge Scheduler  (every 6 hours)</text>
+  <text x="387" y="653" font-size="8" fill="#9ca3af">→ queries needsRecompute GSI  →  drift-aware profile</text>
+  <text x="387" y="665" font-size="8" fill="#9ca3af">→ Claude Haiku  →  tasteProfile  →  fable-users</text>
+
+  <!-- Lambda 3 -->
+  <rect x="377" y="684" width="468" height="60" rx="3" fill="#1a1000" stroke="#92400e" stroke-width="1"/>
+  <text x="387" y="697" font-size="9" font-weight="700" fill="#fbbf24">fable-vision-ingredient-scanner</text>
+  <text x="387" y="710" font-size="8" fill="#9ca3af">← API Gateway  POST /scan-ingredients  (30s timeout)</text>
+  <text x="387" y="722" font-size="8" fill="#9ca3af">→ Claude Haiku 4.5 Vision  (image + storage area inference)</text>
+  <text x="387" y="734" font-size="8" fill="#9ca3af">→ three-tier Epicure matching: exact · prefix · token-overlap</text>
+
+  <!-- Lambda 4 -->
+  <rect x="377" y="751" width="468" height="57" rx="3" fill="#1a1000" stroke="#92400e" stroke-width="1"/>
+  <text x="387" y="764" font-size="9" font-weight="700" fill="#fbbf24">fable-barcode-scanner</text>
+  <text x="387" y="777" font-size="8" fill="#9ca3af">← API Gateway  POST /scan-barcode  (10s timeout  ·  zero npm deps)</text>
+  <text x="387" y="789" font-size="8" fill="#9ca3af">→ Open Food Facts API  (5s AbortController)  ·  numeric EAN/UPC only</text>
+  <text x="387" y="801" font-size="8" fill="#9ca3af">→ three-tier Epicure matching  ·  No QR codes  ·  No external URLs</text>
+
+  <!-- ── Infrastructure ── -->
+  <rect x="870" y="504" width="308" height="310" rx="5" fill="#0d1117" stroke="#FF9900" stroke-width="1.5"/>
+  <text x="1024" y="520" text-anchor="middle" font-size="10" font-weight="700" fill="#FF9900">Infrastructure</text>
+  <line x1="870" y1="525" x2="1178" y2="525" stroke="#160f00" stroke-width="1"/>
+
+  <text x="882" y="541" font-size="9" font-weight="700" fill="#f1f5f9">API Gateway  (HTTP API)</text>
+  <text x="882" y="554" font-size="8" fill="#6b7280">fable-vision-api</text>
+  <text x="882" y="566" font-size="9" fill="#86efac">POST /scan-ingredients</text>
+  <text x="882" y="578" font-size="9" fill="#86efac">POST /scan-barcode</text>
+  <text x="882" y="590" font-size="8" fill="#6b7280">Rotatable URL · No frontend redeploy</text>
+  <line x1="882" y1="597" x2="1168" y2="597" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="882" y="612" font-size="9" font-weight="700" fill="#f1f5f9">EventBridge Scheduler</text>
+  <text x="882" y="625" font-size="8" fill="#6b7280">fable-taste-profile-writer-schedule</text>
+  <text x="882" y="637" font-size="8" fill="#9ca3af">rate(6 hours)</text>
+  <text x="882" y="649" font-size="8" fill="#9ca3af">→ fable-taste-profile-writer Lambda</text>
+  <line x1="882" y1="656" x2="1168" y2="656" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="882" y="671" font-size="9" font-weight="700" fill="#f1f5f9">IAM  (Least-Privilege)</text>
+  <text x="882" y="684" font-size="8" fill="#6b7280">Per-Lambda execution roles</text>
+  <text x="882" y="696" font-size="8" fill="#6b7280">Scoped to specific table ARNs only</text>
+  <text x="882" y="708" font-size="8" fill="#6b7280">Replaces AmazonDynamoDBFullAccess</text>
+  <line x1="882" y1="715" x2="1168" y2="715" stroke="#1f2937" stroke-width="0.5"/>
+
+  <text x="882" y="730" font-size="9" font-weight="700" fill="#f1f5f9">CloudWatch  +  Region</text>
+  <text x="882" y="743" font-size="8" fill="#6b7280">Lambda logs  ·  Error monitoring</text>
+  <text x="882" y="755" font-size="8" fill="#6b7280">All services in eu-west-2</text>
+  <text x="882" y="767" font-size="8" fill="#6b7280">DynamoDB · Lambda · API GW · EventBridge</text>
+
+  <!-- ══ WITHIN-AWS FLOW ARROWS ══ -->
+
+  <!-- fable-feedback Stream → fable-feedback-stream-processor Lambda -->
+  <!-- From right edge of fable-feedback row (x=352, y=626) → Lambda 1 left edge (x=377, y=575) -->
+  <path d="M 353,626 L 362,626 L 362,575 L 377,575"
+        stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#ah-amber)"/>
+  <text x="354" y="608" font-size="7" fill="#f59e0b" transform="rotate(-90, 354, 608)">Stream</text>
+
+  <!-- EventBridge → fable-taste-profile-writer Lambda -->
+  <!-- From left edge of EventBridge block (x=870, y=637) → right edge of Lambda box (x=855, y=643) -->
+  <path d="M 869,637 L 856,637 L 856,644"
+        stroke="#f59e0b" stroke-width="1.5" fill="none" stroke-dasharray="4,2" marker-end="url(#ah-amber)"/>
+
+  <!-- L4 → L5 -->
+  <line x1="600" y1="822" x2="600" y2="842" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LAYER 5: EXTERNAL SERVICES                          -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="10" y="844" width="1180" height="114" rx="6" fill="#1f2937" stroke="#374151" stroke-width="1"/>
+  <text x="22" y="857" font-size="8" font-weight="600" fill="#4b5563" letter-spacing="1.5">LAYER 5  ·  EXTERNAL SERVICES</text>
+
+  <!-- Anthropic Claude -->
+  <rect x="20" y="863" width="278" height="86" rx="5" fill="#0d1117" stroke="#6366f1" stroke-width="1.5"/>
+  <text x="159" y="878" text-anchor="middle" font-size="10" font-weight="700" fill="#a5b4fc">Anthropic Claude</text>
+  <line x1="20" y1="883" x2="298" y2="883" stroke="#1f2937" stroke-width="1"/>
+  <text x="159" y="895" text-anchor="middle" font-size="8" fill="#f1f5f9">claude-sonnet-4-6  (recipe generation)</text>
+  <text x="159" y="907" text-anchor="middle" font-size="8" fill="#9ca3af">claude-haiku-4-5  (brief · vision · macros</text>
+  <text x="159" y="919" text-anchor="middle" font-size="8" fill="#9ca3af">safe-explain · ingredient-swap)</text>
+  <text x="159" y="931" text-anchor="middle" font-size="8" fill="#6b7280">Prompt caching  ·  ~90% cost reduction</text>
+  <text x="159" y="943" text-anchor="middle" font-size="8" fill="#6b7280">Called by: Vercel routes + 2 Lambdas</text>
+
+  <!-- Epicure Core -->
+  <rect x="308" y="863" width="278" height="86" rx="5" fill="#0d1117" stroke="#8fbc8f" stroke-width="1.5"/>
+  <text x="447" y="878" text-anchor="middle" font-size="10" font-weight="700" fill="#8fbc8f">Epicure Core</text>
+  <line x1="308" y1="883" x2="586" y2="883" stroke="#1f2937" stroke-width="1"/>
+  <text x="447" y="895" text-anchor="middle" font-size="8" fill="#f1f5f9">1,790 ingredients  ×  300 dimensions</text>
+  <text x="447" y="907" text-anchor="middle" font-size="8" fill="#f1f5f9">Cosine similarity  ·  7 languages</text>
+  <text x="447" y="919" text-anchor="middle" font-size="8" fill="#9ca3af">4.1M training recipes  (Kaikaku AI)</text>
+  <text x="447" y="931" text-anchor="middle" font-size="8" fill="#6b7280">In-memory at server startup</text>
+  <text x="447" y="943" text-anchor="middle" font-size="8" fill="#6b7280">No external API call</text>
+
+  <!-- Open Food Facts -->
+  <rect x="596" y="863" width="278" height="86" rx="5" fill="#0d1117" stroke="#374151" stroke-width="1.5"/>
+  <text x="735" y="878" text-anchor="middle" font-size="10" font-weight="700" fill="#f1f5f9">Open Food Facts</text>
+  <line x1="596" y1="883" x2="874" y2="883" stroke="#1f2937" stroke-width="1"/>
+  <text x="735" y="895" text-anchor="middle" font-size="8" fill="#f1f5f9">Barcode  →  ingredient list</text>
+  <text x="735" y="907" text-anchor="middle" font-size="8" fill="#9ca3af">5s AbortController timeout</text>
+  <text x="735" y="919" text-anchor="middle" font-size="8" fill="#9ca3af">Numeric EAN/UPC only  ·  No QR codes</text>
+  <text x="735" y="931" text-anchor="middle" font-size="8" fill="#6b7280">Called by: fable-barcode-scanner Lambda</text>
+  <text x="735" y="943" text-anchor="middle" font-size="8" fill="#6b7280">No npm deps in Lambda function</text>
+
+  <!-- Neon Postgres -->
+  <rect x="884" y="863" width="296" height="86" rx="5" fill="#0d1117" stroke="#2d4070" stroke-width="1.5"/>
+  <text x="1032" y="878" text-anchor="middle" font-size="10" font-weight="700" fill="#93c5fd">Neon Postgres</text>
+  <line x1="884" y1="883" x2="1180" y2="883" stroke="#1f2937" stroke-width="1"/>
+  <text x="1032" y="895" text-anchor="middle" font-size="8" fill="#f1f5f9">Auth tables only</text>
+  <text x="1032" y="907" text-anchor="middle" font-size="8" fill="#9ca3af">user  ·  session  ·  account  ·  verification</text>
+  <text x="1032" y="919" text-anchor="middle" font-size="8" fill="#9ca3af">Better Auth 1.2.7  ·  Serverless Postgres</text>
+  <text x="1032" y="931" text-anchor="middle" font-size="8" fill="#6b7280">Called by /api/auth only</text>
+  <text x="1032" y="943" text-anchor="middle" font-size="8" fill="#6b7280">Post-hackathon: replace with AWS RDS</text>
+
+  <!-- ═══════════════════════════════════════════════════ -->
+  <!-- LEGEND                                              -->
+  <!-- ═══════════════════════════════════════════════════ -->
+  <rect x="318" y="958" width="564" height="9" rx="2" fill="#111827"/>
+  <!-- Stream legend -->
+  <line x1="325" y1="963" x2="348" y2="963" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="352" y="966" font-size="7.5" fill="#6b7280">DynamoDB Stream</text>
+  <!-- Dashed legend -->
+  <line x1="455" y1="963" x2="478" y2="963" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="482" y="966" font-size="7.5" fill="#6b7280">EventBridge Schedule</text>
+  <!-- HTTP legend -->
+  <line x1="598" y1="963" x2="621" y2="963" stroke="#6b7280" stroke-width="1.5"/>
+  <text x="625" y="966" font-size="7.5" fill="#6b7280">HTTP / layer boundary</text>
+
+</svg>
