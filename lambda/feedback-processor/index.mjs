@@ -117,6 +117,9 @@ async function processRecord(record, client) {
   }
 }
 
+// Safe Foods Mode placeholder strings — never count as real trending ingredients
+const PLACEHOLDER_INGREDIENTS = new Set(['liquid of choice', 'seasoning of choice'])
+
 async function updateInsights(client, allergenProfile, ingredientList, timeWindow) {
   // Read existing record
   let existing = { trendingIngredients: [], trendingPairings: [], trendingRecipeTypes: [] };
@@ -141,7 +144,7 @@ async function updateInsights(client, allergenProfile, ingredientList, timeWindo
   const ingredientsMap = new Map(
     (existing.trendingIngredients ?? []).map((i) => [i.key, i])
   );
-  for (const key of ingredientList) {
+  for (const key of ingredientList.filter((k) => !PLACEHOLDER_INGREDIENTS.has(String(k).toLowerCase()))) {
     const current = ingredientsMap.get(key) ?? { key, likeCount: 0, score: 0.6 };
     const newLikeCount = current.likeCount + 1;
     const newScore = Math.round(Math.min(0.95, 0.6 + (newLikeCount - 1) * 0.05) * 100) / 100;

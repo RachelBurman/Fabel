@@ -165,6 +165,24 @@ describe("fable-feedback-processor", () => {
     assert.equal(key.S, "global");
   });
 
+  it("excludes Safe Foods Mode placeholders from trendingIngredients", async () => {
+    const image = {
+      userId: { S: "u6" },
+      liked: { BOOL: true },
+      recipeIngredients: {
+        L: [{ S: "chicken breast" }, { S: "seasoning of choice" }, { S: "liquid of choice" }],
+      },
+    };
+    await handlerWithClient({ Records: [makeRecord({ image })] }, client);
+    const putCalls = client.calls.filter((c) => c instanceof PutItemCommand);
+    assert.ok(putCalls.length > 0);
+    // Unmarshal the trendingIngredients from the first PutItem call
+    const written = putCalls[0].input.Item.trendingIngredients.L.map((e) => e.M.key.S);
+    assert.ok(written.includes("chicken breast"), "real ingredient should be included");
+    assert.ok(!written.includes("seasoning of choice"), "placeholder must be excluded");
+    assert.ok(!written.includes("liquid of choice"), "placeholder must be excluded");
+  });
+
   it("is non-fatal when insights write fails — preferenceSignals still written", async () => {
     const failClient = makeStubClient({ failInsights: true });
     // Should not throw even though GetItem/PutItem fail
