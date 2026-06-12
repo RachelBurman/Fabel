@@ -22,6 +22,7 @@ Built for the **H0 Hackathon** (AWS + Vercel, May–June 2026).
 | Allergen data | EU Big 14 truth table — 1,790 ingredient classifications, O(1) lookup |
 | Package manager | pnpm |
 | Lambda | AWS Lambda (`nodejs24.x`) — DynamoDB Streams feedback processor · ingredient insights writer · Claude Vision ingredient scanner · Open Food Facts barcode scanner |
+| Internationalisation | next-intl `^4.13.0` — 7 locales (en, es, fr, de, it, zh, ja); locale detected from `Accept-Language` header; no URL prefix changes |
 | Testing | Jest 29, ts-jest, React Testing Library — 867 tests across 47 suites; 35 Lambda tests (node:test) |
 
 ---
