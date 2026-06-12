@@ -156,6 +156,7 @@ export async function POST(req: NextRequest) {
     mealType: typeof body.mealType === "string" ? body.mealType : undefined,
     dietaryPresets: guestActivePresets.length > 0 ? guestActivePresets : undefined,
     alcoholMode: guestAlcoholMode,
+    lowHistamine: body.lowHistamine === true,
   };
 
   // ── Guest mode: return DB fallback, no Claude call, no rate limit consumed ──

@@ -237,6 +237,7 @@ export function SubstitutesScreen({
                 allergens: preferences.allergens,
                 adventurousness: preferences.adventurousness,
                 ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+                ...(preferences.lowHistamine ? { lowHistamine: true } : {}),
               })
               sub = data.substitutes[0] ?? null
             } catch { /* silently ignore */ }
@@ -302,6 +303,7 @@ export function SubstitutesScreen({
             : {}),
           userId: uid,
           ...(preferences.alcoholMode !== 'none' ? { alcoholMode: preferences.alcoholMode } : {}),
+          ...(preferences.lowHistamine ? { lowHistamine: true } : {}),
         })
 
         const enriched: EnrichedResult[] = data.substitutes.map((sub) => {

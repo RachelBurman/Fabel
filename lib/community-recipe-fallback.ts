@@ -3,6 +3,7 @@ import { dynamo } from "@/lib/dynamo";
 import { allergenIngredients } from "@/lib/epicure";
 import { type GeneratedRecipe } from "@/lib/types";
 import { SEED_RECIPES, type SeedRecipe } from "@/lib/community-recipes-seed";
+import { HIGH_HISTAMINE_INGREDIENT_KEYS } from "@/lib/high-histamine-ingredients";
 
 export type FallbackRecipe = GeneratedRecipe & { id: string };
 
@@ -14,6 +15,7 @@ export interface FindFallbackParams {
   mealType?: string;
   dietaryPresets?: string[]; // user's active diet presets — vegan/vegetarian are hard filters
   alcoholMode?: 'no_cooking' | 'exclude_entirely'; // if set, exclude recipes with alcohol
+  lowHistamine?: boolean;    // if true, exclude recipes containing high-histamine ingredients
 }
 
 const ALCOHOL_TERMS = [
@@ -30,6 +32,17 @@ function ingredientHasAlcohol(name: string): boolean {
 
 function ingredientsHaveAlcohol(ingredientNames: string[]): boolean {
   return ingredientNames.some(ingredientHasAlcohol)
+}
+
+const HIGH_HISTAMINE_TERMS = HIGH_HISTAMINE_INGREDIENT_KEYS.map(k => k.replace(/_/g, ' '))
+
+function ingredientHasHighHistamine(name: string): boolean {
+  const norm = name.toLowerCase()
+  return HIGH_HISTAMINE_TERMS.some(term => norm.includes(term))
+}
+
+function ingredientsHaveHighHistamine(ingredientNames: string[]): boolean {
+  return ingredientNames.some(ingredientHasHighHistamine)
 }
 
 // Returns true if a recipe ingredient name plausibly contains the given allergen.
@@ -175,6 +188,9 @@ async function queryDBFallback(
       // Hard filter: alcohol
       if (params.alcoholMode && ingredientsHaveAlcohol(ingredientNames)) continue;
 
+      // Hard filter: low histamine
+      if (params.lowHistamine && ingredientsHaveHighHistamine(ingredientNames)) continue;
+
       const score = scoreCandidate(
         params.cuisine,
         params.mealType,
@@ -249,6 +265,12 @@ function querySeedFallback(params: FindFallbackParams): FallbackRecipe | null {
     if (params.alcoholMode) {
       const ingredientNames = seed.ingredients.map((i) => i.name)
       if (ingredientsHaveAlcohol(ingredientNames)) continue
+    }
+
+    // Hard filter: low histamine
+    if (params.lowHistamine) {
+      const ingredientNames = seed.ingredients.map((i) => i.name)
+      if (ingredientsHaveHighHistamine(ingredientNames)) continue
     }
 
     // Hard filter: vegan (must be tagged vegan)

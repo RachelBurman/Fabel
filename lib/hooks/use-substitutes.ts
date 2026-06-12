@@ -17,6 +17,7 @@ export type SubstitutesInput = {
   userId?: string | null
   adventurousness?: string
   alcoholMode?: string
+  lowHistamine?: boolean
 }
 
 export type SubstitutesResult = {
@@ -39,6 +40,7 @@ async function fetchSubstitutes(input: SubstitutesInput): Promise<SubstitutesRes
       ...(input.alcoholMode && input.alcoholMode !== 'none'
         ? { alcoholMode: input.alcoholMode }
         : {}),
+      ...(input.lowHistamine ? { lowHistamine: true } : {}),
     }),
   })
   if (res.status === 429) {

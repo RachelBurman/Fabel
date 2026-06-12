@@ -50,7 +50,6 @@ function FableAppContent() {
   const tRecipe = useTranslations('recipe')
   const tKitchen = useTranslations('kitchen')
   const locale = useLocale()
-  console.log('[i18n] detected locale:', locale)
   const { setTheme } = useTheme()
   const { data: session } = useSession()
   const isSignedIn = !!session?.user

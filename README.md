@@ -270,7 +270,7 @@ Allergen-safe ingredient substitution using Epicure embeddings, with full recipe
 One-tap diet restriction setup above the EU Big 14 allergen grid.
 
 - **Four presets**: 🌱 Vegan, 🥗 Vegetarian, 🥑 Keto, 🟢 Low-FODMAP — each maps to a curated list of Epicure ingredient keys excluded from recipe generation and pairings
-- **Low Histamine** toggle — `lowHistamine: boolean` on `UserPreferences`; preset card in onboarding step 3 and allergen settings with a ⚕️ disclaimer ("not medical advice; always consult a healthcare professional"). When active: `effectiveCustomAllergens` gains all keys from `HIGH_HISTAMINE_INGREDIENT_KEYS` (fermented foods, aged cheeses, cured meats, vinegars, alcohol, high-histamine vegetables, citrus, chocolate, and more); prompt clause injected into recipe generation and recipe brief; alcoholic + histamine-trigger beverages filtered from drink pairings; histamine-trigger substitution candidates excluded. `lib/high-histamine-ingredients.ts` is the single source of truth: 60+ Epicure-verified keys covering all major dietary categories; alcohol keys included via `ALCOHOL_INGREDIENT_KEYS` spread (single source of truth for alcohol).
+- **Low Histamine** toggle — `lowHistamine: boolean` on `UserPreferences`; preset card in onboarding step 3 and allergen settings with a ⚕️ disclaimer ("not medical advice; always consult a healthcare professional"). When active: `effectiveCustomAllergens` gains all keys from `HIGH_HISTAMINE_INGREDIENT_KEYS` (fermented foods, aged cheeses, cured meats, vinegars, alcohol, high-histamine vegetables, citrus, chocolate, and more); prompt clause injected into recipe generation and recipe brief; alcoholic + histamine-trigger beverages filtered from drink pairings; histamine-trigger substitution candidates excluded. `lib/high-histamine-ingredients.ts` is the single source of truth: 85+ Epicure-verified keys covering all major dietary categories; alcohol keys included via `ALCOHOL_INGREDIENT_KEYS` spread (single source of truth for alcohol).
 - **Lactose Intolerance** toggle with two sub-modes (expand when enabled):
   - **Include dairy with reminders** — dairy stays in recipes; Claude adds a Lactaid note to the description; a 🥛 banner appears on the recipe screen; dairy kitchen ingredients show a 🥛 indicator on their tag
   - **Exclude dairy entirely** — treats dairy exactly like a milk allergen, filtered from all results and recipe generation
@@ -488,7 +488,7 @@ In-memory (loaded at server startup)
 - ✅ Servings stepper — scale recipe quantities for 1–12 people (default 2)
 - ✅ Kitchen equipment — Hob, Oven, Microwave, Air Fryer, Slow Cooker, Pizza Oven, Barbecue, Instant Pot (collapsible, persisted to DynamoDB)
 - ✅ Dark mode → Theme — 3-way toggle (Light / Auto / Dark) in header and allergen settings; `colorMode` persisted to DynamoDB; backward-migration from old boolean `darkMode` field
-- ✅ Onboarding tutorial slideshow — 5-slide overlay on first launch, re-launchable from settings; `onboardingComplete` persisted to DynamoDB for authenticated users so tutorial state carries across devices
+- ✅ Onboarding tutorial slideshow — 6-slide overlay on first launch, re-launchable from settings; `onboardingComplete` persisted to DynamoDB for authenticated users so tutorial state carries across devices
 - ✅ DynamoDB Streams + Lambda (`fable-feedback-stream-processor`) — real-time `preferenceSignals` written to `fable-users` on every feedback write; deployed on `nodejs24.x`; 6 unit tests
 - ✅ Guest mode indicator — persistent header badge showing save-state context; tapping opens a popover explaining browser-local persistence. UUID persists in `localStorage['fable_user_id']` until the user signs in, at which point guest data is migrated to the authenticated account automatically
 - ✅ `fable-ingredient-insights` table — aggregate trending data by allergen profile; seeded with 14 realistic records across 7 profiles × 2 time windows
@@ -531,12 +531,8 @@ In-memory (loaded at server startup)
 - ✅ **Lambda IAM least-privilege policies** — all four Lambda execution roles updated with tighter custom IAM policies scoped to specific DynamoDB table ARNs; replaces broad `AmazonDynamoDBFullAccess` managed policy attachment.
 - ✅ **i18n (next-intl) — 7 languages** — full locale support via `next-intl ^4.13.0`; locale auto-detected from `Accept-Language` header by middleware (`localePrefix: 'never'` — URL structure unchanged, no language switcher UI); 7 locale files (`en`, `es`, `fr`, `de`, `it`, `zh`, `ja`) cover all UI chrome: nav, auth, kitchen, recipe controls, discover, substitutes, history, saved, settings, onboarding slides, diet preset cards, safe foods, share, pairings, tutorial visuals, discover, allergen settings, recipe results, and all error/empty states; recipe content, Claude outputs, and Epicure ingredient names remain English-only; adding an eighth language requires only a new `messages/xx.json` — no code changes; architecture note for Devpost: "Mirrors Epicure's 7 languages exactly."
 
-### In Progress
-
-### Near Term
-
 ### Post-Hackathon / Future
-- [ ] Better Auth + AWS RDS Postgres — replace Neon with RDS for a full AWS architecture story; schema identical, connection string swap
+- [ ] AWS RDS Postgres — replace Neon with RDS for a full AWS-only architecture story; schema identical, connection string swap
 - [ ] Social auth (Google + GitHub) — Better Auth config ready, Neon schema ready; needs OAuth app setup
 - [ ] Latency reduction on `/api/recipe-brief` — on-device AI when PWA limitations are resolved
 - [ ] Lambda cold start optimisation for Vision
