@@ -157,7 +157,7 @@ function SafeFoodsVisual() {
 
 // ── Slides data ─────────────────────────────────────────────────────────────────
 
-const SLIDE_IDS = ['welcome', 'allergens', 'kitchen', 'recipe', 'safe-foods'] as const
+const SLIDE_IDS = ['welcome', 'allergens', 'kitchen', 'recipe', 'safeFoods'] as const
 const SLIDE_VISUALS = [WelcomeVisual, AllergenVisual, KitchenVisual, RecipeVisual, SafeFoodsVisual]
 
 // ── Animation variants ──────────────────────────────────────────────────────────
