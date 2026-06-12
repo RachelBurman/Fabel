@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
       : null;
 
   const rawGlobalWeek = profileKey === "global"
-    ? profileWeekRecord
+    ? (profileWeekRecord ?? profileAllTimeRecord)
     : (globalWeekRes.Item ?? null) as IngredientInsightsRecord | null;
 
   console.log(`[insights] userId=${userId} useStoredProfile=${useStoredProfile} hasEnoughSignals=${hasEnoughSignals} recipeSuggestions=${recipeSuggestions?.length ?? 0} tasteProfile=${tasteProfile !== null} weeklyRecipeTypes=${effectiveRecipeTypes.length} weeklyPairings=${effectivePairings.length}`);
