@@ -224,6 +224,31 @@ describe('POST /api/generate-recipe', () => {
       })
     )
   })
+
+  it('forwards lowHistamine: true to findFallbackRecipe for guest requests', async () => {
+    const { POST } = await import('../../app/api/generate-recipe/route')
+    await POST(makeRequest({
+      ingredients: [],
+      allergens: [],
+      lowHistamine: true,
+      userId: 'guest-uuid',
+    }))
+    expect(mockFindFallbackRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ lowHistamine: true })
+    )
+  })
+
+  it('forwards lowHistamine: false when not set in body', async () => {
+    const { POST } = await import('../../app/api/generate-recipe/route')
+    await POST(makeRequest({
+      ingredients: [],
+      allergens: [],
+      userId: 'guest-uuid',
+    }))
+    expect(mockFindFallbackRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ lowHistamine: false })
+    )
+  })
 })
 
 // ─── /api/substitutes ────────────────────────────────────────────────────────

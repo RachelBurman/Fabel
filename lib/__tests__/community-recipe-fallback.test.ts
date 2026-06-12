@@ -209,3 +209,105 @@ describe('findFallbackRecipe — safeFoods hard filter', () => {
     expect(result!.id).toBe('seed-012')
   })
 })
+
+// ─── findFallbackRecipe — alcoholMode hard filter ─────────────────────────────
+
+describe('findFallbackRecipe — alcoholMode hard filter', () => {
+  it('excludes a DB recipe containing wine when alcoholMode is set', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        makeSavedRecipeItem('Coq au Vin', ['chicken', 'red wine', 'mushrooms', 'onion']),
+      ],
+    })
+    const result = await findFallbackRecipe(
+      makeParams({ allergens: [], alcoholMode: 'no_cooking' })
+    )
+    // "red wine" contains the term "wine" → excluded; falls through to seed recipes
+    const seedIds = SEED_RECIPES.map((s) => s.id)
+    expect(result).not.toBeNull()
+    expect(seedIds).toContain(result!.id)
+  })
+
+  it('keeps a DB recipe with no alcohol when alcoholMode is set', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        makeSavedRecipeItem('Herb Chicken', ['chicken breast', 'olive oil', 'thyme', 'lemon']),
+      ],
+    })
+    const result = await findFallbackRecipe(
+      makeParams({ allergens: [], alcoholMode: 'exclude_entirely' })
+    )
+    expect(result).not.toBeNull()
+    expect(result!.title).toBe('Herb Chicken')
+  })
+
+  it('returns a DB recipe with alcohol when no alcoholMode is set', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        makeSavedRecipeItem('Beer Battered Fish', ['fish', 'beer', 'flour']),
+      ],
+    })
+    const result = await findFallbackRecipe(makeParams({ allergens: [] }))
+    expect(result).not.toBeNull()
+    expect(result!.title).toBe('Beer Battered Fish')
+  })
+})
+
+// ─── findFallbackRecipe — lowHistamine hard filter ────────────────────────────
+
+describe('findFallbackRecipe — lowHistamine hard filter', () => {
+  it('excludes a DB recipe containing soy sauce when lowHistamine is true', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        makeSavedRecipeItem('Teriyaki Chicken', ['chicken', 'soy sauce', 'ginger', 'garlic']),
+      ],
+    })
+    const result = await findFallbackRecipe(
+      makeParams({ allergens: [], lowHistamine: true })
+    )
+    // "soy sauce" matches the HIGH_HISTAMINE_TERMS term derived from "soy_sauce" key → excluded
+    const seedIds = SEED_RECIPES.map((s) => s.id)
+    expect(result).not.toBeNull()
+    expect(seedIds).toContain(result!.id)
+  })
+
+  it('keeps a DB recipe with no high-histamine ingredients when lowHistamine is true', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        // Uses only ingredients that are not in HIGH_HISTAMINE_INGREDIENT_KEYS
+        // (no citrus, no fermented foods, no alcohol, no aged cheeses)
+        makeSavedRecipeItem('Herb Roast Chicken', ['chicken breast', 'olive oil', 'thyme', 'garlic', 'carrot']),
+      ],
+    })
+    const result = await findFallbackRecipe(
+      makeParams({ allergens: [], lowHistamine: true })
+    )
+    expect(result).not.toBeNull()
+    expect(result!.title).toBe('Herb Roast Chicken')
+  })
+
+  it('returns a DB recipe with high-histamine ingredients when lowHistamine is false', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        makeSavedRecipeItem('Miso Soup', ['miso', 'tofu', 'spring onion', 'dashi']),
+      ],
+    })
+    const result = await findFallbackRecipe(makeParams({ allergens: [], lowHistamine: false }))
+    expect(result).not.toBeNull()
+    expect(result!.title).toBe('Miso Soup')
+  })
+
+  it('excludes a DB recipe containing wine under lowHistamine (alcohol keys are included)', async () => {
+    mockSend.mockResolvedValue({
+      Items: [
+        makeSavedRecipeItem('Wine Risotto', ['arborio rice', 'white wine', 'parmesan', 'butter']),
+      ],
+    })
+    const result = await findFallbackRecipe(
+      makeParams({ allergens: [], lowHistamine: true })
+    )
+    const seedIds = SEED_RECIPES.map((s) => s.id)
+    expect(result).not.toBeNull()
+    expect(seedIds).toContain(result!.id)
+  })
+})
