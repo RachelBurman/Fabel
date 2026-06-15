@@ -186,7 +186,7 @@ export function VisionReviewScreen({
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-border shrink-0 space-y-2">
+      <div className="px-6 pt-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-4 border-t border-border shrink-0 space-y-2">
         <Button
           onClick={handleConfirm}
           className="w-full rounded-full"

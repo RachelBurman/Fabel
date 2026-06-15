@@ -54,7 +54,7 @@ function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, r
         </div>
 
         {!canView && (
-          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/60 backdrop-blur-sm text-white/70 rounded-full">
+          <div className="absolute top-10 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/60 backdrop-blur-sm text-white/70 rounded-full">
             <Lock className="w-3 h-3" />
             <span className="text-xs">Preview only</span>
           </div>
