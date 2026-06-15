@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "studio": "remotion studio src/index.ts",
-    "render:intro": "remotion render src/index.ts AllergenPicker out/01-intro.mp4 --codec=h264"
+    "render:intro":   "remotion render src/index.ts AllergenPicker out/01-intro.mp4 --codec=h264",
+    "render:discover": "remotion render src/index.ts DiscoverTab out/02-discover.mp4 --codec=h264"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.291",
