@@ -69,7 +69,7 @@ export function VisionReviewScreen({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-background flex flex-col"
+      className="fixed inset-0 z-[60] bg-background flex flex-col"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
@@ -186,7 +186,7 @@ export function VisionReviewScreen({
       </div>
 
       {/* Footer */}
-      <div className="px-6 pt-4 pb-[calc(4rem+env(safe-area-inset-bottom,0px))] md:pb-4 border-t border-border shrink-0 space-y-2">
+      <div className="px-6 py-4 border-t border-border shrink-0 space-y-2 safe-area-pb">
         <Button
           onClick={handleConfirm}
           className="w-full rounded-full"
