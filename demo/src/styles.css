@@ -1,4 +1,0 @@
-/* Load the app's full stylesheet — CSS variables, Tailwind base, animations.
-   PostCSS + @tailwindcss/postcss (from parent node_modules) processes this
-   exactly as the Next.js app does. */
-@import '../../app/globals.css';
