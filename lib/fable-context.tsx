@@ -446,7 +446,14 @@ export function FableProvider({ children }: { children: ReactNode }) {
     if (userIdRef.current) {
       saveRecipeMutation
         .mutateAsync({ userId: userIdRef.current, recipe: { ...recipe, isSaved: true } as unknown as Record<string, unknown> })
-        .catch(err => console.error('Failed to persist saved recipe:', err))
+        .catch(err => {
+          console.error('Failed to persist saved recipe:', err)
+          setSavedRecipes(prev => prev.filter(r => r.id !== recipe.id))
+          setPreferences(prev => ({
+            ...prev,
+            savedRecipes: prev.savedRecipes.filter(id => id !== recipe.id),
+          }))
+        })
     }
   }, [saveRecipeMutation])
 

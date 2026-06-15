@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 export type SaveRecipeInput = {
   userId: string
@@ -6,13 +6,20 @@ export type SaveRecipeInput = {
 }
 
 async function saveRecipe(input: SaveRecipeInput): Promise<void> {
-  await fetch('/api/user/saved-recipes', {
+  const res = await fetch('/api/user/saved-recipes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   })
+  if (!res.ok) throw new Error(`Save failed: ${res.status}`)
 }
 
 export function useSaveRecipe() {
-  return useMutation({ mutationFn: saveRecipe })
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: saveRecipe,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['savedRecipes', variables.userId] })
+    },
+  })
 }

@@ -3,9 +3,8 @@
 import { motion } from 'framer-motion'
 import { type Recipe } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Clock, Users, Heart, ShieldCheck, ArrowLeft } from 'lucide-react'
+import { Clock, Users, ShieldCheck, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { useTranslations } from 'next-intl'
 
 interface RecipeCardProps {
@@ -14,17 +13,7 @@ interface RecipeCardProps {
 }
 
 function RecipeCard({ recipe, index }: RecipeCardProps) {
-  const { saveRecipe, unsaveRecipe, isRecipeSaved } = useFable()
   const t = useTranslations('recipe')
-  const isSaved = isRecipeSaved(recipe.id)
-
-  const handleToggleSave = () => {
-    if (isSaved) {
-      unsaveRecipe(recipe.id)
-    } else {
-      saveRecipe(recipe)
-    }
-  }
 
   return (
     <motion.div
@@ -38,25 +27,12 @@ function RecipeCard({ recipe, index }: RecipeCardProps) {
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-6xl opacity-50">🍽️</span>
         </div>
-        
+
         {/* Match Score Badge */}
         <div className="absolute top-3 left-3 flex items-center gap-1.5 px-3 py-1.5 bg-card/90 backdrop-blur-sm rounded-full border border-border">
           <ShieldCheck className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium text-foreground">{t('matchScore', { score: recipe.matchScore })}</span>
         </div>
-
-        {/* Save Button */}
-        <button
-          onClick={handleToggleSave}
-          className={cn(
-            'absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200',
-            isSaved
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-card/90 backdrop-blur-sm text-muted-foreground hover:text-primary border border-border'
-          )}
-        >
-          <Heart className={cn('w-5 h-5', isSaved && 'fill-current')} />
-        </button>
       </div>
 
       {/* Content */}

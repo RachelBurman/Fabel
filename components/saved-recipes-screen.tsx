@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { type Recipe, type Collection } from '@/lib/types'
 import { useFable } from '@/lib/fable-context'
-import { Clock, Users, Heart, Trash2, BookmarkX, Bookmark, ArrowLeft, ArrowRight, FolderOpen, Plus, Folder } from 'lucide-react'
+import { Clock, Users, Heart, Trash2, BookmarkX, Bookmark, ArrowLeft, ArrowRight, FolderOpen, Plus, Folder, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { RecipeGradient } from '@/components/recipe-gradient'
@@ -52,6 +52,13 @@ function SavedRecipeCard({ recipe, index, onRemove, onView, onAddToCollection, r
           <Heart className="w-3.5 h-3.5 fill-current" />
           <span className="text-xs font-medium">{tSaved('savedBadge')}</span>
         </div>
+
+        {!canView && (
+          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 bg-black/60 backdrop-blur-sm text-white/70 rounded-full">
+            <Lock className="w-3 h-3" />
+            <span className="text-xs">Preview only</span>
+          </div>
+        )}
 
         {/* Action buttons */}
         <div className="absolute top-3 right-3 flex gap-1.5">
