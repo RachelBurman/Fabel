@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   const TABLE = "fable-ingredient-insights";
 
   // Fetch insights records and (conditionally) the live preference profile in parallel
-  const [profileWeekRes, profileAllTimeRes, globalWeekRes, livePreferenceProfile] =
+  const [profileWeekRes, profileAllTimeRes, globalWeekRes, globalAllTimeRes, livePreferenceProfile] =
     await Promise.all([
       dynamo
         .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: profileKey, timeWindow: weekStr } }))
@@ -85,6 +85,12 @@ export async function GET(req: NextRequest) {
         ? Promise.resolve({ Item: undefined })
         : dynamo
             .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: "global", timeWindow: weekStr } }))
+            .catch(() => ({ Item: undefined })),
+      // Fallback for non-global profiles when this week's global record hasn't been seeded yet
+      profileKey === "global"
+        ? Promise.resolve({ Item: undefined })
+        : dynamo
+            .send(new GetCommand({ TableName: TABLE, Key: { allergenProfile: "global", timeWindow: "all-time" } }))
             .catch(() => ({ Item: undefined })),
       // Skip live computation when the stored profile is fresh
       useStoredProfile
@@ -183,7 +189,7 @@ export async function GET(req: NextRequest) {
 
   const rawGlobalWeek = profileKey === "global"
     ? (profileWeekRecord ?? profileAllTimeRecord)
-    : (globalWeekRes.Item ?? null) as IngredientInsightsRecord | null;
+    : (globalWeekRes.Item ?? globalAllTimeRes.Item ?? null) as IngredientInsightsRecord | null;
 
   console.log(`[insights] userId=${userId} useStoredProfile=${useStoredProfile} hasEnoughSignals=${hasEnoughSignals} recipeSuggestions=${recipeSuggestions?.length ?? 0} tasteProfile=${tasteProfile !== null} weeklyRecipeTypes=${effectiveRecipeTypes.length} weeklyPairings=${effectivePairings.length}`);
 

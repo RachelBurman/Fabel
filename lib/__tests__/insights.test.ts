@@ -159,11 +159,28 @@ describe('GET /api/insights', () => {
       .mockResolvedValueOnce({ Item: null })   // profileWeek (empty)
       .mockResolvedValueOnce({ Item: null })   // profileAllTime
       .mockResolvedValueOnce({ Item: sampleInsight }) // globalWeek (separate fetch since not global)
+      .mockResolvedValueOnce({ Item: sampleInsight }) // globalAllTime fallback (separate fetch since not global)
 
     const res = await GET(makeGetRequest('u2'))
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.profileKey).toBe('gluten-free')
+  })
+
+  it('falls back to global all-time when this week\'s global record is missing', async () => {
+    // Non-global profile (gluten-free), current week's global record hasn't been seeded yet
+    mockSend
+      .mockResolvedValueOnce({ Item: { userId: 'u3', allergens: ['gluten'], activePresets: [] } })
+      .mockResolvedValueOnce({ Item: null })   // profileWeek
+      .mockResolvedValueOnce({ Item: null })   // profileAllTime
+      .mockResolvedValueOnce({ Item: undefined }) // globalWeek missing for current week
+      .mockResolvedValueOnce({ Item: sampleInsight }) // globalAllTime fallback present
+
+    const res = await GET(makeGetRequest('u3'))
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body.globalWeek).toBeTruthy()
+    expect(body.globalWeek.trendingIngredients).toHaveLength(1)
   })
 
   it('returns null records gracefully when table has no data', async () => {
